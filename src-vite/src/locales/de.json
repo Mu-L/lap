@@ -176,6 +176,10 @@
     "title": "Bildsuche",
     "similar_images": "Ähnliche",
     "image_search_placeholder": "Nach Bildinhalt oder Dateiname suchen",
+    "matches": "Treffer",
+    "unknown_location": "Unbekannter Ort",
+    "unknown_camera": "Unbekannte Kamera",
+    "unknown_lens": "Unbekanntes Objektiv",
     "semantic_matches": "Visuelle Treffer",
     "filename_matches": "Dateinamen-Treffer",
     "index": {
@@ -465,6 +469,7 @@
       "location": "Keine Orte gefunden",
       "location_hint": "Fügen Sie Fotos mit Standortdaten hinzu, damit sie hier angezeigt werden",
       "person": "Keine Personen gefunden",
+      "recognized_person": "Keine erkannte Person gefunden",
       "person_hint": "Indizieren Sie Gesichter in Alben, damit sie hier angezeigt werden",
       "camera": "Keine Kameras gefunden",
       "camera_hint": "Fügen Sie Fotos mit Kameradaten hinzu, damit sie hier angezeigt werden"

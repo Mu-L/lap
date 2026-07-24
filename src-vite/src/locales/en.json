@@ -176,6 +176,10 @@
     "title": "Search",
     "similar_images": "Similar",
     "image_search_placeholder": "Search by content or filename",
+    "matches": "Matches",
+    "unknown_location": "Unknown location",
+    "unknown_camera": "Unknown camera",
+    "unknown_lens": "Unknown lens",
     "semantic_matches": "Visual matches",
     "filename_matches": "Filename matches",
     "index": {
@@ -465,6 +469,7 @@
       "location": "No locations found",
       "location_hint": "Add photos with location data to see them here",
       "person": "No people found",
+      "recognized_person": "No recognized person found",
       "person_hint": "Index faces in Albums to see people here",
       "camera": "No cameras found",
       "camera_hint": "Add photos with camera metadata to see them here"

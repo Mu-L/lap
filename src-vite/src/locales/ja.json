@@ -176,6 +176,10 @@
     "title": "画像検索",
     "similar_images": "類似画像",
     "image_search_placeholder": "画像内容またはファイル名で検索",
+    "matches": "一致結果",
+    "unknown_location": "不明な場所",
+    "unknown_camera": "不明なカメラ",
+    "unknown_lens": "不明なレンズ",
     "semantic_matches": "画像の一致",
     "filename_matches": "ファイル名の一致",
     "index": {
@@ -465,6 +469,7 @@
       "location": "場所が見つかりません",
       "location_hint": "位置情報付きの写真を追加すると、ここに表示されます",
       "person": "人物が見つかりません",
+      "recognized_person": "認識済みの人物が見つかりません",
       "person_hint": "アルバムで顔をインデックスすると、ここに人物が表示されます",
       "camera": "カメラが見つかりません",
       "camera_hint": "カメラ情報付きの写真を追加すると、ここに表示されます"

@@ -176,6 +176,10 @@
     "title": "Búsqueda de imágenes",
     "similar_images": "Similares",
     "image_search_placeholder": "Buscar por contenido o nombre de archivo",
+    "matches": "Coincidencias",
+    "unknown_location": "Ubicación desconocida",
+    "unknown_camera": "Cámara desconocida",
+    "unknown_lens": "Objetivo desconocido",
     "semantic_matches": "Coincidencias visuales",
     "filename_matches": "Coincidencias de nombre",
     "index": {
@@ -465,6 +469,7 @@
       "location": "No se encontraron ubicaciones",
       "location_hint": "Añade fotos con datos de ubicación para verlas aquí",
       "person": "No se encontraron personas",
+      "recognized_person": "No se encontró ninguna persona reconocida",
       "person_hint": "Indexa rostros en Álbumes para ver personas aquí",
       "camera": "No se encontraron cámaras",
       "camera_hint": "Añade fotos con metadatos de cámara para verlas aquí"

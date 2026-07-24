@@ -62,7 +62,7 @@
           :selectedValues="fileTypeSelectedValues"
           :summaryLabel="fileTypeSummaryLabel"
           :separatorsAfter="[0]"
-          :disabled="tempViewMode === 'album' || tempViewMode === 'person' || isScanStreamingMode"
+          :disabled="isFixedAiResultView || tempViewMode === 'album' || isScanStreamingMode"
           :selected="activeFileTypeMask !== 0"
           @multi-select="handleFileTypeSelect"
         />
@@ -1167,6 +1167,13 @@ function formatRatingGroupLabel(label: string) {
 }
 
 function formatGroupLabel(label: string) {
+  const unknownGroupLabels: Record<string, string> = {
+    'unknown-location': localeMsg.value.search?.unknown_location || 'Unknown location',
+    'unknown-camera': localeMsg.value.search?.unknown_camera || 'Unknown camera',
+    'unknown-lens': localeMsg.value.search?.unknown_lens || 'Unknown lens',
+  };
+  if (unknownGroupLabels[label]) return unknownGroupLabels[label];
+
   const groupBy = Number(effectiveGroupBy.value || 0);
   if (groupBy === GROUP.DAY || groupBy === GROUP.MONTH || groupBy === GROUP.YEAR) return formatDateGroupLabel(groupBy, label);
   if (groupBy === GROUP.FOLDER) return formatFolderGroupLabel(label);
@@ -2557,6 +2564,7 @@ function showLoadingContent(requestId: number) {
 
 // Similar Search Mode State
 const tempViewMode = ref<'none' | 'similar' | 'album' | 'person'>('none');
+let suppressPersonContextRefresh = false;
 const dedupQueryParams = computed(() => {
   return { ...currentQueryParams.value };
 });
@@ -4468,7 +4476,7 @@ onMounted( async() => {
     }
     if (deletedIds.length === 0 || fileList.value.length === 0) return;
 
-    if (tempViewMode.value === 'similar' || tempViewMode.value === 'album') {
+    if (tempViewMode.value !== 'none') {
       updateContent();
       return;
     }
@@ -4660,21 +4668,17 @@ watch(
       config.rightPanel.show = false;
     }
 
-    // If temp mode is active and query context changed, exit temp mode and refresh.
-    if (tempViewMode.value === 'similar') {
-      const params = currentImageSearchParams.value;
-      if (params && (params.searchText || params.fileId)) {
-        const requestId = ++currentContentRequestId;
-        getImageSearchFileList(params.searchText, params.fileId || 0, requestId);
-      }
-      return;
-    }
-    if (tempViewMode.value === 'album') {
+    // Entering the temporary person result updates person.id so face overlays
+    // can identify the matched person. Ignore only that internal sync; later
+    // query-context changes exit this temporary view like similar-image search.
+    if (tempViewMode.value === 'person' && suppressPersonContextRefresh) return;
+
+    // A changed query context invalidates other temporary result lists. Return
+    // to the normal view instead of refreshing or retaining the temporary list.
+    if (tempViewMode.value !== 'none') {
       updateContent();
       return;
     }
-    // Skip other temp modes to prevent race conditions
-    if (tempViewMode.value !== 'none') return;
     
     scheduleContentRefresh(() => {
       // Double check in case tempViewMode changed during setTimeout
@@ -5729,7 +5733,7 @@ async function getImageSearchFileList(
     fileId,
     threshold: thresholdOverride ?? config.imageSearchThresholds[config.settings.imageSearch.thresholdIndex],
     limit: config.settings.imageSearch.limit,
-    fileType: Number(config.search.fileType || 0),
+    fileType: tempViewMode.value === 'similar' ? 0 : Number(config.search.fileType || 0),
   };
   currentCollectionId.value = null;
   currentSearchFileIds.value = [];
@@ -6320,14 +6324,14 @@ async function enterPersonSearchMode(file: any) {
   // fetch faces
   const faces = await getFacesForFile(file.id);
   if (!faces || faces.length === 0) {
-     toast.info(localeMsg.value.tooltip.not_found.person || "No person found");
+     toast.info(localeMsg.value.tooltip.not_found.recognized_person || "No recognized person found");
      return;
   }
 
   // Find first face with person_id
   const face = faces.find((f: any) => f.person_id && f.person_id > 0);
   if (!face) {
-     toast.info(localeMsg.value.tooltip.not_found.person || "No person found");
+     toast.info(localeMsg.value.tooltip.not_found.recognized_person || "No recognized person found");
      return;
   }
 
@@ -6345,8 +6349,11 @@ async function enterPersonSearchMode(file: any) {
   showQuickView.value = false;
 
   // 3. Update libConfig.person to reflect the found person
+  suppressPersonContextRefresh = true;
   libConfig.person.id = face.person_id;
   libConfig.person.name = face.person_name || null;
+  await nextTick();
+  suppressPersonContextRefresh = false;
 
   // 4. Update Title to indicate context
   contentTitle.value = face.person_name || localeMsg.value.sidebar.people;
@@ -6362,7 +6369,7 @@ async function enterPersonSearchMode(file: any) {
     gridViewRef.value.scrollToPosition(0);
   }
   
-  getFileList({ personId: face.person_id }, requestId);
+  getFileList({ personId: face.person_id, searchFileType: 0 }, requestId);
 }
 
 function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
@@ -7871,7 +7878,9 @@ const smartAlbumFileTypeMask = computed(() => {
 });
 
 const activeFileTypeMask = computed(() =>
-  isSmartAlbumView.value
+  isFixedAiResultView.value
+    ? 0
+    : isSmartAlbumView.value
     ? smartAlbumFileTypeMask.value
     : Number(config.search.fileType || 0)
 );
@@ -8071,7 +8080,7 @@ const fixedAiSortOptions = computed(() => [{
 }]);
 
 const toolbarSortOptions = computed(() =>
-  isFixedAiResultView.value ? fixedAiSortOptions.value : sortOptions.value
+  isSimilaritySortedResultView.value ? fixedAiSortOptions.value : sortOptions.value
 );
 
 // sort extend options
@@ -8080,7 +8089,7 @@ const sortExtendOptions = computed(() => {
 });
 
 const toolbarSortExtendOptions = computed(() =>
-  isFixedAiResultView.value ? [] : sortExtendOptions.value
+  isSimilaritySortedResultView.value ? [] : sortExtendOptions.value
 );
 
 const groupTypeLabels = computed(() =>
@@ -8102,9 +8111,9 @@ const groupOptions = computed(() => {
 });
 
 const fixedAiGroupOptions = computed(() => [{
-  label: isSubjectGroupingView.value
+  label: isSubjectGroupingView.value || tempViewMode.value === 'similar' || tempViewMode.value === 'person'
     ? (groupTypeLabels.value[GROUP.NONE] || 'None')
-    : 'Matches',
+    : (localeMsg.value.search.matches || 'Matches'),
   value: GROUP.NONE,
 }]);
 
@@ -8119,7 +8128,7 @@ const toolbarGroupIndex = computed(() => {
 });
 
 const toolbarSortType = computed(() => {
-  if (isFixedAiResultView.value) return 0;
+  if (isSimilaritySortedResultView.value) return 0;
   return isSmartAlbumView.value
     ? Number(getActiveCustomSmartAlbum()?.sort?.type ?? 0)
     : Number(config.search.sortType || 0);
@@ -8145,13 +8154,18 @@ const isAiSearchMode = computed(() =>
 );
 
 const isFixedAiResultView = computed(() =>
-  libConfig.activePane !== 'collection' && isAiSearchMode.value
+  tempViewMode.value === 'person' ||
+  isSimilaritySortedResultView.value
+);
+
+const isSimilaritySortedResultView = computed(() =>
+  tempViewMode.value === 'similar' ||
+  (libConfig.activePane !== 'collection' && isAiSearchMode.value)
 );
 
 const isSortControlDisabled = computed(() =>
   isFixedAiResultView.value ||
   tempViewMode.value === 'album' ||
-  tempViewMode.value === 'person' ||
   isScanStreamingMode.value
 );
 

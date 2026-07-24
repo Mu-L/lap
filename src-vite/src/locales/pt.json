@@ -176,6 +176,10 @@
     "title": "Pesquisa de imagem",
     "similar_images": "Semelhantes",
     "image_search_placeholder": "Pesquisar por conteúdo ou nome de arquivo",
+    "matches": "Correspondências",
+    "unknown_location": "Local desconhecido",
+    "unknown_camera": "Câmera desconhecida",
+    "unknown_lens": "Lente desconhecida",
     "semantic_matches": "Correspondências visuais",
     "filename_matches": "Correspondências de nome",
     "index": {
@@ -465,6 +469,7 @@
       "location": "Nenhuma localização encontrada",
       "location_hint": "Adicione fotos com dados de localização para vê-las aqui",
       "person": "Nenhuma pessoa encontrada",
+      "recognized_person": "Nenhuma pessoa reconhecida encontrada",
       "person_hint": "Indexe rostos em Álbuns para ver pessoas aqui",
       "camera": "Nenhuma câmera encontrada",
       "camera_hint": "Adicione fotos com metadados da câmera para vê-las aqui"

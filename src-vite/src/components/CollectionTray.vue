@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import { libConfig } from '@/common/config';
@@ -126,7 +126,7 @@ import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
 
-const props = defineProps({
+defineProps({
   expanded: {
     type: Boolean,
     required: true,
@@ -173,15 +173,6 @@ onMounted(async () => {
     await loadCollections();
   });
 });
-
-watch(
-  () => libConfig.activePane,
-  (pane) => {
-    if (pane === 'main' && props.expanded) {
-      emit('toggle-expanded');
-    }
-  },
-);
 
 onBeforeUnmount(() => {
   unlistenCollectionFilesDropped?.();

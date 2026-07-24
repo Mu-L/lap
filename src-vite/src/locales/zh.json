@@ -176,6 +176,10 @@
     "title": "图片搜索",
     "similar_images": "相似图片",
     "image_search_placeholder": "按内容或文件名搜索",
+    "matches": "匹配结果",
+    "unknown_location": "未知位置",
+    "unknown_camera": "未知相机",
+    "unknown_lens": "未知镜头",
     "semantic_matches": "画面匹配",
     "filename_matches": "文件名匹配",
     "index": {
@@ -465,6 +469,7 @@
       "location": "未找到地点",
       "location_hint": "添加带位置信息的照片后，会显示在这里",
       "person": "未找到人物",
+      "recognized_person": "未找到已识别的人物",
       "person_hint": "在相册中索引人脸后，会显示在这里",
       "camera": "未找到相机",
       "camera_hint": "添加带相机元数据的照片后，会显示在这里"
