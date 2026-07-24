@@ -4304,6 +4304,23 @@ impl AFile {
                     condition
                 })
             }
+            "media_subtype" => {
+                let subtype = Self::smart_rule_string(value)
+                    .ok_or_else(|| "Media subtype value required".to_string())?;
+                if subtype != "live_photo" {
+                    return Err(format!("Unsupported media subtype: {}", subtype));
+                }
+                if matches!(operator, "is_not" | "neq" | "not_in") {
+                    Ok("(a.media_subtype IS NULL OR a.media_subtype != 'live_photo' OR a.live_photo_video_id IS NULL)".to_string())
+                } else if matches!(operator, "is" | "eq" | "in") {
+                    Ok(
+                        "(a.media_subtype = 'live_photo' AND a.live_photo_video_id IS NOT NULL)"
+                            .to_string(),
+                    )
+                } else {
+                    Err(format!("Unsupported media subtype operator: {}", operator))
+                }
+            }
             "extension" => {
                 let condition = Self::build_smart_extension_condition(value, sql_params)?;
                 Ok(if matches!(operator, "is_not" | "not_in" | "neq") {

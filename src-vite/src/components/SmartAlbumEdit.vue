@@ -99,6 +99,7 @@
                     :lens-options="lensOptions"
                     :location-options="locationOptions"
                     :file-type-options="fileTypeOptions"
+                    :media-subtype-options="mediaSubtypeOptions"
                     :extension-options="extensionOptions"
                   />
                   <TButton
@@ -189,6 +190,10 @@ const fileTypeOptions = computed(() => [
   { value: 2, label: localeMsg.value.toolbar.filter?.file_type_options?.[3] || 'Video' },
 ]);
 
+const mediaSubtypeOptions = computed(() => [
+  { value: 'live_photo', label: t('album.smart_edit.media_subtypes.live_photo') },
+]);
+
 function indexedOptions(labels: unknown, fallbacks: string[]) {
   const values = Array.isArray(labels) ? labels : [];
   return fallbacks.map((fallback, value) => ({
@@ -222,6 +227,7 @@ const fieldOptions = computed(() => [
   { value: 'tag', label: t('album.smart_edit.fields.tag') },
   { value: 'person', label: t('album.smart_edit.fields.person') },
   { value: 'file_type', label: t('album.smart_edit.fields.file_type') },
+  { value: 'media_subtype', label: t('album.smart_edit.fields.media_subtype') },
   { value: 'extension', label: t('album.smart_edit.fields.extension') },
   { value: 'orientation', label: t('album.smart_edit.fields.orientation') },
   { value: 'width', label: t('album.smart_edit.fields.width') },
@@ -273,7 +279,7 @@ function normalizeRuleForEdit(rule: any) {
 function getOperatorOptions(field: string) {
   const op = (key: string) => ({ value: key, label: t(`album.smart_edit.operators.${key}`) });
   if (field === 'name') return [op('contains'), op('not_contains')];
-  if (['file_type', 'extension', 'camera', 'lens', 'location'].includes(field)) return [op('is'), op('is_not')];
+  if (['file_type', 'media_subtype', 'extension', 'camera', 'lens', 'location'].includes(field)) return [op('is'), op('is_not')];
   if (field === 'favorite' || field === 'has_gps') return [op('is')];
   if (field === 'orientation') return [op('is')];
   if (field === 'rating') return [op('is'), op('is_not'), op('gt'), op('gte'), op('lt'), op('lte'), op('between'), op('empty'), op('not_empty')];
@@ -295,6 +301,7 @@ function resetRuleValue(rule: any) {
 function setDefaultRuleValue(rule: any) {
   if (rule.field === 'name') rule.value = '';
   else if (rule.field === 'file_type') rule.value = 1;
+  else if (rule.field === 'media_subtype') rule.value = 'live_photo';
   else if (rule.field === 'extension') rule.value = extensionOptions.value[0]?.value || 'jpg';
   else if (rule.field === 'favorite' || rule.field === 'has_gps') rule.value = true;
   else if (rule.field === 'orientation') rule.value = 'landscape';
@@ -328,6 +335,7 @@ function isRuleValid(rule: any) {
   if (isDateRuleField(rule.field) && rule.operator === 'is') return isDatePeriodValueValid(rule.value);
   if (rule.field === 'orientation') return isOrientationValueValid(rule.value);
   if (rule.field === 'file_type') return Boolean(getFileTypeValue(rule.value));
+  if (rule.field === 'media_subtype') return mediaSubtypeOptions.value.some(option => option.value === rule.value);
   if (isDateRuleField(rule.field)) return Boolean(rule.value?.value);
   return rule.value !== null && rule.value !== undefined && rule.value !== '';
 }
@@ -616,6 +624,7 @@ const RuleValueControl = defineComponent({
     lensOptions: { type: Array, default: () => [] },
     locationOptions: { type: Array, default: () => [] },
     fileTypeOptions: { type: Array, default: () => [] },
+    mediaSubtypeOptions: { type: Array, default: () => [] },
     extensionOptions: { type: Array, default: () => [] },
   },
   setup(props: any) {
@@ -757,6 +766,7 @@ const RuleValueControl = defineComponent({
       value: getFileTypeValue(props.rule.value),
       onChange: (event: any) => { props.rule.value = Number(event.target.value); },
     }, props.fileTypeOptions.map((option: any) => h('option', { value: option.value }, option.label)));
+    const mediaSubtypeInput = () => selectInput(props.mediaSubtypeOptions);
     const extensionInput = () => {
       const extension = getExtensionValue(props.rule.value);
       const options = !extension || props.extensionOptions.some((option: any) => option.value === extension)
@@ -834,6 +844,7 @@ const RuleValueControl = defineComponent({
     return () => {
       if (['empty', 'not_empty'].includes(props.rule.operator) && !isDateRuleField(props.rule.field)) return h('span', { class: 'text-xs text-base-content/30' }, '-');
       if (props.rule.field === 'file_type') return fileTypeInput();
+      if (props.rule.field === 'media_subtype') return mediaSubtypeInput();
       if (props.rule.field === 'extension') return extensionInput();
       if (props.rule.field === 'favorite' || props.rule.field === 'has_gps') return boolSelect();
       if (props.rule.field === 'orientation') return orientationSelect();

@@ -98,6 +98,7 @@
       "fields": {
         "name": "Nom",
         "file_type": "Type de fichier",
+        "media_subtype": "Sous-type de média",
         "extension": "Extension",
         "favorite": "Favori",
         "rating": "Note",
@@ -116,6 +117,9 @@
         "camera": "Appareil",
         "lens": "Objectif",
         "location": "Lieu"
+      },
+      "media_subtypes": {
+        "live_photo": "Live Photo"
       },
       "operators": {
         "is": "=",

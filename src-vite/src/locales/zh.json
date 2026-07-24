@@ -98,6 +98,7 @@
       "fields": {
         "name": "名称",
         "file_type": "文件类型",
+        "media_subtype": "媒体子类型",
         "extension": "扩展名",
         "favorite": "收藏",
         "rating": "评分",
@@ -116,6 +117,9 @@
         "camera": "相机",
         "lens": "镜头",
         "location": "地点"
+      },
+      "media_subtypes": {
+        "live_photo": "实况照片"
       },
       "operators": {
         "is": "=",

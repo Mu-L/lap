@@ -98,6 +98,7 @@
       "fields": {
         "name": "이름",
         "file_type": "파일 유형",
+        "media_subtype": "미디어 하위 유형",
         "extension": "확장자",
         "favorite": "즐겨찾기",
         "rating": "평점",
@@ -116,6 +117,9 @@
         "camera": "카메라",
         "lens": "렌즈",
         "location": "위치"
+      },
+      "media_subtypes": {
+        "live_photo": "Live Photo"
       },
       "operators": {
         "is": "=",
