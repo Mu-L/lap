@@ -13,6 +13,7 @@ use crate::t_apple_sidecar::{
     delete_apple_aae_sidecars, preflight_rename_plan, resolve_group_primary_target,
     rollback_copied_transfers, rollback_rename_changes, rollback_renamed_sidecars,
 };
+use crate::t_similar;
 use crate::t_sqlite::{
     ACamera, ACollection, ACollectionOrder, AFile, AFolder, ALens, ALocation, ATag, ATagFileState,
     ATagSelectionCount, AThumb, ATimeLine, Album, GroupedQueryResult, ImageSearchParams, Person,
@@ -2367,6 +2368,62 @@ pub async fn search_similar_images(
 ) -> Result<Vec<AFile>, String> {
     AFile::search_similar_images(&state, params)
         .map_err(|e| format!("Error while searching similar images: {}", e))
+}
+
+#[tauri::command]
+pub fn similar_start_scan(
+    app_handle: tauri::AppHandle,
+    state: State<t_similar::SimilarState>,
+    scope_key: String,
+    source_version: i64,
+    params: Option<QueryParams>,
+    collection_id: Option<i64>,
+    file_ids: Option<Vec<i64>>,
+) -> Result<(), String> {
+    t_similar::start_scan(
+        app_handle,
+        state,
+        scope_key,
+        source_version,
+        params,
+        collection_id,
+        file_ids,
+    )
+}
+
+#[tauri::command]
+pub fn similar_get_scan_status(
+    state: State<t_similar::SimilarState>,
+) -> t_similar::SimilarScanStatus {
+    t_similar::get_status(state)
+}
+
+#[tauri::command]
+pub fn similar_cancel_scan(state: State<t_similar::SimilarState>) {
+    t_similar::cancel_scan(state)
+}
+
+#[tauri::command]
+pub fn similar_get_eligible_count(
+    params: Option<QueryParams>,
+    collection_id: Option<i64>,
+    file_ids: Option<Vec<i64>>,
+) -> Result<u64, String> {
+    t_similar::eligible_count(params, collection_id, file_ids)
+}
+
+#[tauri::command]
+pub fn similar_list_groups(scope_key: String, limit: i64, offset: i64) -> Result<serde_json::Value, String> {
+    t_similar::list_groups(&scope_key, limit, offset)
+}
+
+#[tauri::command]
+pub fn similar_get_group(group_id: i64, scope_key: String) -> Result<serde_json::Value, String> {
+    t_similar::get_group(group_id, &scope_key)
+}
+#[tauri::command]
+pub fn similar_has_scan(scope_key: String) -> Result<bool, String> {
+    t_similar::has_scan(&scope_key)
 }
 
 // face recognition

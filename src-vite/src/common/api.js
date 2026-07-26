@@ -1823,6 +1823,32 @@ export async function listenDedupScanProgress(callback) {
   return await listen('dedup-scan-progress', callback);
 }
 
+export async function similarStartScan(scopeKey, sourceVersion, params = null, collectionId = null, fileIds = null) {
+  return await invoke('similar_start_scan', { scopeKey, sourceVersion, params, collectionId, fileIds });
+}
+
+export async function similarGetScanStatus() {
+  return await invoke('similar_get_scan_status');
+}
+
+export async function similarCancelScan() {
+  return await invoke('similar_cancel_scan');
+}
+
+export async function similarGetEligibleCount(params = null, collectionId = null, fileIds = null) {
+  return await invoke('similar_get_eligible_count', { params, collectionId, fileIds });
+}
+
+export async function similarListGroups(scopeKey, limit = 100, offset = 0) {
+  return await invoke('similar_list_groups', { scopeKey, limit, offset });
+}
+export async function similarGetGroup(groupId, scopeKey) { return await invoke('similar_get_group', { groupId, scopeKey }); }
+export async function similarHasScan(scopeKey) { return await invoke('similar_has_scan', { scopeKey }); }
+
+export async function listenSimilarScanProgress(callback) {
+  return await listen('similar-scan-progress', callback);
+}
+
 // listen index finished
 export async function listenIndexFinished(callback) {
   return await listen('index_finished', callback);

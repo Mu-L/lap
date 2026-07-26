@@ -34,6 +34,7 @@ mod t_menu;
 mod t_migration;
 mod t_pasteboard;
 mod t_protocol;
+mod t_similar;
 mod t_sqlite;
 mod t_storage;
 mod t_utils;
@@ -89,6 +90,7 @@ async fn main() {
             }),
         )))
         .manage(t_dedup::DedupState::default())
+        .manage(t_similar::SimilarState::default())
         .setup(|_app| {
             t_video::init_ffmpeg_path(&_app.handle());
             t_config::set_app_identifier(&_app.config().identifier);
@@ -385,6 +387,13 @@ async fn main() {
             t_cmds::dedup_get_overview,
             t_cmds::dedup_set_keep,
             t_cmds::dedup_delete_selected,
+            t_cmds::similar_start_scan,
+            t_cmds::similar_get_scan_status,
+            t_cmds::similar_cancel_scan,
+            t_cmds::similar_get_eligible_count,
+            t_cmds::similar_list_groups,
+            t_cmds::similar_get_group,
+            t_cmds::similar_has_scan,
             // video
             t_video::prepare_video,
             t_video::cancel_video_prepare,

@@ -349,7 +349,7 @@ fn get_files_by_sizes(conn: &Connection) -> Result<Vec<AFile>, String> {
     Ok(files)
 }
 
-fn get_files_by_query(params: &QueryParams) -> Result<Vec<AFile>, String> {
+pub fn get_files_by_query(params: &QueryParams) -> Result<Vec<AFile>, String> {
     let mut all_files = Vec::new();
     let mut offset: i64 = 0;
     let chunk_size: i64 = 2000;
@@ -370,7 +370,7 @@ fn get_files_by_query(params: &QueryParams) -> Result<Vec<AFile>, String> {
     Ok(all_files)
 }
 
-fn get_files_by_collection(
+pub fn get_files_by_collection(
     collection_id: i64,
     params: Option<&QueryParams>,
 ) -> Result<Vec<AFile>, String> {

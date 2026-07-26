@@ -80,6 +80,43 @@ fn get_migrations() -> Vec<Migration> {
             description: "Post v0.2.4 schema updates",
             sql: "",
         },
+        Migration {
+            version: 10,
+            description: "Create visual similarity review tables",
+            sql: "
+                CREATE TABLE IF NOT EXISTS similarity_scans (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scope_key TEXT NOT NULL UNIQUE,
+                    source_version INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    file_count INTEGER NOT NULL DEFAULT 0,
+                    group_count INTEGER NOT NULL DEFAULT 0,
+                    created_at INTEGER NOT NULL,
+                    completed_at INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS similarity_groups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    scan_id INTEGER NOT NULL,
+                    representative_file_id INTEGER NOT NULL,
+                    file_count INTEGER NOT NULL,
+                    latest_taken_date INTEGER NOT NULL DEFAULT 0,
+                    min_score REAL NOT NULL DEFAULT 0,
+                    max_score REAL NOT NULL DEFAULT 0,
+                    FOREIGN KEY (scan_id) REFERENCES similarity_scans(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_similarity_groups_scan ON similarity_groups(scan_id);
+                CREATE TABLE IF NOT EXISTS similarity_group_items (
+                    group_id INTEGER NOT NULL,
+                    file_id INTEGER NOT NULL,
+                    score REAL NOT NULL,
+                    PRIMARY KEY (group_id, file_id),
+                    FOREIGN KEY (group_id) REFERENCES similarity_groups(id) ON DELETE CASCADE,
+                    FOREIGN KEY (file_id) REFERENCES afiles(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_similarity_items_group ON similarity_group_items(group_id);
+                CREATE INDEX IF NOT EXISTS idx_similarity_items_file ON similarity_group_items(file_id);
+            ",
+        },
     ]
 }
 

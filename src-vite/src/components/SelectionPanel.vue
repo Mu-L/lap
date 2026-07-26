@@ -1,12 +1,12 @@
 <template>
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
-    <div class="flex items-center w-full shrink-0 px-2 mb-2">
+    <div class="my-2 px-2 flex items-center w-full shrink-0">
       <div class="flex-1 pl-1">
-        <span class="text-sm font-semibold text-base-content/70">
+        <span class="text-sm font-semibold text-primary/70">
           {{ $t('toolbar.filter.select_mode') }}
         </span>
       </div>
-      <div class="mt-2 flex items-center gap-1">
+      <div class="flex items-center gap-1">
         <TButton
           :icon="IconClose"
           :tooltip="$t('msgbox.close')"

@@ -1,12 +1,23 @@
 <template>
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
-    <div class="flex items-center w-full shrink-0 px-2 mb-2">
-      <div class="flex-1 pl-1">
-        <span class="text-sm font-semibold text-base-content/70">
-          {{ $t('info_panel.dedup.title') }}
-        </span>
+    <div class="my-2 px-2 flex items-center justify-between w-full shrink-0">
+      <div class="flex items-center text-sm font-semibold gap-1">
+        <button
+          class="px-1 cursor-pointer"
+          :class="activeTab === 'duplicates' ? 'text-primary/70' : 'hover:text-base-content'"
+          @click="selectDuplicatesTab"
+        >
+          {{ $t('info_panel.dedup.tabs.exact') }}
+        </button>
+        <button
+          class="px-1 cursor-pointer"
+          :class="activeTab === 'similar' ? 'text-primary/70' : 'hover:text-base-content'"
+          @click="openSimilarTab()"
+        >
+          {{ $t('info_panel.dedup.tabs.similar') }}
+        </button>
       </div>
-      <div class="mt-2 flex items-center gap-1">
+      <div class="flex items-center gap-1">
         <TButton
           :icon="IconClose"
           :tooltip="$t('msgbox.close')"
@@ -16,7 +27,128 @@
       </div>
     </div>
 
-    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden flex flex-col">
+    <div
+      class="mb-2 px-2 flex-1 min-h-0 overflow-x-hidden flex flex-col"
+      :class="activeTab === 'duplicates' ? 'overflow-hidden' : 'overflow-y-auto'"
+    >
+      <template v-if="activeTab === 'similar'">
+        <div v-if="similarLoading" class="p-4 flex-1 flex items-center justify-center">
+          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+            <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
+            <p class="text-xs font-medium">{{ similarProgressLabel }}</p>
+            <progress class="progress progress-primary w-full" :value="similarStatus.current" :max="Math.max(1, similarStatus.total)"></progress>
+            <button class="btn btn-sm" @click="cancelSimilar">{{ $t('info_panel.dedup.similar.cancel') }}</button>
+          </div>
+        </div>
+        <div v-else-if="similarError" class="p-4 flex-1 flex items-center justify-center">
+          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+            <p class="text-xs font-medium">{{ $t('info_panel.dedup.similar.error_title') }}</p>
+            <PanelActionButton
+              class="mx-auto"
+              :icon="IconRefresh"
+              primary
+              @click="openSimilarTab(true)"
+            >
+              {{ $t('info_panel.dedup.rescan') }}
+            </PanelActionButton>
+          </div>
+        </div>
+        <div v-else-if="similarGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
+          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+            <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
+            <p class="text-xs font-medium">{{ similarHasScanned ? $t('info_panel.dedup.similar.empty_title') : $t('info_panel.dedup.similar.find_title') }}</p>
+            <p v-if="!similarHasScanned" class="text-xs text-base-content/30">{{ $t('info_panel.dedup.similar.description') }}</p>
+            <PanelActionButton v-if="!similarHasScanned" class="mx-auto" :icon="IconSimilar" primary :disabled="similarEligibleCount === 0" @click="startSimilar">
+              {{ $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
+            </PanelActionButton>
+          </div>
+        </div>
+        <template v-else>
+          <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
+                {{ $t('info_panel.dedup.similar.groups_title') }}
+              </span>
+            </div>
+            <div class="mx-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-2">
+              <button
+                v-for="group in visibleSimilarGroups"
+                :key="group.id"
+                class="group/thumb relative h-20 min-w-0 overflow-hidden rounded-box cursor-pointer"
+                :class="selectedSimilarGroupId === group.id ? 'ring-2 ring-primary' : ''"
+                @click="selectSimilarGroup(group)"
+              >
+                <img v-if="group.representative?.thumbnail" :src="group.representative.thumbnail" class="h-full w-full object-cover" loading="lazy" />
+                <div v-else class="h-full w-full skeleton"></div>
+                <div class="absolute left-1 top-1 rounded bg-base-300/85 px-1.5 py-0.5 text-[10px] font-semibold text-base-content/70 backdrop-blur-sm">
+                  {{ group.file_count }}
+                </div>
+                <div
+                  class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] leading-tight text-white/90 opacity-0 transition-opacity group-hover/thumb:opacity-100"
+                  :class="{ 'opacity-100': selectedSimilarGroupId === group.id }"
+                >
+                  <div v-if="group.representative?.width && group.representative?.height" class="text-white/70">
+                    {{ group.representative.width }} x {{ group.representative.height }}
+                  </div>
+                </div>
+              </button>
+              <button
+                v-if="hiddenSimilarGroupCount > 0"
+                class="flex h-20 min-w-0 items-center justify-center rounded-box border border-dashed border-base-content/20 bg-base-100/50 text-xs font-semibold text-base-content/70"
+                @click="expandSimilarGroups"
+              >
+                +{{ hiddenSimilarGroupCount }}
+              </button>
+            </div>
+            <PanelActionButton v-if="similarGroups.length < similarTotalGroups" class="mx-auto" :disabled="isLoadingMoreSimilarGroups" @click="loadMoreSimilarGroups">
+              {{ $t('info_panel.dedup.similar.load_more') }}
+            </PanelActionButton>
+          </div>
+          <div v-if="activeSimilarGroup" class="border-t border-base-content/5 px-1 py-4 space-y-3">
+            <div class="flex items-center gap-2">
+              <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
+                {{ $t('info_panel.dedup.actions_title') }}
+              </span>
+              <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
+                {{ $t('info_panel.select_hint') }}
+              </span>
+            </div>
+            <div class="space-y-2.5">
+              <button
+                v-for="item in activeSimilarGroup.items"
+                :key="item.file_id"
+                class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
+                :class="getDedupItemClass(item.file_id)"
+                @click="handleSimilarSelection(item.file_id)"
+                @dblclick="handleSimilarSelection(item.file_id, true)"
+              >
+                <div class="flex items-center gap-2">
+                  <div class="w-10 h-10 rounded-box overflow-hidden shrink-0">
+                    <img v-if="item.file?.thumbnail" :src="item.file.thumbnail" class="w-full h-full object-cover" />
+                    <div v-else class="w-full h-full skeleton"></div>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold text-base-content/70 truncate">{{ item.file?.name }}</div>
+                    <div
+                      class="text-[11px] text-base-content/30 truncate"
+                      :title="formatDedupFolderPath(item.file)"
+                    >
+                      {{ formatDedupFolderPath(item.file) }}
+                    </div>
+                    <div v-if="item.file?.modified_at" class="text-[11px] text-base-content/30">
+                      {{ $t('file_info.modified_at') }}: {{ formatTimestamp(item.file.modified_at, $t('format.date_time')) }}
+                    </div>
+                  </div>
+                  <div class="shrink-0 text-[11px] text-base-content/30">
+                    {{ Math.round((item.score || 0) * 100) }}%
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </template>
+      </template>
+      <template v-else>
       <div v-if="isDedupLoading" class="p-4 flex-1 flex items-center justify-center">
         <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
           <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
@@ -47,9 +179,11 @@
         </div>
       </div>
 
-      <template v-else>
-
-        <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
+      <div v-else ref="dedupSplitPaneRef" class="flex min-h-0 flex-1 flex-col">
+        <div
+          class="min-h-0 shrink-0 flex flex-col border-t border-base-content/5 px-1 py-3 space-y-3"
+          :style="{ height: `${config.dedup.duplicateSetsHeight}%` }"
+        >
           <div class="flex items-center gap-2">
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.groups_title') }}
@@ -61,44 +195,51 @@
               }) }}
             </span>
           </div>
-          <div class="mx-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-2">
-            <button
+          <div
+            ref="duplicateGroupsScrollRef"
+            class="min-h-0 flex-1 overflow-y-auto py-1"
+            @scroll="loadMoreDuplicateThumbnails"
+          >
+            <div class="mx-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-2">
+              <button
               v-for="group in visibleDuplicateGroups"
               :key="group.id"
+              :data-duplicate-group-id="group.id"
               class="group/thumb relative h-20 min-w-0 overflow-hidden rounded-box cursor-pointer"
-              :class="selectedGroupId === group.id ? 'ring-2 ring-primary' : ''"
-              @click="selectDuplicateGroup(group)"
-            >
-              <img
-                v-if="group.keepItem?.file?.thumbnail"
-                :src="group.keepItem.file.thumbnail"
-                class="h-full w-full object-cover"
-                loading="lazy"
-              />
-              <div v-else class="h-full w-full skeleton"></div>
-              <div class="absolute left-1 top-1 rounded bg-base-300/85 px-1.5 py-0.5 text-[10px] font-semibold text-base-content/70 backdrop-blur-sm">
-                {{ group.file_count }}
-              </div>
-              <div
-                class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] leading-tight text-white/90 opacity-0 transition-opacity group-hover/thumb:opacity-100"
-                :class="{ 'opacity-100': selectedGroupId === group.id }"
+                :class="selectedGroupId === group.id ? 'ring-2 ring-primary' : ''"
+                @click="selectDuplicateGroup(group)"
               >
-                <div>{{ formatFileSize(group.file_size) }}</div>
-                <div v-if="group.keepItem?.file?.width && group.keepItem?.file?.height" class="text-white/70">
-                  {{ group.keepItem.file.width }} x {{ group.keepItem.file.height }}
+                <img
+                  v-if="group.keepItem?.file?.thumbnail"
+                  :src="group.keepItem.file.thumbnail"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div v-else class="h-full w-full skeleton"></div>
+                <div class="absolute left-1 top-1 rounded bg-base-300/85 px-1.5 py-0.5 text-[10px] font-semibold text-base-content/70 backdrop-blur-sm">
+                  {{ group.file_count }}
                 </div>
-              </div>
-            </button>
-            <div
-              v-if="hiddenDuplicateGroupCount > 0"
-              class="flex h-20 min-w-0 items-center justify-center rounded-box border border-dashed border-base-content/20 bg-base-100/50 text-xs font-semibold text-base-content/70"
-            >
-              +{{ hiddenDuplicateGroupCount }}
+                <div
+                  class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] leading-tight text-white/90 opacity-0 transition-opacity group-hover/thumb:opacity-100"
+                  :class="{ 'opacity-100': selectedGroupId === group.id }"
+                >
+                  <div>{{ formatFileSize(group.file_size) }}</div>
+                  <div v-if="group.keepItem?.file?.width && group.keepItem?.file?.height" class="text-white/70">
+                    {{ group.keepItem.file.width }} x {{ group.keepItem.file.height }}
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
-
-        <div v-if="activeGroup" class="border-t border-base-content/5 px-1 py-4 space-y-3">
+        <div
+          v-if="activeGroup"
+          class="-mx-2 z-10 flex h-1 border-b border-base-content/5 shrink-0 touch-none cursor-row-resize items-center select-none"
+          @pointerdown.prevent="startDraggingDuplicateSplitter"
+        >
+          <div class="h-1 w-full transition-colors hover:bg-primary" :class="{ 'bg-primary': isDraggingDuplicateSplitter }"></div>
+        </div>
+        <div v-if="activeGroup" class="min-h-0 flex-1 overflow-y-auto px-1 py-3 space-y-3">
           <div class="flex items-center gap-2">
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.actions_title') }}
@@ -208,6 +349,7 @@
             </button>
           </div>
         </div>
+      </div>
       </template>
     </div>
   </div>
@@ -215,18 +357,47 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted, nextTick, PropType } from 'vue';
-import { formatFileSize, getFolderName, getFolderPath, formatFolderBreadcrumb, getThumbnailDataUrl, isMac, formatTimestamp } from '@/common/utils';
+import { useI18n } from 'vue-i18n';
+import {
+  formatFileSize,
+  getFolderName,
+  getFolderPath,
+  formatFolderBreadcrumb,
+  getThumbnailDataUrl,
+  isMac,
+  formatTimestamp,
+} from '@/common/utils';
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconRefresh, IconSimilar, IconTrash } from '@/common/icons';
-import { dedupStartScan, dedupCancelScan, dedupGetScanStatus, dedupGetOverview, listenDedupScanProgress, dedupListGroups, dedupSetKeep, getAlbum, getFileThumb } from '@/common/api';
+import {
+  dedupStartScan,
+  dedupCancelScan,
+  dedupGetScanStatus,
+  dedupGetOverview,
+  listenDedupScanProgress,
+  dedupListGroups,
+  dedupSetKeep,
+  getAlbum,
+  getFileThumb,
+  similarStartScan,
+  similarGetScanStatus,
+  similarCancelScan,
+  similarGetEligibleCount,
+  similarListGroups,
+  similarGetGroup,
+  similarHasScan,
+  listenSimilarScanProgress,
+} from '@/common/api';
 import { config } from '@/common/config';
+import { SIMILAR_SCAN } from '@/common/constants';
 
 const dedupPaneGlobalState = ((globalThis as any).__lapDedupPaneState ||= {
   lastScanKey: '',
 });
-const DEDUP_THUMBNAIL_LIMIT = 19;
+const DEDUP_THUMBNAIL_PAGE_SIZE = 100;
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
+const { t } = useI18n();
 
 const props = defineProps({
   selectedFileId: {
@@ -261,6 +432,21 @@ const emit = defineEmits<{
 
 const selectedDupIdsByGroup = ref<Map<number, Set<number>>>(new Map());
 const isDedupLoading = ref(false);
+const activeTab = ref<'duplicates' | 'similar'>(
+  config.dedup.activeTab === 'similar' ? 'similar' : 'duplicates',
+);
+const similarLoading = ref(false);
+const similarStatus = ref<any>({ phase: 'idle', current: 0, total: 0 });
+const similarGroups = ref<any[]>([]);
+const similarTotalGroups = ref(0);
+const isLoadingMoreSimilarGroups = ref(false);
+const showAllSimilarGroups = ref(false);
+const selectedSimilarGroupId = ref<number | null>(null);
+const similarEligibleCount = ref(0);
+const similarHasScanned = ref(false);
+const similarError = ref(false);
+const similarLoadedScope = ref('');
+const unlistenSimilarProgress = ref<null | (() => void)>(null);
 const dedupScanError = ref(false);
 const unlistenDedupProgress = ref<null | (() => void)>(null);
 const queuedDedupScan = ref(false);
@@ -274,6 +460,11 @@ const totalReclaimableBytes = ref(0);
 const albumRootPaths = ref<Map<number, string>>(new Map());
 const dedupStatusPollTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const isPollingDedupStatus = ref(false);
+const loadedDuplicateGroupCount = ref(DEDUP_THUMBNAIL_PAGE_SIZE);
+const duplicateGroupsScrollRef = ref<HTMLElement | null>(null);
+const dedupSplitPaneRef = ref<HTMLElement | null>(null);
+const isDraggingDuplicateSplitter = ref(false);
+const isLoadingMoreDuplicateThumbnails = ref(false);
 
 const duplicateGroups = computed(() =>
   rawGroups.value.map((group: any) => {
@@ -292,8 +483,23 @@ const activeGroup = computed(() => {
   if (selectedGroupId.value === null) return null;
   return duplicateGroups.value.find(group => group.id === selectedGroupId.value) || null;
 });
-const visibleDuplicateGroups = computed(() => duplicateGroups.value.slice(0, DEDUP_THUMBNAIL_LIMIT));
-const hiddenDuplicateGroupCount = computed(() => Math.max(0, duplicateGroups.value.length - DEDUP_THUMBNAIL_LIMIT));
+const activeSimilarGroup = computed(() => similarGroups.value.find(group => Number(group.id) === selectedSimilarGroupId.value) || null);
+const similarProgressLabel = computed(() => ({
+  preparing: t('info_panel.dedup.similar.preparing'),
+  finding_matches: t('info_panel.dedup.similar.finding_matches'),
+  building_sets: t('info_panel.dedup.similar.building_sets'),
+})[similarStatus.value.phase] || t('info_panel.dedup.similar.analyzing'));
+const visibleDuplicateGroups = computed(() => duplicateGroups.value.slice(0, loadedDuplicateGroupCount.value));
+const visibleSimilarGroups = computed(() =>
+  showAllSimilarGroups.value
+    ? similarGroups.value
+    : similarGroups.value.slice(0, SIMILAR_SCAN.THUMBNAIL_LIMIT)
+);
+const hiddenSimilarGroupCount = computed(() =>
+  showAllSimilarGroups.value
+    ? 0
+    : Math.max(0, similarGroups.value.length - SIMILAR_SCAN.THUMBNAIL_LIMIT)
+);
 
 function emitDedupStatuses() {
   const statuses: Record<number, 'keep' | 'dup'> = {};
@@ -354,11 +560,179 @@ function handleDuplicateSelection(fileId: number, preview = false) {
   }
 }
 
+function handleSimilarSelection(fileId: number, preview = false) {
+  emit('select-file', fileId);
+  if (preview) emit('preview-file', fileId);
+}
+
+async function hydrateSimilarThumbnails(groups: any[], activeGroupId: number | null) {
+  const visibleIds = new Set(
+    visibleSimilarGroups.value.map(group => Number(group.id))
+  );
+  const files = groups.flatMap(group => {
+    if (Number(group.id) === activeGroupId) return [group.representative, ...(group.items || []).map((item: any) => item.file)];
+    return visibleIds.has(Number(group.id)) ? [group.representative] : [];
+  }).filter(Boolean);
+  await Promise.all(files.map(async (file: any) => {
+    if (file.thumbnail || !file.file_path) return;
+    const thumb = await getFileThumb(
+      file.id,
+      file.file_path,
+      file.file_type || 1,
+      file.e_orientation || 0,
+      config.settings.thumbnailSize,
+      false,
+    );
+    file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path);
+  }));
+}
+
+async function expandSimilarGroups() {
+  showAllSimilarGroups.value = true;
+  await nextTick();
+  await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
+}
+
+async function fetchSimilarGroups(append = false) {
+  const scopeKey = props.dedupScanKey;
+  const offset = append ? similarGroups.value.length : 0;
+  let page;
+  try { page = await similarListGroups(scopeKey, SIMILAR_SCAN.PAGE_SIZE, offset); }
+  catch (error) {
+    console.error('fetchSimilarGroups error:', error);
+    if (scopeKey === props.dedupScanKey) similarError.value = true;
+    return;
+  }
+  if (scopeKey !== props.dedupScanKey) return;
+  similarError.value = false;
+  const groups = Array.isArray(page?.items) ? page.items : [];
+  similarGroups.value = append ? [...similarGroups.value, ...groups] : groups;
+  similarTotalGroups.value = Number(page?.total || 0);
+  similarLoadedScope.value = props.dedupScanKey;
+  if (!append) {
+    selectedSimilarGroupId.value = similarGroups.value[0] ? Number(similarGroups.value[0].id) : null;
+    const firstGroup = similarGroups.value[0];
+    if (firstGroup) {
+      let detail;
+      try { detail = await similarGetGroup(firstGroup.id, scopeKey); }
+      catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
+      if (scopeKey !== props.dedupScanKey) return;
+      Object.assign(firstGroup, detail);
+    }
+  }
+  await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
+}
+
+async function loadMoreSimilarGroups() {
+  if (isLoadingMoreSimilarGroups.value || similarGroups.value.length >= similarTotalGroups.value) return;
+  isLoadingMoreSimilarGroups.value = true;
+  try { await fetchSimilarGroups(true); }
+  finally { isLoadingMoreSimilarGroups.value = false; }
+}
+
+async function openSimilarTab(forceReload = false) {
+  activeTab.value = 'similar';
+  config.dedup.activeTab = 'similar';
+  if (!props.dedupScanKey) return;
+  const scopeKey = props.dedupScanKey;
+  if (forceReload) similarLoadedScope.value = '';
+  similarError.value = false;
+  let status;
+  try { status = await similarGetScanStatus(); }
+  catch (error) { console.error('getSimilarScanStatus error:', error); similarError.value = true; return; }
+  if (scopeKey !== props.dedupScanKey) return;
+  if (status?.scopeKey === props.dedupScanKey && (status.state === 'running' || status.isScanning)) {
+    similarStatus.value = status;
+    similarLoading.value = true;
+    return;
+  }
+  if (similarLoadedScope.value !== props.dedupScanKey) await fetchSimilarGroups();
+  if (scopeKey !== props.dedupScanKey) return;
+  if (similarError.value) return;
+  const hasCachedGroups = similarGroups.value.length > 0;
+  let hasPersistedScan = false;
+  try { hasPersistedScan = await similarHasScan(props.dedupScanKey); }
+  catch (error) { console.error('similarHasScan error:', error); similarError.value = true; return; }
+  if (scopeKey !== props.dedupScanKey) return;
+  similarHasScanned.value = hasCachedGroups
+    || (status?.scopeKey === props.dedupScanKey && status?.state === 'finished')
+    || hasPersistedScan;
+  if (!similarHasScanned.value) {
+    let eligibleCount;
+    try {
+      eligibleCount = Number(await similarGetEligibleCount(
+        props.dedupFileIds === null ? (props.dedupQueryParams || null) : null,
+        props.dedupFileIds === null ? props.dedupCollectionId : null,
+        props.dedupFileIds,
+      ));
+    } catch (error) { console.error('getSimilarEligibleCount error:', error); similarError.value = true; return; }
+    if (scopeKey !== props.dedupScanKey) return;
+    similarEligibleCount.value = eligibleCount;
+  }
+}
+
+function selectDuplicatesTab() {
+  activeTab.value = 'duplicates';
+  config.dedup.activeTab = 'duplicates';
+}
+
+async function startSimilar() {
+  const needsConfirmation = similarEligibleCount.value > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD;
+  const message = t('info_panel.dedup.similar.large_scan_confirm', {
+    count: similarEligibleCount.value.toLocaleString(),
+  });
+  if (needsConfirmation && !window.confirm(message)) return;
+  similarLoading.value = true;
+  try {
+    const sourceVersion = Number(props.dedupScanKey.match(/\|version:(\d+)$/)?.[1] || 0);
+    await similarStartScan(
+      props.dedupScanKey,
+      sourceVersion,
+      props.dedupFileIds === null ? (props.dedupQueryParams || null) : null,
+      props.dedupFileIds === null ? props.dedupCollectionId : null,
+      props.dedupFileIds,
+    );
+  } catch (error) {
+    console.error('startSimilar error:', error);
+    similarLoading.value = false;
+    similarError.value = true;
+  }
+}
+
+async function cancelSimilar() {
+  try { await similarCancelScan(); }
+  catch (error) { console.error('cancelSimilar error:', error); similarLoading.value = false; similarError.value = true; }
+}
+async function selectSimilarGroup(group: any) {
+  selectedSimilarGroupId.value = Number(group.id);
+  if (!group.items) {
+    try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
+    catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
+  }
+  await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
+  if (group.representative?.id) emit('select-file', group.representative.id);
+}
+
 function selectDuplicateGroup(group: any) {
   selectedGroupId.value = Number(group.id);
   const keepFileId = Number(group.keepItem?.file_id || 0);
   if (keepFileId > 0) {
     emit('select-file', keepFileId);
+  }
+}
+
+function scrollSelectedDuplicateGroupIntoView(groupId: number) {
+  const container = duplicateGroupsScrollRef.value;
+  const item = container?.querySelector<HTMLElement>(`[data-duplicate-group-id="${groupId}"]`);
+  if (!container || !item) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const itemRect = item.getBoundingClientRect();
+  const padding = 4;
+  if (itemRect.top < containerRect.top + padding) {
+    container.scrollBy({ top: itemRect.top - containerRect.top - padding, behavior: 'smooth' });
+  } else if (itemRect.bottom > containerRect.bottom - padding) {
+    container.scrollBy({ top: itemRect.bottom - containerRect.bottom + padding, behavior: 'smooth' });
   }
 }
 
@@ -506,7 +880,7 @@ async function hydrateAlbumRootPaths(groups: any[]) {
 async function hydrateGroupThumbnails(groups: any[], activeGroupId: number | null) {
   const tasks: Promise<void>[] = [];
   const visibleGroupIds = new Set(
-    (groups || []).slice(0, DEDUP_THUMBNAIL_LIMIT).map((group: any) => Number(group.id))
+    (groups || []).slice(0, loadedDuplicateGroupCount.value).map((group: any) => Number(group.id))
   );
 
   for (const group of groups || []) {
@@ -568,6 +942,7 @@ async function fetchGroups(preferredGroupId: number | null = null) {
             ? Number(normalized[0].id)
             : null;
 
+    loadedDuplicateGroupCount.value = DEDUP_THUMBNAIL_PAGE_SIZE;
     await hydrateAlbumRootPaths(normalized);
     await hydrateGroupThumbnails(normalized, nextSelectedGroupId);
     rawGroups.value = normalized;
@@ -602,6 +977,48 @@ async function fetchGroups(preferredGroupId: number | null = null) {
     console.error('fetchGroups error:', error);
     showDedupScanError();
   }
+}
+
+async function loadMoreDuplicateThumbnails(event: Event) {
+  const target = event.currentTarget as HTMLElement;
+  const hasMore = loadedDuplicateGroupCount.value < duplicateGroups.value.length;
+  const isAtBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+  if (!hasMore || !isAtBottom || isLoadingMoreDuplicateThumbnails.value) return;
+
+  isLoadingMoreDuplicateThumbnails.value = true;
+  loadedDuplicateGroupCount.value = Math.min(
+    duplicateGroups.value.length,
+    loadedDuplicateGroupCount.value + DEDUP_THUMBNAIL_PAGE_SIZE,
+  );
+  try {
+    await nextTick();
+    await hydrateGroupThumbnails(rawGroups.value, selectedGroupId.value);
+  } finally {
+    isLoadingMoreDuplicateThumbnails.value = false;
+  }
+}
+
+function startDraggingDuplicateSplitter(event: PointerEvent) {
+  (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+  isDraggingDuplicateSplitter.value = true;
+  document.addEventListener('pointermove', handleDuplicateSplitterMouseMove);
+  document.addEventListener('pointerup', stopDraggingDuplicateSplitter);
+  document.addEventListener('pointercancel', stopDraggingDuplicateSplitter);
+}
+
+function handleDuplicateSplitterMouseMove(event: PointerEvent) {
+  const container = dedupSplitPaneRef.value;
+  if (!isDraggingDuplicateSplitter.value || !container) return;
+  const rect = container.getBoundingClientRect();
+  const nextHeight = ((event.clientY - rect.top) / rect.height) * 100;
+  config.dedup.duplicateSetsHeight = Math.max(20, Math.min(nextHeight, 80));
+}
+
+function stopDraggingDuplicateSplitter() {
+  isDraggingDuplicateSplitter.value = false;
+  document.removeEventListener('pointermove', handleDuplicateSplitterMouseMove);
+  document.removeEventListener('pointerup', stopDraggingDuplicateSplitter);
+  document.removeEventListener('pointercancel', stopDraggingDuplicateSplitter);
 }
 
 function stopDedupStatusPolling() {
@@ -736,6 +1153,17 @@ async function triggerBackendDedup(force = false) {
 watch(
   () => props.dedupScanKey,
   (newKey) => {
+    // Similar scans are scoped to the full content result. Never retain a previous scope's groups.
+    similarGroups.value = [];
+    similarTotalGroups.value = 0;
+    isLoadingMoreSimilarGroups.value = false;
+    showAllSimilarGroups.value = false;
+    selectedSimilarGroupId.value = null;
+    similarEligibleCount.value = 0;
+    similarHasScanned.value = false;
+    similarError.value = false;
+    similarLoadedScope.value = '';
+    similarLoading.value = false;
     if (!newKey) {
       scanGeneration.value++;
       stopDedupStatusPolling();
@@ -750,11 +1178,14 @@ watch(
       return;
     }
     triggerBackendDedup();
+    if (activeTab.value === 'similar') void openSimilarTab();
   }
 );
 
 watch(selectedGroupId, async (groupId, prevGroupId) => {
   if (!groupId || groupId === prevGroupId) return;
+  await nextTick();
+  scrollSelectedDuplicateGroupIntoView(groupId);
   await hydrateGroupThumbnails(rawGroups.value, groupId);
   if (selectedGroupId.value !== groupId) return;
   const group = duplicateGroups.value.find((item: any) => item.id === groupId);
@@ -762,6 +1193,11 @@ watch(selectedGroupId, async (groupId, prevGroupId) => {
   if (keepId) {
     emit('select-file', keepId);
   }
+});
+
+watch(selectedSimilarGroupId, async (groupId, prevGroupId) => {
+  if (!groupId || groupId === prevGroupId) return;
+  await hydrateSimilarThumbnails(similarGroups.value, groupId);
 });
 
 onMounted(async () => {
@@ -781,16 +1217,39 @@ onMounted(async () => {
       await handleDedupScanSettled();
     }
   });
+  unlistenSimilarProgress.value = await listenSimilarScanProgress(async (event: any) => {
+    const payload = event?.payload;
+    if (payload?.scopeKey !== props.dedupScanKey) return;
+    similarStatus.value = payload || similarStatus.value;
+    if (payload?.state === 'running') { similarLoading.value = true; return; }
+    if (payload?.state === 'error') {
+      similarLoading.value = false;
+      similarError.value = true;
+      return;
+    }
+    if (payload?.state === 'finished') {
+      similarLoading.value = false;
+      await fetchSimilarGroups();
+      similarHasScanned.value = true;
+      return;
+    }
+    if (payload?.state === 'idle') {
+      similarLoading.value = false;
+    }
+  });
 
   triggerBackendDedup();
+  if (activeTab.value === 'similar') await openSimilarTab();
 });
 
 onUnmounted(() => {
   stopDedupStatusPolling();
+  stopDraggingDuplicateSplitter();
   if (unlistenDedupProgress.value) {
     unlistenDedupProgress.value();
     unlistenDedupProgress.value = null;
   }
+  if (unlistenSimilarProgress.value) unlistenSimilarProgress.value();
 });
 
 defineExpose({

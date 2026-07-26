@@ -1,13 +1,13 @@
 <template>
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
     <!-- Header & Close -->
-    <div class="flex items-center w-full shrink-0 px-2 mb-2">
+    <div class="my-2 px-2 flex items-center w-full shrink-0">
       <div class="flex-1 pl-1">
-        <span class="text-sm font-semibold text-base-content/70">
+        <span class="text-sm font-semibold text-primary/70">
           {{ $t('file_info.title') }}
         </span>
       </div>
-      <div class="mt-2 flex items-center gap-1">
+      <div class="flex items-center gap-1">
         <TButton
           :icon="IconClose"
           :tooltip="$t('msgbox.close')"
@@ -26,14 +26,11 @@
           class="flex items-center gap-1 cursor-pointer text-base-content/70 hover:text-base-content transition-all duration-200 ease-in-out"
           @click.stop="togglePreview"
         >
-          <TButton
-            :icon="IconRight"
-            :buttonSize="'small'"
-            iconClasses="transition-transform duration-200"
-            :iconStyle="{ transform: showPreviewPanel ? 'rotate(90deg)' : 'rotate(0deg)' }"
+          <IconRight
+            class="w-3 h-3 transition-transform duration-200"
+            :class="{ 'rotate-90': showPreviewPanel }"
             @click.stop="togglePreview"
           />
-          <!-- <component :is="fileInfo?.file_type === 2 ? IconVideo : IconPhoto" class="w-4 h-4" /> -->
           <span class="font-bold mr-auto uppercase text-xs tracking-wide text-base-content/30">{{ $t('file_info.preview') }}</span>
         </div>
 
@@ -138,14 +135,11 @@
         <div class="flex items-center gap-1 cursor-pointer text-base-content/70 hover:text-base-content transition-all duration-200 ease-in-out" 
           @click.stop="toggleBasicInfo"
         >
-          <TButton
-            :icon="IconRight"
-            :buttonSize="'small'"
-            iconClasses="transition-transform duration-200"
-            :iconStyle="{ transform: showBasicInfoPanel ? 'rotate(90deg)' : 'rotate(0deg)' }"
+          <IconRight
+            class="w-3 h-3 transition-transform duration-200"
+            :class="{ 'rotate-90': showBasicInfoPanel }"
             @click.stop="toggleBasicInfo"
           />
-          <!-- <IconFile class="w-4 h-4" /> -->
           <span class="font-bold mr-auto uppercase text-xs tracking-wide text-base-content/30">{{ $t('file_info.general') }}</span>
         </div>
 
@@ -313,14 +307,11 @@
       <div class="border-t border-base-content/5 px-1 py-4 space-y-3">
 
         <div class="flex items-center gap-1 cursor-pointer text-base-content/70 hover:text-base-content" @click.stop="toggleMetadata">
-          <TButton
-            :icon="IconRight"
-            :buttonSize="'small'"
-            iconClasses="transition-transform duration-200"
-            :iconStyle="{ transform: showMetadataPanel ? 'rotate(90deg)' : 'rotate(0deg)' }"
+          <IconRight
+            class="w-3 h-3 transition-transform duration-200"
+            :class="{ 'rotate-90': showMetadataPanel }"
             @click.stop="toggleMetadata"
           />
-          <!-- <IconCameraAperture class="w-4 h-4 " />  -->
           <span class="font-bold mr-auto uppercase text-xs tracking-wide text-base-content/30">{{ $t('file_info.metadata') }}</span>
         </div>
 
@@ -373,16 +364,13 @@
       <!-- Map View -->
       <div v-if="fileInfo?.gps_latitude && fileInfo?.gps_longitude" 
         class="border-t border-base-content/5 px-1 py-4 space-y-3 flex flex-col transition-[flex-grow]" 
-        :class="{ 'flex-1 min-h-[300px] shrink-0': showMapPanel }">
+        :class="{ 'flex-1 min-h-75 shrink-0': showMapPanel }">
         <div class="flex items-center gap-1 cursor-pointer text-base-content/70 hover:text-base-content shrink-0" @click.stop="toggleMapPanel">
-          <TButton
-            :icon="IconRight"
-            :buttonSize="'small'"
-            iconClasses="transition-transform duration-200"
-            :iconStyle="{ transform: showMapPanel ? 'rotate(90deg)' : 'rotate(0deg)' }"
+          <IconRight
+            class="w-3 h-3 transition-transform duration-200"
+            :class="{ 'rotate-90': showMapPanel }"
             @click.stop="toggleMapPanel"
           />
-          <!-- <IconLocation class="w-4 h-4 " />  -->
           <span class="font-bold mr-auto uppercase text-xs tracking-wide text-base-content/30">{{ $t('file_info.map') }}</span>
         </div>
 

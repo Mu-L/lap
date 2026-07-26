@@ -32,6 +32,11 @@ export const useConfigStore = defineStore('configStore', {
       mode: 'info',               // right panel mode ('info' | 'dedup')
     },
 
+    dedup: {
+      activeTab: 'duplicates',   // active dedup tab ('duplicates' | 'similar')
+      duplicateSetsHeight: 50,   // duplicate sets section height as a percentage
+    },
+
     infoPanel: {
       showPreview: true,         // show preview thumbnail
       previewMode: 'thumbnail',  // preview section mode ('thumbnail' | 'histogram')

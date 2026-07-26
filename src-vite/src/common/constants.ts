@@ -64,3 +64,9 @@ export const GROUP = {
 } as const;
 
 export type Group = (typeof GROUP)[keyof typeof GROUP];
+
+export const SIMILAR_SCAN = {
+  PAGE_SIZE: 100,
+  LARGE_RESULT_THRESHOLD: 10_000,
+  THUMBNAIL_LIMIT: 19,
+} as const;
