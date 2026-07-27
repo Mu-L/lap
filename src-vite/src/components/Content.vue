@@ -4718,7 +4718,7 @@ watch(
   () => Boolean(config.settings.grid.showFilmStrip),
   () => {
     resetGroupingState();
-    updateContent();
+    void nextTick(() => gridViewRef.value?.refreshLayout?.());
   },
 );
 
