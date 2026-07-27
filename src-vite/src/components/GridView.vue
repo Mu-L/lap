@@ -101,7 +101,7 @@
           </div>
         </Transition>
         <div v-if="contentReady" class="flex flex-col items-center gap-2">
-          <img src="@/assets/images/lazycat-300.png" class="w-48 object-contain opacity-30" alt="" />
+          <img src="@/assets/images/lazycat-300.png" class="w-32 object-contain opacity-30" alt="" />
           <span class="text-sm">{{ emptyMessage }}</span>
           <span class="text-xs">{{ emptyHint }}</span>
         </div>

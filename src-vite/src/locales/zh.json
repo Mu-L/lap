@@ -57,7 +57,7 @@
       "name": "名称",
       "description": "描述",
       "description_placeholder": "输入相册描述",
-      "images": "图片",
+      "images": "照片",
       "videos": "视频",
       "scanned_files": "已扫描文件",
       "files_to_scan": "待扫描文件",
@@ -69,7 +69,7 @@
     },
     "no_albums": {
       "title": "还没有相册",
-      "description": "添加包含图片或视频的文件夹以开始使用"
+      "description": "添加包含照片或视频的文件夹以开始使用"
     },
     "no_smart_albums": {
       "description": "通过自定义查询条件创建智能相册。"
@@ -172,13 +172,13 @@
     "add_album_title": "从添加相册开始",
     "add_album_description": "选择一个文件夹，让 Lap 为您整理照片和视频。",
     "search_title": "按记忆搜索",
-    "search_description": "用自然语言搜索，发现相似图片，即刻找到您想要的内容。",
+    "search_description": "用自然语言搜索，发现相似照片，即刻找到您想要的内容。",
     "drag_title": "拖拽导入",
     "drag_description": "从文件管理器或浏览器中直接拖拽照片到相册。"
   },
   "search": {
-    "title": "图片搜索",
-    "similar_images": "相似图片",
+    "title": "搜索",
+    "similar_images": "相似照片",
     "image_search_placeholder": "按内容或文件名搜索",
     "matches": "匹配结果",
     "unknown_location": "未知位置",
@@ -359,8 +359,8 @@
       ],
       "file_type_options": [
         "全部",
-        "图片",
-        "RAW",
+        "照片",
+        "RAW 文件",
         "视频"
       ]
     },
@@ -403,9 +403,9 @@
       "copy": "复制",
       "move": "移动"
     },
-    "edit_disabled": "请选择单个图片进行编辑",
-    "type_image": "张图片",
-    "type_images": "张图片",
+    "edit_disabled": "请选择单张照片进行编辑",
+    "type_image": "张照片",
+    "type_images": "张照片",
     "type_video": "个视频",
     "type_videos": "个视频",
     "select_title": "选择",
@@ -419,16 +419,16 @@
     "dedup": {
       "title": "重复项",
       "tabs": {
-        "exact": "完全相同",
-        "similar": "相似图片"
+        "exact": "重复项",
+        "similar": "相似照片"
       },
       "scanning": "扫描重复项中...",
       "error_title": "无法扫描重复项",
       "error_desc": "扫描未能完成，请更新文件列表后重试。",
       "empty_title": "未发现重复项",
       "empty_desc": "可以添加更多文件，或更新当前筛选范围后再试。",
-      "similar_title": "相似图片功能将在下一步提供",
-      "similar_desc": "这个标签页将用于视觉上相似的图片分组，当前先保留完全重复的清理流程。",
+      "similar_title": "相似照片功能将在下一步提供",
+      "similar_desc": "这个标签页将用于视觉上相似的照片分组，当前先保留完全重复的清理流程。",
       "similar": {
         "find_title": "查找相似照片",
         "description": "在当前结果中分析视觉上相似的照片。",
@@ -466,13 +466,13 @@
       "person": "人脸识别仍处于测试阶段，结果可能不准确。"
     },
     "not_found": {
-      "albums": "未找到相册。添加包含图片或视频的文件夹",
+      "albums": "未找到相册。添加包含照片或视频的文件夹",
       "files": "未找到文件",
-      "image_files": "未找到图片文件",
+      "image_files": "未找到照片",
       "raw_files": "未找到 RAW 文件",
       "video_files": "未找到视频文件",
-      "image_raw_files": "未找到图片或 RAW 文件",
-      "image_video_files": "未找到图片或视频文件",
+      "image_raw_files": "未找到照片或 RAW 文件",
+      "image_video_files": "未找到照片或视频文件",
       "raw_video_files": "未找到 RAW 或视频文件",
       "folder_files": "此文件夹中没有文件",
       "folder_files_hint": "尝试浏览子文件夹，或在设置中开启'显示子文件夹中的文件'以查看所有文件。",
@@ -500,25 +500,25 @@
     "copy_image": {
       "success": "已复制 {count} 个文件到剪贴板",
       "limit": "每次最多复制 {count} 个文件。",
-      "failed": "复制图片失败。不支持的格式或文件已损坏。"
+      "failed": "复制照片失败。不支持的格式或文件已损坏。"
     },
     "open_external": {
-      "mixed_selection": "请仅选择图片或仅选择视频，以在外部编辑器中打开。",
+      "mixed_selection": "请仅选择照片或仅选择视频，以在外部编辑器中打开。",
       "no_app": "未设置外部编辑器。请在设置中选择一个。",
       "failed": "无法打开外部编辑器。"
     },
     "save_image": {
-      "success": "图片已保存",
-      "save_as_success": "图片已另存为新文件",
-      "failed": "保存图片失败。不支持的格式或文件已损坏。"
+      "success": "照片已保存",
+      "save_as_success": "照片已另存为新文件",
+      "failed": "保存照片失败。不支持的格式或文件已损坏。"
     },
     "update_image": {
-      "success": "图片已从文件中更新",
-      "failed": "从文件更新图片失败。"
+      "success": "照片已从文件中更新",
+      "failed": "从文件更新照片失败。"
     },
     "image_viewer": {
-      "first_image": "已经是第一张图片",
-      "last_image": "已经是最后一张图片"
+      "first_image": "已经是第一张照片",
+      "last_image": "已经是最后一张照片"
     },
     "album_exists": "此相册已存在"
   },
@@ -558,16 +558,16 @@
       "view_in_new_window": "在新窗口中查看...",
       "copy": "复制到剪贴板",
       "paste": "粘贴",
-      "edit_image": "编辑图片...",
-      "open_image_in_app": "在 {app} 中打开图片...",
+      "edit_image": "编辑...",
+      "open_image_in_app": "在 {app} 中打开照片...",
       "open_video_in_app": "在 {app} 中打开视频...",
-      "open_selected_images_in_app": "在 {app} 中打开所选图片...",
-      "compare_selected_images": "对比所选图片",
+      "open_selected_images_in_app": "在 {app} 中打开所选照片...",
+      "compare_selected_images": "对比所选照片",
       "open_selected_videos_in_app": "在 {app} 中打开所选视频...",
       "open_in_app": "在外部应用中打开...",
-      "find_similar_images": "查找相似图片",
-      "find_person_images": "查找人物图片",
-      "print": "打印图片...",
+      "find_similar_images": "查找相似照片",
+      "find_person_images": "查找此人物的照片",
+      "print": "打印...",
       "rename": "重命名",
       "move_to": "移动到...",
       "copy_to": "复制到...",
@@ -656,7 +656,7 @@
       "success": "已导入 {count} 个文件",
       "no_clipboard_image": "剪贴板中没有图片。",
       "overlay": "拖放文件以导入",
-      "no_files": "无法导入文件。请确保拖放的是图片文件。"
+      "no_files": "无法导入文件。请确保拖放的是受支持的照片文件。"
     },
     "manage_libraries": {
       "title": "管理库",
@@ -808,8 +808,8 @@
       "error": "选择文件失败。"
     },
     "image_editor": {
-      "title": "编辑图片",
-      "tab_edit": "编辑",
+      "title": "编辑",
+      "tab_edit": "通用",
       "tab_adjust": "调整",
       "histogram": "直方图",
       "light": "光影",
@@ -856,7 +856,7 @@
       "crop_shape_custom": "自定义",
       "crop_shape_landscape": "横屏",
       "crop_shape_portrait": "竖屏",
-      "crop_hint": "进入裁剪模式后，可选择宽高比并框定画面。",
+      "crop_hint": "进入裁剪模式后，可选择宽高比并框定照片。",
       "crop_applied_hint": "裁剪已应用。点击“还原”可查看或调整。",
       "zoom": "缩放",
       "aspect_ratio": "宽高比",
@@ -898,7 +898,7 @@
         "中",
         "低"
       ],
-      "copy_image": "复制到剪贴板",
+      "copy_image": "复制照片到剪贴板",
       "ok": "保存",
       "cancel": "取消",
       "overwrite": "覆盖",
@@ -992,10 +992,10 @@
     }
   },
   "image_viewer": {
-    "title": "图片查看器",
+    "title": "照片查看器",
     "loading": "加载中...",
-    "loading_original": "加载原图...",
-    "failed": "加载图片失败。文件不存在或已损坏。",
+    "loading_original": "加载原始照片...",
+    "failed": "加载照片失败。文件不存在或已损坏。",
     "toolbar": {
       "prev": "上一张",
       "next": "下一张",
@@ -1147,7 +1147,7 @@
       "size": "缩略图大小",
       "scaling": "缩略图缩放",
       "scaling_options": [
-        "适应整个图像",
+        "适应整张照片",
         "裁剪填充",
         "拉伸填充"
       ],
@@ -1191,7 +1191,7 @@
       "section_navigation": "导航",
       "mouse_wheel": "鼠标滚轮",
       "mouse_wheel_options": [
-        "上一张/下一张图片 (Ctrl 缩放)",
+        "上一张/下一张照片 (Ctrl 缩放)",
         "放大/缩小"
       ],
       "navigator_view": "导航器",
@@ -1232,22 +1232,22 @@
     },
     "image_search": {
       "title": "搜索",
-      "search_image": "图片搜索",
+      "search_image": "照片搜索",
       "search_model": "选择模型（重启生效）",
-      "default_model_hint": "默认模型仅支持英文的图片搜索",
+      "default_model_hint": "默认模型仅支持英文的照片搜索",
       "multilingual_model_hint": "支持 50+ 语言搜索",
       "search_model_options": [
         "默认（英文）",
         "多语言"
       ],
       "multilingual_model_download_title": "下载多语言搜索模型？",
-      "multilingual_model_download_message": "多语言图片搜索模型尚未安装。下载后可支持 50+ 语言搜索。",
+      "multilingual_model_download_message": "多语言照片搜索模型尚未安装。下载后可支持 50+ 语言搜索。",
       "download": "下载",
       "downloading_multilingual_model": "正在下载多语言模型",
       "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
       "multilingual_model_download_failed": "多语言搜索模型下载失败",
-      "find_similar": "查找相似图片",
-      "similarity": "图片相似度",
+      "find_similar": "查找相似照片",
+      "similarity": "视觉相似度",
       "similarity_hint": "越高越相似，结果越少。越低越不相似，结果越多",
       "similarity_options": [
         "极高",
@@ -1260,7 +1260,7 @@
       "title": "快捷键",
       "sections": {
         "global": "全局",
-        "image_browsing": "图片浏览",
+        "image_browsing": "媒体浏览",
         "viewing": "查看",
         "file_actions": "文件操作",
         "selection": "选择",
@@ -1273,13 +1273,13 @@
         "font_decrease": "减小字体大小",
         "font_reset": "重置字体大小",
         "search": "搜索",
-        "previous_image": "上一张图片",
-        "next_image": "下一张图片",
-        "first_image": "第一张图片",
-        "last_image": "最后一张图片",
+        "previous_image": "上一张",
+        "next_image": "下一张",
+        "first_image": "第一张",
+        "last_image": "最后一张",
         "quick_preview": "快速预览",
         "close_viewer": "关闭查看器",
-        "search_similar": "查找相似图片",
+        "search_similar": "查找相似照片",
         "show_info": "显示信息",
         "zoom_in": "放大",
         "zoom_out": "缩小",
@@ -1288,7 +1288,7 @@
         "toggle_slideshow": "播放 / 暂停幻灯片",
         "open_new_window": "在新窗口中查看",
         "open_external_app": "在外部应用中打开",
-        "edit_image": "编辑图片",
+        "edit_image": "编辑",
         "copy_file": "复制到剪贴板",
         "paste_file": "粘贴",
         "reveal_in_finder": "在访达中显示",
@@ -1322,8 +1322,8 @@
     "advanced": {
       "title": "高级",
       "section_external_apps": "外部应用",
-      "external_image_editor": "打开图片使用",
-      "external_video_app": "打开视频使用",
+      "external_image_editor": "使用以下应用打开照片",
+      "external_video_app": "使用以下应用打开视频",
       "external_app_not_selected": "未选择应用",
       "choose_app": "选择",
       "clear_app": "清除",

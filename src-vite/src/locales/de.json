@@ -57,7 +57,7 @@
       "name": "Name",
       "description": "Beschreibung",
       "description_placeholder": "Albumbeschreibung eingeben",
-      "images": "Bilder",
+      "images": "Fotos",
       "videos": "Videos",
       "scanned_files": "Gescannte Dateien",
       "files_to_scan": "Zu scannende Dateien",
@@ -69,7 +69,7 @@
     },
     "no_albums": {
       "title": "Keine Alben",
-      "description": "Fügen Sie ein Album hinzu, um zu beginnen"
+      "description": "Fügen Sie ein Album mit Fotos oder Videos hinzu, um zu beginnen"
     },
     "no_smart_albums": {
       "description": "Erstellen Sie intelligente Alben aus benutzerdefinierten Abfrageregeln."
@@ -172,13 +172,13 @@
     "add_album_title": "Beginne mit dem Hinzufügen eines Albums",
     "add_album_description": "Wähle einen Ordner und lass Lap deine Fotos und Videos organisieren.",
     "search_title": "Suche nach Erinnerung",
-    "search_description": "Suche mit natürlicher Sprache, entdecke ähnliche Bilder und finde sofort, was du suchst.",
+    "search_description": "Suche mit natürlicher Sprache, entdecke ähnliche Fotos und finde sofort, was du suchst.",
     "drag_title": "Zum Importieren ziehen",
     "drag_description": "Ziehe Fotos aus deinem Dateimanager oder Browser direkt in ein Album."
   },
   "search": {
-    "title": "Bildsuche",
-    "similar_images": "Ähnliche",
+    "title": "Suche",
+    "similar_images": "Ähnliche Fotos",
     "image_search_placeholder": "Nach Bildinhalt oder Dateiname suchen",
     "matches": "Treffer",
     "unknown_location": "Unbekannter Ort",
@@ -359,9 +359,9 @@
       ],
       "file_type_options": [
         "Alle",
-        "Bild",
-        "RAW",
-        "Video"
+        "Fotos",
+        "RAW-Dateien",
+        "Videos"
       ]
     },
     "tooltip": {
@@ -403,9 +403,9 @@
       "copy": "Kopieren",
       "move": "Verschieben"
     },
-    "edit_disabled": "Wählen Sie ein einzelnes Bild zum Bearbeiten",
-    "type_image": "Bild",
-    "type_images": "Bilder",
+    "edit_disabled": "Wählen Sie ein einzelnes Foto zum Bearbeiten",
+    "type_image": "Foto",
+    "type_images": "Fotos",
     "type_video": "Video",
     "type_videos": "Videos",
     "select_title": "Auswahl",
@@ -419,8 +419,8 @@
     "dedup": {
       "title": "Duplikate",
       "tabs": {
-        "exact": "Exakt",
-        "similar": "Ähnlich"
+        "exact": "Duplikate",
+        "similar": "Ähnliche Fotos"
       },
       "scanning": "Duplikate werden gescannt...",
       "error_title": "Duplikate konnten nicht gescannt werden",
@@ -428,7 +428,7 @@
       "empty_title": "Keine potenziellen Duplikate in dieser Liste",
       "empty_desc": "Erweitern Sie den Filter oder prüfen Sie eine andere Dateiliste.",
       "similar_title": "Ähnliche Fotos folgen als Nächstes",
-      "similar_desc": "Dieser Tab wird für visuell ähnliche Bilder verwendet, sobald der Workflow für exakte Duplikate erweitert wurde.",
+      "similar_desc": "Dieser Tab wird für visuell ähnliche Fotos verwendet, sobald der Workflow für exakte Duplikate erweitert wurde.",
       "similar": {
         "find_title": "Ähnliche Fotos finden",
         "description": "Visuell ähnliche Fotos in den aktuellen Ergebnissen analysieren.",
@@ -466,13 +466,13 @@
       "person": "Die Gesichtserkennung ist noch im Beta-Stadium und kann ungenau sein."
     },
     "not_found": {
-      "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Bildern oder Videos hinzu",
+      "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Fotos oder Videos hinzu",
       "files": "Keine Dateien gefunden",
-      "image_files": "Keine Bilddateien gefunden",
+      "image_files": "Keine Fotos gefunden",
       "raw_files": "Keine RAW-Dateien gefunden",
       "video_files": "Keine Videodateien gefunden",
-      "image_raw_files": "Keine Bild- oder RAW-Dateien gefunden",
-      "image_video_files": "Keine Bild- oder Videodateien gefunden",
+      "image_raw_files": "Keine Fotos oder RAW-Dateien gefunden",
+      "image_video_files": "Keine Fotos oder Videos gefunden",
       "raw_video_files": "Keine RAW- oder Videodateien gefunden",
       "folder_files": "Dieser Ordner enthält keine Dateien",
       "folder_files_hint": "Durchsuchen Sie Unterordner oder aktivieren Sie 'Dateien aus Unterordnern anzeigen' in den Einstellungen.",
@@ -500,25 +500,25 @@
     "copy_image": {
       "success": "{count} Datei(en) in die Zwischenablage kopiert",
       "limit": "Es können höchstens {count} Dateien gleichzeitig kopiert werden.",
-      "failed": "Bild konnte nicht kopiert werden. Nicht unterstütztes Format oder beschädigte Datei."
+      "failed": "Foto konnte nicht kopiert werden. Nicht unterstütztes Format oder beschädigte Datei."
     },
     "open_external": {
-      "mixed_selection": "Wählen Sie nur Bilder oder nur Videos aus, um sie in einem externen Editor zu öffnen.",
+      "mixed_selection": "Wählen Sie nur Fotos oder nur Videos aus, um sie in einem externen Editor zu öffnen.",
       "no_app": "Es ist kein externer Editor festgelegt. Wählen Sie einen in den Optionen aus.",
       "failed": "Der externe Editor konnte nicht geöffnet werden."
     },
     "save_image": {
-      "success": "Bild gespeichert",
-      "save_as_success": "Bild als neue Datei gespeichert",
-      "failed": "Bild konnte nicht gespeichert werden. Nicht unterstütztes Format oder beschädigte Datei."
+      "success": "Foto gespeichert",
+      "save_as_success": "Foto als neue Datei gespeichert",
+      "failed": "Foto konnte nicht gespeichert werden. Nicht unterstütztes Format oder beschädigte Datei."
     },
     "update_image": {
-      "success": "Bild aktualisiert",
-      "failed": "Bild konnte nicht aus der Datei aktualisiert werden."
+      "success": "Foto aktualisiert",
+      "failed": "Foto konnte nicht aus der Datei aktualisiert werden."
     },
     "image_viewer": {
-      "first_image": "Erstes Bild",
-      "last_image": "Letztes Bild"
+      "first_image": "Erstes Foto",
+      "last_image": "Letztes Foto"
     },
     "album_exists": "Album existiert bereits"
   },
@@ -558,16 +558,16 @@
       "view_in_new_window": "In neuem Fenster...",
       "copy": "In die Zwischenablage",
       "paste": "Einfügen",
-      "edit_image": "Bild bearbeiten...",
-      "open_image_in_app": "Bild in {app} öffnen...",
+      "edit_image": "Bearbeiten...",
+      "open_image_in_app": "Foto in {app} öffnen...",
       "open_video_in_app": "Video in {app} öffnen...",
-      "open_selected_images_in_app": "Ausgewählte Bilder in {app} öffnen...",
-      "compare_selected_images": "Ausgewählte Bilder vergleichen",
+      "open_selected_images_in_app": "Ausgewählte Fotos in {app} öffnen...",
+      "compare_selected_images": "Ausgewählte Fotos vergleichen",
       "open_selected_videos_in_app": "Ausgewählte Videos in {app} öffnen...",
       "open_in_app": "In externer App öffnen...",
-      "find_similar_images": "Ähnliche finden",
-      "find_person_images": "Personenbilder finden",
-      "print": "Bild drucken...",
+      "find_similar_images": "Ähnliche Fotos finden",
+      "find_person_images": "Fotos dieser Person finden",
+      "print": "Drucken...",
       "rename": "Umbenennen",
       "move_to": "Verschieben nach...",
       "copy_to": "Kopieren nach...",
@@ -656,7 +656,7 @@
       "success": "{count} Datei(en) importiert",
       "no_clipboard_image": "Die Zwischenablage enthält kein Bild.",
       "overlay": "Dateien zum Importieren ablegen",
-      "no_files": "Keine Dateien konnten importiert werden. Stelle sicher, dass du Bilddateien ablegst."
+      "no_files": "Keine Dateien konnten importiert werden. Stelle sicher, dass du unterstützte Fotodateien ablegst."
     },
     "manage_libraries": {
       "title": "Bibliotheken verwalten",
@@ -808,8 +808,8 @@
       "error": "Dateiauswahl fehlgeschlagen."
     },
     "image_editor": {
-      "title": "Bild bearbeiten",
-      "tab_edit": "Bearbeiten",
+      "title": "Bearbeiten",
+      "tab_edit": "Allgemein",
       "tab_adjust": "Anpassen",
       "histogram": "Histogramm",
       "light": "Licht",
@@ -856,7 +856,7 @@
       "crop_shape_custom": "Benutzerdef.",
       "crop_shape_landscape": "Landschaft",
       "crop_shape_portrait": "Porträt",
-      "crop_hint": "Starten Sie den Zuschneidemodus, um ein Seitenverhältnis zu wählen und das Bild auszurichten.",
+      "crop_hint": "Starten Sie den Zuschneidemodus, um ein Seitenverhältnis zu wählen und das Foto auszurichten.",
       "crop_applied_hint": "Zuschnitt angewendet. Klicken Sie auf „Wiederherstellen“, um ihn zu prüfen oder anzupassen.",
       "zoom": "Zoom",
       "aspect_ratio": "Seitenverhältnis",
@@ -898,7 +898,7 @@
         "Mittel",
         "Niedrig"
       ],
-      "copy_image": "Kopieren",
+      "copy_image": "Foto in die Zwischenablage kopieren",
       "ok": "Speichern",
       "cancel": "Abbrechen",
       "overwrite": "Überschreiben",
@@ -992,10 +992,10 @@
     }
   },
   "image_viewer": {
-    "title": "Bildbetrachter",
+    "title": "Fotoanzeige",
     "loading": "Lade...",
-    "loading_original": "Originalbild wird geladen...",
-    "failed": "Bild konnte nicht geladen werden. Die Datei fehlt oder ist beschädigt.",
+    "loading_original": "Originalfoto wird geladen...",
+    "failed": "Foto konnte nicht geladen werden. Die Datei fehlt oder ist beschädigt.",
     "toolbar": {
       "prev": "Vorheriges",
       "next": "Nächstes",
@@ -1147,7 +1147,7 @@
       "size": "Größe",
       "scaling": "Skalierung",
       "scaling_options": [
-        "Ganzes Bild",
+        "Ganzes Foto",
         "Füllen",
         "Strecken"
       ],
@@ -1191,7 +1191,7 @@
       "section_navigation": "Navigation",
       "mouse_wheel": "Mausrad",
       "mouse_wheel_options": [
-        "Vorher/Nächst (Strg Zoom)",
+        "Vorheriges / Nächstes Foto (Strg zum Zoomen)",
         "Zoom +/-"
       ],
       "navigator_view": "Navigator",
@@ -1232,22 +1232,22 @@
     },
     "image_search": {
       "title": "Suche",
-      "search_image": "Bildsuche",
+      "search_image": "Fotosuche",
       "search_model": "Modell auswählen (Neustart erforderlich)",
-      "default_model_hint": "Das Standardmodell unterstützt nur die Bildsuche auf Englisch",
+      "default_model_hint": "Das Standardmodell unterstützt nur die Fotosuche auf Englisch",
       "multilingual_model_hint": "Suche in über 50 Sprachen",
       "search_model_options": [
         "Standard (Englisch)",
         "Mehrsprachig"
       ],
       "multilingual_model_download_title": "Mehrsprachiges Suchmodell herunterladen?",
-      "multilingual_model_download_message": "Das mehrsprachige Bildsuchmodell ist nicht installiert. Laden Sie es herunter, um die Suche in über 50 Sprachen zu aktivieren.",
+      "multilingual_model_download_message": "Das mehrsprachige Fotosuchmodell ist nicht installiert. Laden Sie es herunter, um die Suche in über 50 Sprachen zu aktivieren.",
       "download": "Herunterladen",
       "downloading_multilingual_model": "Mehrsprachiges Modell wird heruntergeladen",
       "multilingual_model_download_success": "Das mehrsprachige Suchmodell ist bereit. Starten Sie Lap neu, um es zu verwenden.",
       "multilingual_model_download_failed": "Mehrsprachiges Suchmodell konnte nicht heruntergeladen werden",
-      "find_similar": "Ähnliche Bilder finden",
-      "similarity": "Ähnlichkeit",
+      "find_similar": "Ähnliche Fotos finden",
+      "similarity": "Visuelle Ähnlichkeit",
       "similarity_hint": "Höher = ähnlicher, weniger Ergebnisse. Niedriger = weniger ähnlich, mehr Ergebnisse",
       "similarity_options": [
         "Sehr hoch",
@@ -1260,7 +1260,7 @@
       "title": "Tastenkürzel",
       "sections": {
         "global": "Allgemein",
-        "image_browsing": "Bildnavigation",
+        "image_browsing": "Mediennavigation",
         "viewing": "Anzeige",
         "file_actions": "Dateiaktionen",
         "selection": "Auswahl",
@@ -1273,13 +1273,13 @@
         "font_decrease": "Schrift verkleinern",
         "font_reset": "Schriftgröße zurücksetzen",
         "search": "Suche",
-        "previous_image": "Vorheriges Bild",
-        "next_image": "Nächstes Bild",
-        "first_image": "Erstes Bild",
-        "last_image": "Letztes Bild",
+        "previous_image": "Vorheriges",
+        "next_image": "Nächstes",
+        "first_image": "Erstes",
+        "last_image": "Letztes",
         "quick_preview": "Schnellvorschau",
         "close_viewer": "Viewer schließen",
-        "search_similar": "Ähnliche Bilder finden",
+        "search_similar": "Ähnliche Fotos finden",
         "show_info": "Info anzeigen",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",
@@ -1288,7 +1288,7 @@
         "toggle_slideshow": "Diashow starten / pausieren",
         "open_new_window": "In neuem Fenster öffnen",
         "open_external_app": "In externer App öffnen",
-        "edit_image": "Bild bearbeiten",
+        "edit_image": "Bearbeiten",
         "copy_file": "In Zwischenablage kopieren",
         "paste_file": "Einfügen",
         "reveal_in_finder": "Im Finder anzeigen",
@@ -1322,7 +1322,7 @@
     "advanced": {
       "title": "Erweitert",
       "section_external_apps": "Externe Apps",
-      "external_image_editor": "Bild öffnen mit",
+      "external_image_editor": "Foto öffnen mit",
       "external_video_app": "Video öffnen mit",
       "external_app_not_selected": "Keine App ausgewählt",
       "choose_app": "Auswählen",

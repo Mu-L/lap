@@ -57,7 +57,7 @@
       "name": "Nome",
       "description": "Descrição",
       "description_placeholder": "Digite a descrição do álbum",
-      "images": "Imagens",
+      "images": "Fotos",
       "videos": "Vídeos",
       "scanned_files": "Arquivos verificados",
       "files_to_scan": "Arquivos para escanear",
@@ -69,7 +69,7 @@
     },
     "no_albums": {
       "title": "Sem álbuns",
-      "description": "Adicione um álbum para começar"
+      "description": "Adicione um álbum com fotos ou vídeos para começar"
     },
     "no_smart_albums": {
       "description": "Crie álbuns inteligentes com regras de consulta personalizadas."
@@ -172,13 +172,13 @@
     "add_album_title": "Comece adicionando um álbum",
     "add_album_description": "Selecione uma pasta e deixe o Lap organizar suas fotos e vídeos.",
     "search_title": "Pesquise por memória",
-    "search_description": "Pesquise com linguagem natural, descubra imagens semelhantes e encontre o que procura instantaneamente.",
+    "search_description": "Pesquise com linguagem natural, descubra fotos semelhantes e encontre instantaneamente o que procura.",
     "drag_title": "Arraste para importar",
     "drag_description": "Arraste fotos do seu gerenciador de arquivos ou navegador diretamente para um álbum."
   },
   "search": {
-    "title": "Pesquisa de imagem",
-    "similar_images": "Semelhantes",
+    "title": "Pesquisa",
+    "similar_images": "Fotos semelhantes",
     "image_search_placeholder": "Pesquisar por conteúdo ou nome de arquivo",
     "matches": "Correspondências",
     "unknown_location": "Local desconhecido",
@@ -359,9 +359,9 @@
       ],
       "file_type_options": [
         "Todos",
-        "Imagem",
-        "RAW",
-        "Vídeo"
+        "Fotos",
+        "Arquivos RAW",
+        "Vídeos"
       ]
     },
     "tooltip": {
@@ -403,9 +403,9 @@
       "copy": "Copiar",
       "move": "Mover"
     },
-    "edit_disabled": "Selecione uma única imagem para editar",
-    "type_image": "Imagem",
-    "type_images": "Imagens",
+    "edit_disabled": "Selecione uma única foto para editar",
+    "type_image": "Foto",
+    "type_images": "Fotos",
     "type_video": "Vídeo",
     "type_videos": "Vídeos",
     "select_title": "Seleção",
@@ -419,8 +419,8 @@
     "dedup": {
       "title": "Duplicados",
       "tabs": {
-        "exact": "Exatos",
-        "similar": "Semelhantes"
+        "exact": "Duplicados",
+        "similar": "Fotos semelhantes"
       },
       "scanning": "Escaneando duplicados...",
       "error_title": "Não foi possível escanear os duplicados",
@@ -428,7 +428,7 @@
       "empty_title": "Nenhum duplicado potencial nesta lista",
       "empty_desc": "Amplie os filtros ou teste outra lista de arquivos.",
       "similar_title": "As fotos semelhantes vêm em seguida",
-      "similar_desc": "Esta aba será usada para imagens visualmente semelhantes quando o fluxo de duplicatas exatas for expandido.",
+      "similar_desc": "Esta aba será usada para fotos visualmente semelhantes quando o fluxo de duplicatas exatas for expandido.",
       "similar": {
         "find_title": "Encontrar fotos semelhantes",
         "description": "Analise fotos visualmente semelhantes nos resultados atuais.",
@@ -466,13 +466,13 @@
       "person": "O reconhecimento facial está em beta e pode não ser preciso."
     },
     "not_found": {
-      "albums": "Nenhum álbum encontrado. Adicione uma pasta com imagens ou vídeos",
+      "albums": "Nenhum álbum encontrado. Adicione uma pasta com fotos ou vídeos",
       "files": "Nenhum arquivo encontrado",
-      "image_files": "Nenhum arquivo de imagem encontrado",
+      "image_files": "Nenhum arquivo de foto encontrado",
       "raw_files": "Nenhum arquivo RAW encontrado",
       "video_files": "Nenhum arquivo de vídeo encontrado",
-      "image_raw_files": "Nenhum arquivo de imagem ou RAW encontrado",
-      "image_video_files": "Nenhum arquivo de imagem ou vídeo encontrado",
+      "image_raw_files": "Nenhum arquivo de foto ou RAW encontrado",
+      "image_video_files": "Nenhum arquivo de foto ou vídeo encontrado",
       "raw_video_files": "Nenhum arquivo RAW ou de vídeo encontrado",
       "folder_files": "Esta pasta não contém arquivos",
       "folder_files_hint": "Navegue pelas subpastas ou ative 'Mostrar arquivos de subpastas' nas Configurações.",
@@ -500,25 +500,25 @@
     "copy_image": {
       "success": "{count} arquivo(s) copiado(s) para a área de transferência",
       "limit": "Você pode copiar até {count} arquivos por vez.",
-      "failed": "Falha ao copiar a imagem. Formato não suportado ou arquivo corrompido."
+      "failed": "Falha ao copiar a foto. Formato não suportado ou arquivo corrompido."
     },
     "open_external": {
-      "mixed_selection": "Selecione apenas imagens ou apenas vídeos para abri-los em um editor externo.",
+      "mixed_selection": "Selecione apenas fotos ou apenas vídeos para abri-los em um editor externo.",
       "no_app": "Nenhum editor externo definido. Escolha um em Ajustes.",
       "failed": "Não foi possível abrir o editor externo."
     },
     "save_image": {
-      "success": "Imagem salva",
-      "save_as_success": "Imagem salva como novo arquivo",
-      "failed": "Falha ao salvar a imagem. Formato não suportado ou arquivo corrompido."
+      "success": "Foto salva",
+      "save_as_success": "Foto salva como novo arquivo",
+      "failed": "Falha ao salvar a foto. Formato não suportado ou arquivo corrompido."
     },
     "update_image": {
-      "success": "Imagem atualizada",
-      "failed": "Falha ao atualizar a imagem a partir do arquivo."
+      "success": "Foto atualizada",
+      "failed": "Falha ao atualizar a foto a partir do arquivo."
     },
     "image_viewer": {
-      "first_image": "Primeira imagem",
-      "last_image": "Última imagem"
+      "first_image": "Primeira foto",
+      "last_image": "Última foto"
     },
     "album_exists": "Este álbum já existe"
   },
@@ -558,16 +558,16 @@
       "view_in_new_window": "Ver em nova janela...",
       "copy": "Copiar para área de transferência",
       "paste": "Colar",
-      "edit_image": "Editar imagem...",
-      "open_image_in_app": "Abrir imagem em {app}...",
+      "edit_image": "Editar...",
+      "open_image_in_app": "Abrir foto em {app}...",
       "open_video_in_app": "Abrir vídeo em {app}...",
-      "open_selected_images_in_app": "Abrir imagens selecionadas em {app}...",
-      "compare_selected_images": "Comparar imagens selecionadas",
+      "open_selected_images_in_app": "Abrir fotos selecionadas em {app}...",
+      "compare_selected_images": "Comparar fotos selecionadas",
       "open_selected_videos_in_app": "Abrir vídeos selecionados em {app}...",
       "open_in_app": "Abrir em app externo...",
-      "find_similar_images": "Encontrar semelhantes",
-      "find_person_images": "Encontrar fotos de pessoa",
-      "print": "Imprimir imagem...",
+      "find_similar_images": "Encontrar fotos semelhantes",
+      "find_person_images": "Encontrar fotos desta pessoa",
+      "print": "Imprimir...",
       "rename": "Renomear",
       "move_to": "Mover para...",
       "copy_to": "Copiar para...",
@@ -656,7 +656,7 @@
       "success": "{count} arquivo(s) importado(s)",
       "no_clipboard_image": "A área de transferência não contém uma imagem.",
       "overlay": "Solte os arquivos para importar",
-      "no_files": "Nenhum arquivo pôde ser importado. Certifique-se de soltar arquivos de imagem."
+      "no_files": "Nenhum arquivo pôde ser importado. Certifique-se de soltar arquivos de foto compatíveis."
     },
     "manage_libraries": {
       "title": "Gerenciar bibliotecas",
@@ -808,8 +808,8 @@
       "error": "Falha ao selecionar arquivo."
     },
     "image_editor": {
-      "title": "Editor de imagem",
-      "tab_edit": "Editar",
+      "title": "Editar",
+      "tab_edit": "Geral",
       "tab_adjust": "Ajustar",
       "histogram": "Histograma",
       "light": "Luz",
@@ -856,7 +856,7 @@
       "crop_shape_custom": "Personalizado",
       "crop_shape_landscape": "Paisagem",
       "crop_shape_portrait": "Retrato",
-      "crop_hint": "Inicie o modo de corte para escolher uma proporção e enquadrar a imagem.",
+      "crop_hint": "Inicie o modo de corte para escolher uma proporção e enquadrar a foto.",
       "crop_applied_hint": "Corte aplicado. Clique em Restaurar para revisar ou ajustar.",
       "zoom": "Zoom",
       "aspect_ratio": "Proporção",
@@ -898,7 +898,7 @@
         "Média",
         "Baixa"
       ],
-      "copy_image": "Copiar",
+      "copy_image": "Copiar foto para a área de transferência",
       "ok": "Salvar",
       "cancel": "Cancelar",
       "overwrite": "Sobrescrever",
@@ -992,10 +992,10 @@
     }
   },
   "image_viewer": {
-    "title": "Visualizador",
+    "title": "Visualizador de fotos",
     "loading": "Carregando...",
-    "loading_original": "Carregando imagem original...",
-    "failed": "Falha ao carregar a imagem. O arquivo está ausente ou corrompido.",
+    "loading_original": "Carregando foto original...",
+    "failed": "Falha ao carregar a foto. O arquivo está ausente ou corrompido.",
     "toolbar": {
       "prev": "Anterior",
       "next": "Próximo",
@@ -1147,7 +1147,7 @@
       "size": "Tamanho",
       "scaling": "Escala",
       "scaling_options": [
-        "Ajustar tudo",
+        "Ajustar foto inteira",
         "Preencher",
         "Esticar"
       ],
@@ -1191,7 +1191,7 @@
       "section_navigation": "Navegação",
       "mouse_wheel": "Roda do mouse",
       "mouse_wheel_options": [
-        "Ant/Próx (Ctrl zoom)",
+        "Foto anterior / seguinte (Ctrl para ampliar)",
         "Zoom +/-"
       ],
       "navigator_view": "Navegador",
@@ -1232,22 +1232,22 @@
     },
     "image_search": {
       "title": "Pesquisa",
-      "search_image": "Pesquisa de imagens",
+      "search_image": "Pesquisa de fotos",
       "search_model": "Escolher modelo (requer reinicialização)",
-      "default_model_hint": "O modelo padrão só oferece suporte à pesquisa de imagens em inglês",
+      "default_model_hint": "O modelo padrão só oferece suporte à pesquisa de fotos em inglês",
       "multilingual_model_hint": "Pesquisa em mais de 50 idiomas",
       "search_model_options": [
         "Padrão (inglês)",
         "Multilíngue"
       ],
       "multilingual_model_download_title": "Baixar o modelo de pesquisa multilíngue?",
-      "multilingual_model_download_message": "O modelo de pesquisa de imagens multilíngue não está instalado. Baixe-o para habilitar a pesquisa em mais de 50 idiomas.",
+      "multilingual_model_download_message": "O modelo de pesquisa de fotos multilíngue não está instalado. Baixe-o para habilitar a pesquisa em mais de 50 idiomas.",
       "download": "Baixar",
       "downloading_multilingual_model": "Baixando modelo multilíngue",
       "multilingual_model_download_success": "O modelo de pesquisa multilíngue está pronto. Reinicie o Lap para usá-lo.",
       "multilingual_model_download_failed": "Falha ao baixar o modelo de pesquisa multilíngue",
-      "find_similar": "Encontrar imagens semelhantes",
-      "similarity": "Similaridade",
+      "find_similar": "Encontrar fotos semelhantes",
+      "similarity": "Similaridade visual",
       "similarity_hint": "Mais alto = mais similar, menos resultados. Mais baixo = menos similar, mais resultados",
       "similarity_options": [
         "Muito alta",
@@ -1260,7 +1260,7 @@
       "title": "Atalhos",
       "sections": {
         "global": "Global",
-        "image_browsing": "Navegação de imagens",
+        "image_browsing": "Navegação de mídia",
         "viewing": "Visualização",
         "file_actions": "Ações de arquivo",
         "selection": "Seleção",
@@ -1273,13 +1273,13 @@
         "font_decrease": "Diminuir tamanho da fonte",
         "font_reset": "Redefinir tamanho da fonte",
         "search": "Pesquisar",
-        "previous_image": "Imagem anterior",
-        "next_image": "Próxima imagem",
-        "first_image": "Primeira imagem",
-        "last_image": "Última imagem",
+        "previous_image": "Anterior",
+        "next_image": "Seguinte",
+        "first_image": "Primeira",
+        "last_image": "Última",
         "quick_preview": "Pré-visualização rápida",
         "close_viewer": "Fechar visualizador",
-        "search_similar": "Encontrar imagens semelhantes",
+        "search_similar": "Encontrar fotos semelhantes",
         "show_info": "Mostrar informações",
         "zoom_in": "Ampliar",
         "zoom_out": "Reduzir",
@@ -1288,7 +1288,7 @@
         "toggle_slideshow": "Reproduzir / pausar apresentação",
         "open_new_window": "Abrir em nova janela",
         "open_external_app": "Abrir em app externo",
-        "edit_image": "Editar imagem",
+        "edit_image": "Editar",
         "copy_file": "Copiar para a área de transferência",
         "paste_file": "Colar",
         "reveal_in_finder": "Mostrar no Finder",
@@ -1322,7 +1322,7 @@
     "advanced": {
       "title": "Avançado",
       "section_external_apps": "Apps externos",
-      "external_image_editor": "Abrir imagem com",
+      "external_image_editor": "Abrir foto com",
       "external_video_app": "Abrir vídeo com",
       "external_app_not_selected": "Nenhum app selecionado",
       "choose_app": "Escolher",

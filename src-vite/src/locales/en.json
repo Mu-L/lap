@@ -57,7 +57,7 @@
       "name": "Name",
       "description": "Description",
       "description_placeholder": "Enter album description",
-      "images": "Images",
+      "images": "Photos",
       "videos": "Videos",
       "scanned_files": "Scanned files",
       "files_to_scan": "Files to scan",
@@ -69,7 +69,7 @@
     },
     "no_albums": {
       "title": "No albums added yet",
-      "description": "Add an album containing images or videos to get started"
+      "description": "Add an album containing photos or videos to get started"
     },
     "no_smart_albums": {
       "description": "Create smart albums from custom query rules."
@@ -172,13 +172,13 @@
     "add_album_title": "Start by adding an album",
     "add_album_description": "Select a folder and let Lap organize your photos and videos.",
     "search_title": "Search by memory",
-    "search_description": "Search with natural language, discover similar images, and find what you're looking for instantly.",
+    "search_description": "Search with natural language, discover similar photos, and find what you're looking for instantly.",
     "drag_title": "Drag to import",
     "drag_description": "Drag photos from your file manager or browser directly into an album."
   },
   "search": {
     "title": "Search",
-    "similar_images": "Similar",
+    "similar_images": "Similar photos",
     "image_search_placeholder": "Search by content or filename",
     "matches": "Matches",
     "unknown_location": "Unknown location",
@@ -359,9 +359,9 @@
       ],
       "file_type_options": [
         "All",
-        "Image",
-        "RAW",
-        "Video"
+        "Photos",
+        "RAW Files",
+        "Videos"
       ]
     },
     "tooltip": {
@@ -403,9 +403,9 @@
       "copy": "Copy",
       "move": "Move"
     },
-    "edit_disabled": "Select a single image to edit",
-    "type_image": "Image",
-    "type_images": "Images",
+    "edit_disabled": "Select a single photo to edit",
+    "type_image": "Photo",
+    "type_images": "Photos",
     "type_video": "Video",
     "type_videos": "Videos",
     "select_title": "Select",
@@ -419,8 +419,8 @@
     "dedup": {
       "title": "Duplicates",
       "tabs": {
-        "exact": "Exact",
-        "similar": "Similar"
+        "exact": "Duplicates",
+        "similar": "Similar Photos"
       },
       "scanning": "Scanning duplicates...",
       "error_title": "Unable to scan duplicates",
@@ -428,7 +428,7 @@
       "empty_title": "No duplicates found",
       "empty_desc": "Try adding more files or updating the current filter range.",
       "similar_title": "Similar photos are coming next",
-      "similar_desc": "This tab will be used for visually similar images after the exact-duplicate workflow is expanded.",
+      "similar_desc": "This tab will be used for visually similar photos after the exact-duplicate workflow is expanded.",
       "similar": {
         "find_title": "Find similar photos",
         "description": "Analyze visually similar photos in the current results.",
@@ -466,13 +466,13 @@
       "person": "Face recognition is in beta and may be inaccurate."
     },
     "not_found": {
-      "albums": "No albums found. Add a folder with images or videos",
+      "albums": "No albums found. Add a folder with photos or videos",
       "files": "No files found",
-      "image_files": "No image files found",
+      "image_files": "No photos found",
       "raw_files": "No RAW files found",
       "video_files": "No video files found",
-      "image_raw_files": "No image or RAW files found",
-      "image_video_files": "No image or video files found",
+      "image_raw_files": "No photos or RAW files found",
+      "image_video_files": "No photos or videos found",
       "raw_video_files": "No RAW or video files found",
       "folder_files": "This folder has no files",
       "folder_files_hint": "Try browsing subfolders, or enable 'Show files from subfolders' in Settings.",
@@ -500,25 +500,25 @@
     "copy_image": {
       "success": "{count} file(s) copied to clipboard",
       "limit": "You can copy up to {count} files at a time.",
-      "failed": "Failed to copy image. Unsupported format or corrupted file."
+      "failed": "Failed to copy photo. Unsupported format or corrupted file."
     },
     "open_external": {
-      "mixed_selection": "Select only images or only videos to open them in an external editor.",
+      "mixed_selection": "Select only photos or only videos to open them in an external editor.",
       "no_app": "No external editor is set. Choose one in Settings.",
       "failed": "Failed to open the external editor."
     },
     "save_image": {
-      "success": "The image has been saved",
-      "save_as_success": "The image has been saved as a new file",
-      "failed": "Failed to save image. Unsupported format or corrupted file."
+      "success": "The photo has been saved",
+      "save_as_success": "The photo has been saved as a new file",
+      "failed": "Failed to save photo. Unsupported format or corrupted file."
     },
     "update_image": {
-      "success": "The image has been updated from the file",
-      "failed": "Failed to update image from file."
+      "success": "The photo has been updated from the file",
+      "failed": "Failed to update photo from file."
     },
     "image_viewer": {
-      "first_image": "Already the first image",
-      "last_image": "Already the last image"
+      "first_image": "Already the first photo",
+      "last_image": "Already the last photo"
     },
     "album_exists": "This album already exists"
   },
@@ -558,16 +558,16 @@
       "view_in_new_window": "View in new window...",
       "copy": "Copy to clipboard",
       "paste": "Paste",
-      "edit_image": "Edit image...",
-      "open_image_in_app": "Open image in {app}...",
+      "edit_image": "Edit...",
+      "open_image_in_app": "Open photo in {app}...",
       "open_video_in_app": "Open video in {app}...",
-      "open_selected_images_in_app": "Open selected images in {app}...",
-      "compare_selected_images": "Compare selected images",
+      "open_selected_images_in_app": "Open selected photos in {app}...",
+      "compare_selected_images": "Compare selected photos",
       "open_selected_videos_in_app": "Open selected videos in {app}...",
       "open_in_app": "Open in external app...",
-      "find_similar_images": "Find similar images",
-      "find_person_images": "Find person images",
-      "print": "Print image...",
+      "find_similar_images": "Find similar photos",
+      "find_person_images": "Find photos of this person",
+      "print": "Print...",
       "rename": "Rename",
       "move_to": "Move to...",
       "copy_to": "Copy to...",
@@ -656,7 +656,7 @@
       "success": "{count} file(s) imported",
       "no_clipboard_image": "The clipboard does not contain an image.",
       "overlay": "Drop files to import",
-      "no_files": "No files could be imported. Make sure you are dropping image files."
+      "no_files": "No files could be imported. Make sure you are dropping supported photo files."
     },
     "manage_libraries": {
       "title": "Manage libraries",
@@ -808,8 +808,8 @@
       "error": "Failed to select file."
     },
     "image_editor": {
-      "title": "Edit image",
-      "tab_edit": "Edit",
+      "title": "Edit",
+      "tab_edit": "General",
       "tab_adjust": "Adjust",
       "histogram": "Histogram",
       "light": "Light",
@@ -856,7 +856,7 @@
       "crop_shape_custom": "Custom",
       "crop_shape_landscape": "Landscape",
       "crop_shape_portrait": "Portrait",
-      "crop_hint": "Start crop mode to choose an aspect ratio and frame the image.",
+      "crop_hint": "Start crop mode to choose an aspect ratio and frame the photo.",
       "crop_applied_hint": "Crop applied. Click Restore to review or adjust it.",
       "zoom": "Zoom",
       "aspect_ratio": "Aspect ratio",
@@ -898,7 +898,7 @@
         "Medium",
         "Low"
       ],
-      "copy_image": "Copy to clipboard",
+      "copy_image": "Copy photo to clipboard",
       "ok": "Save",
       "cancel": "Cancel",
       "overwrite": "Overwrite",
@@ -992,10 +992,10 @@
     }
   },
   "image_viewer": {
-    "title": "Image viewer",
+    "title": "Photo viewer",
     "loading": "Loading...",
-    "loading_original": "Loading original image...",
-    "failed": "Failed to load image. The file is missing or corrupted.",
+    "loading_original": "Loading original photo...",
+    "failed": "Failed to load photo. The file is missing or corrupted.",
     "toolbar": {
       "prev": "Previous",
       "next": "Next",
@@ -1147,7 +1147,7 @@
       "size": "Thumbnail size",
       "scaling": "Thumbnail scaling",
       "scaling_options": [
-        "Fit entire image",
+        "Fit entire photo",
         "Crop to fill",
         "Stretch to fill"
       ],
@@ -1191,7 +1191,7 @@
       "section_navigation": "Navigation",
       "mouse_wheel": "Mouse wheel",
       "mouse_wheel_options": [
-        "Previous / Next image (Ctrl to zoom)",
+        "Previous / Next photo (Ctrl to zoom)",
         "Zoom in / out"
       ],
       "navigator_view": "Navigator",
@@ -1232,22 +1232,22 @@
     },
     "image_search": {
       "title": "Search",
-      "search_image": "Image search",
+      "search_image": "Photo search",
       "search_model": "Choose model (restart required)",
-      "default_model_hint": "The default model only supports English image search",
+      "default_model_hint": "The default model only supports English photo search",
       "multilingual_model_hint": "Search across 50+ languages",
       "search_model_options": [
         "Default (English)",
         "Multilingual"
       ],
       "multilingual_model_download_title": "Download multilingual search model?",
-      "multilingual_model_download_message": "The multilingual image search model is not installed. Download it to enable search in 50+ languages.",
+      "multilingual_model_download_message": "The multilingual photo search model is not installed. Download it to enable search in 50+ languages.",
       "download": "Download",
       "downloading_multilingual_model": "Downloading multilingual model",
       "multilingual_model_download_success": "Multilingual search model is ready. Restart Lap to use it.",
       "multilingual_model_download_failed": "Failed to download multilingual search model",
-      "find_similar": "Find similar images",
-      "similarity": "Image similarity",
+      "find_similar": "Find similar photos",
+      "similarity": "Visual similarity",
       "similarity_hint": "Higher = more similar, fewer results. Lower = less similar, more results",
       "similarity_options": [
         "Very high",
@@ -1260,7 +1260,7 @@
       "title": "Shortcuts",
       "sections": {
         "global": "Global",
-        "image_browsing": "Image browsing",
+        "image_browsing": "Media browsing",
         "viewing": "Viewing",
         "file_actions": "File actions",
         "selection": "Selection",
@@ -1273,13 +1273,13 @@
         "font_decrease": "Decrease font size",
         "font_reset": "Reset font size",
         "search": "Search",
-        "previous_image": "Previous image",
-        "next_image": "Next image",
-        "first_image": "First image",
-        "last_image": "Last image",
+        "previous_image": "Previous",
+        "next_image": "Next",
+        "first_image": "First",
+        "last_image": "Last",
         "quick_preview": "Quick preview",
         "close_viewer": "Close viewer",
-        "search_similar": "Find similar images",
+        "search_similar": "Find similar photos",
         "show_info": "Show info",
         "zoom_in": "Zoom in",
         "zoom_out": "Zoom out",
@@ -1288,7 +1288,7 @@
         "toggle_slideshow": "Play / pause slideshow",
         "open_new_window": "View in new window",
         "open_external_app": "Open in external app",
-        "edit_image": "Edit image",
+        "edit_image": "Edit",
         "copy_file": "Copy to clipboard",
         "paste_file": "Paste",
         "reveal_in_finder": "Reveal in Finder",
@@ -1322,7 +1322,7 @@
     "advanced": {
       "title": "Advanced",
       "section_external_apps": "External apps",
-      "external_image_editor": "Open image in",
+      "external_image_editor": "Open photo in",
       "external_video_app": "Open video in",
       "external_app_not_selected": "No app selected",
       "choose_app": "Choose",
