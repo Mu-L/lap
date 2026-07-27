@@ -240,6 +240,12 @@
     "two_stars": "2 estrelas",
     "one_star": "1 estrela"
   },
+  "culling": {
+    "title": "Seleção",
+    "picks": "Selecionadas",
+    "rejected": "Rejeitadas",
+    "unreviewed": "Não revisadas"
+  },
   "tag": {
     "title": "Tags",
     "add_tag": "Adicionar tag",
@@ -440,6 +446,7 @@
         "building_sets": "Criando grupos semelhantes",
         "analyzing": "Analisando fotos semelhantes",
         "groups_title": "Grupos semelhantes",
+        "groups_count": "{count} grupos semelhantes",
         "load_more": "Carregar mais",
         "error_title": "Não foi possível carregar fotos semelhantes",
         "empty_title": "Nenhuma foto semelhante encontrada"
@@ -1306,6 +1313,9 @@
         "print": "Imprimir",
         "toggle_favorite": "Alternar favorito",
         "set_clear_rating": "Definir / limpar classificação",
+        "mark_pick": "Marcar como selecionada",
+        "mark_rejected": "Marcar como rejeitada",
+        "mark_unreviewed": "Marcar como não revisada",
         "clear_rating": "Limpar classificação",
         "rate_one": "Avaliar 1 estrela",
         "rate_two": "Avaliar 2 estrelas",

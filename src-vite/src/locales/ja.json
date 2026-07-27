@@ -240,6 +240,12 @@
     "two_stars": "2つ星",
     "one_star": "1つ星"
   },
+  "culling": {
+    "title": "選別",
+    "picks": "採用",
+    "rejected": "除外",
+    "unreviewed": "未選別"
+  },
   "tag": {
     "title": "タグ",
     "add_tag": "タグを追加",
@@ -440,6 +446,7 @@
         "building_sets": "類似グループを作成中",
         "analyzing": "類似写真を分析中",
         "groups_title": "類似グループ",
+        "groups_count": "類似グループ {count} 件",
         "load_more": "さらに読み込む",
         "error_title": "類似写真を読み込めません",
         "empty_title": "類似写真が見つかりません"
@@ -1306,6 +1313,9 @@
         "print": "印刷",
         "toggle_favorite": "お気に入りの切り替え",
         "set_clear_rating": "評価を設定 / クリア",
+        "mark_pick": "採用にする",
+        "mark_rejected": "除外にする",
+        "mark_unreviewed": "未選別にする",
         "clear_rating": "評価をクリア",
         "rate_one": "1つ星評価",
         "rate_two": "2つ星評価",

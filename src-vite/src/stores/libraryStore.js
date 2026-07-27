@@ -16,11 +16,12 @@ export const useLibraryStore = defineStore('libraryStore', {
     /** @type {'main' | 'collection'} */
     activePane: 'main',
 
-    /** @type {{ item: 'all-files' | 'favorites' | 'ratings' | 'subjects' | 'on-this-day', smartId: string | null, ratingsExpanded: boolean, subjectsExpanded: boolean, subjectCounts: Record<string, number> }} */
+    /** @type {{ item: 'all-files' | 'favorites' | 'ratings' | 'culling' | 'subjects' | 'on-this-day', smartId: string | null, ratingsExpanded: boolean, cullingExpanded: boolean, subjectsExpanded: boolean, subjectCounts: Record<string, number> }} */
     library: {
       item: LIB_ITEM.ALL,
       smartId: null,
       ratingsExpanded: true,
+      cullingExpanded: true,
       subjectsExpanded: true,
       subjectCounts: {},
     },
@@ -51,6 +52,10 @@ export const useLibraryStore = defineStore('libraryStore', {
     /** @type {{ item: number | null }} */
     rating: {
       item: null,             // 0: unrated, 1-5: rated files
+    },
+
+    culling: {
+      item: 'pick',
     },
 
     /** @type {{ id: number | null }} */

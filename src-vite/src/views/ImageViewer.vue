@@ -214,6 +214,7 @@ import {
   getTagsForFile,
   setFileFavorite,
   setFileRating,
+  setFileCullingFlag,
   setFileRotate,
 } from '@/common/api';
 
@@ -599,6 +600,13 @@ function handleKeyDown(event: KeyboardEvent) {
     return;
   }
 
+  const cullingShortcut = getMatchedCulling(event);
+  if (cullingShortcut !== null) {
+    event.preventDefault();
+    void setCurrentFileCullingFlag(cullingShortcut, getActiveFilePane());
+    return;
+  }
+
   if (matchesShortcut('slideshow.toggle', event, shortcutPlatform)) {
     event.preventDefault();
     clickSlideShow(getActiveFilePane());
@@ -667,10 +675,20 @@ const ratingActions: Array<{ actionId: ShortcutActionId; rating: number }> = [
   { actionId: 'meta.rating.four', rating: 4 },
   { actionId: 'meta.rating.five', rating: 5 },
 ];
+const cullingActions: Array<{ actionId: ShortcutActionId; cullingFlag: number }> = [
+  { actionId: 'meta.culling.pick', cullingFlag: 1 },
+  { actionId: 'meta.culling.reject', cullingFlag: 2 },
+  { actionId: 'meta.culling.unreviewed', cullingFlag: 0 },
+];
 
 function getMatchedRating(event: KeyboardEvent) {
   const match = ratingActions.find(({ actionId }) => matchesShortcut(actionId, event, shortcutPlatform));
   return match ? match.rating : null;
+}
+
+function getMatchedCulling(event: KeyboardEvent) {
+  const match = cullingActions.find(({ actionId }) => matchesShortcut(actionId, event, shortcutPlatform));
+  return match ? match.cullingFlag : null;
 }
 
 function getMatchedViewBackground(event: KeyboardEvent): number | null {
@@ -1217,6 +1235,23 @@ const setCurrentFileRating = async (rating: number, pane: Pane = 'left') => {
   syncFileMetaToContent(currentFileId, { rating: normalized });
 };
 
+const setCurrentFileCullingFlag = async (cullingFlag: number, pane: Pane = 'left') => {
+  const target = getFileInfoByPane(pane);
+  const currentFileId = getFileIdByPane(pane);
+  if (!target || currentFileId <= 0) return;
+
+  const normalized = Math.max(0, Math.min(2, cullingFlag));
+  const previous = Number(target.culling_flag ?? target.cullingFlag ?? 0);
+  applyFileMetaToPanes(currentFileId, { culling_flag: normalized });
+  const result = await setFileCullingFlag(currentFileId, normalized);
+  if (result === null) {
+    applyFileMetaToPanes(currentFileId, { culling_flag: previous });
+    return;
+  }
+  syncFileMetaToContent(currentFileId, { culling_flag: normalized });
+  void emit('culling-status-updated');
+};
+
 const clickRotate = async (pane: Pane = 'left') => {
   const target = getFileInfoByPane(pane);
   const currentFileId = getFileIdByPane(pane);
@@ -1305,6 +1340,15 @@ const handleItemAction = async (payload: { action: string }) => {
     case 'rating-4':
     case 'rating-5':
       await setCurrentFileRating(Number(payload.action.split('-')[1]), pane);
+      break;
+    case 'culling-pick':
+      await setCurrentFileCullingFlag(1, pane);
+      break;
+    case 'culling-reject':
+      await setCurrentFileCullingFlag(2, pane);
+      break;
+    case 'culling-unreviewed':
+      await setCurrentFileCullingFlag(0, pane);
       break;
     case 'zoom-in':
       clickZoomIn(pane);

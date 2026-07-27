@@ -213,6 +213,8 @@ import {
   IconRotate,
   IconComment,
   IconStarFilled,
+  IconFlagFilled,
+  IconFlagOff,
   IconLivePhoto
 } from '@/common/icons';
 
@@ -560,7 +562,22 @@ const hasBottomMediaBadges = computed(() => (
 const statusBadges = computed<ThumbnailBadge[]>(() => {
   const badges: ThumbnailBadge[] = [];
   const rating = Number(props.file.rating || 0);
+  const cullingFlag = Number(props.file.culling_flag ?? props.file.cullingFlag ?? 0);
   const metaIcons: ThumbnailBadge['icons'] = [];
+
+  if (cullingFlag === 1) {
+    badges.push({
+      key: 'culling-pick',
+      icon: IconFlagFilled,
+      iconClass: 'text-primary',
+    });
+  } else if (cullingFlag === 2) {
+    badges.push({
+      key: 'culling-reject',
+      icon: IconFlagOff,
+      iconClass: 'text-error',
+    });
+  }
 
   if (props.file.is_favorite) {
     badges.push({

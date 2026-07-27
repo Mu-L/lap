@@ -95,6 +95,42 @@
         </div>
       </Transition>
 
+      <div class="sidebar-item sidebar-item-hover" @click="toggleCulling">
+        <IconRight
+          :class="[
+            'p-1 w-6 h-6 shrink-0 transition-transform',
+            libConfig.library.cullingExpanded ? 'rotate-90' : '',
+          ]"
+          @click.stop="toggleCulling"
+        />
+        <span class="sidebar-item-label">{{ localeMsg.culling.title }}</span>
+      </div>
+
+      <Transition
+        @before-enter="onBeforeEnter"
+        @enter="onEnter"
+        @after-enter="onAfterEnter"
+        @leave="onLeave"
+      >
+        <div v-if="libConfig.library.cullingExpanded" class="overflow-hidden">
+          <ul class="mb-2">
+            <li v-for="item in cullingItems" :key="item.id" class="pl-4">
+              <div
+                :class="[
+                  'sidebar-item sidebar-item-compact ml-2',
+                  libConfig.library.item === LIB_ITEM.CULLING && libConfig.culling.item === item.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                ]"
+                @click="selectCulling(item.id)"
+              >
+                <component :is="item.icon" class="mx-1 w-4 h-4 shrink-0" />
+                <span class="sidebar-item-label">{{ item.label }}</span>
+                <span v-if="item.count" class="ml-auto text-[10px] tabular-nums text-base-content/30 mr-2">{{ item.count.toLocaleString() }}</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </Transition>
+
       <div class="sidebar-item sidebar-item-hover" @click="toggleSubjects">
         <IconRight
           :class="[
@@ -143,9 +179,9 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { listen } from '@tauri-apps/api/event';
 import { config, libConfig } from '@/common/config';
-import { LIB_ITEM, RATE, type LibItem } from '@/common/constants';
+import { CULLING, LIB_ITEM, RATE, type LibItem } from '@/common/constants';
 
-import { IconPhotoAll, IconHeartFilled, IconRight, IconBolt, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
+import { IconPhotoAll, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
 import { getQueryCountAndSum, getTotalCountAndSum } from '@/common/api';
 import { SMART_TAG_CATEGORIES } from '@/common/smartTags';
 
@@ -164,6 +200,12 @@ const todayCount = ref(0);
 const unratedCount = ref(0);
 const ratedCountOverride = ref<number | null>(null);
 let unlistenLibraryItemCount: (() => void) | null = null;
+let unlistenCullingStatus: (() => void) | null = null;
+const cullingCounts = ref<Record<string, number>>({
+  [CULLING.PICK]: 0,
+  [CULLING.REJECT]: 0,
+  [CULLING.UNREVIEWED]: 0,
+});
 const ratingCounts = ref<Record<number, number>>({
   1: 0,
   2: 0,
@@ -176,7 +218,7 @@ const ratedCount = computed(() =>
   ?? Object.values(ratingCounts.value).reduce((sum, count) => sum + count, 0)
 );
 
-const buildQueryParams = ({ isFavorite = false, rating = RATE.NONE, startDate = 0, endDate = 0 } = {}) => ({
+const buildQueryParams = ({ isFavorite = false, rating = RATE.NONE, cullingFlag = -1, startDate = 0, endDate = 0 } = {}) => ({
   searchFileType: 0,
   sortType: 0,
   sortOrder: 0,
@@ -194,6 +236,7 @@ const buildQueryParams = ({ isFavorite = false, rating = RATE.NONE, startDate = 
   locationName: "",
   isFavorite,
   rating,
+  cullingFlag,
   tagId: 0,
   personId: 0,
 });
@@ -229,6 +272,12 @@ const smartTagItems = computed(() =>
     };
   })
 );
+
+const cullingItems = computed(() => [
+  { id: CULLING.PICK, label: localeMsg.value.culling.picks, icon: IconFlagFilled, count: cullingCounts.value[CULLING.PICK] },
+  { id: CULLING.REJECT, label: localeMsg.value.culling.rejected, icon: IconFlagOff, count: cullingCounts.value[CULLING.REJECT] },
+  { id: CULLING.UNREVIEWED, label: localeMsg.value.culling.unreviewed, icon: IconFlag, count: cullingCounts.value[CULLING.UNREVIEWED] },
+]);
 
 function formatSearchResultCount(count: number) {
   const limit = Number(config.settings.imageSearch.limit || 0);
@@ -267,6 +316,18 @@ const refreshRatingCounts = async () => {
   ratedCountOverride.value = null;
 };
 
+const refreshCullingCounts = async () => {
+  const entries = await Promise.all([
+    [CULLING.PICK, 1],
+    [CULLING.REJECT, 2],
+    [CULLING.UNREVIEWED, 0],
+  ].map(async ([item, cullingFlag]) => {
+    const result = await getQueryCountAndSum(buildQueryParams({ cullingFlag }));
+    return [item, result ? Number(result[0]) : 0] as const;
+  }));
+  cullingCounts.value = Object.fromEntries(entries) as Record<string, number>;
+};
+
 function selectItem(item: LibItem) {
   libConfig.library.item = item;
 }
@@ -277,6 +338,10 @@ function toggleSubjects() {
 
 function toggleRatings() {
   libConfig.library.ratingsExpanded = !libConfig.library.ratingsExpanded;
+}
+
+function toggleCulling() {
+  libConfig.library.cullingExpanded = !libConfig.library.cullingExpanded;
 }
 
 function onBeforeEnter(el: Element) {
@@ -310,6 +375,11 @@ function selectRating(rating: number) {
   libConfig.rating.item = rating;
 }
 
+function selectCulling(item: string) {
+  libConfig.library.item = LIB_ITEM.CULLING;
+  libConfig.culling.item = item;
+}
+
 function selectSmartTag(smartId: string) {
   libConfig.library.item = LIB_ITEM.SUBJECTS;
   libConfig.library.smartId = smartId;
@@ -339,6 +409,13 @@ const applyCountUpdate = (payload: any) => {
         }
         break;
       }
+      case LIB_ITEM.CULLING: {
+        const item = String(payload?.cullingItem || '');
+        if (Object.hasOwn(cullingCounts.value, item)) {
+          cullingCounts.value = { ...cullingCounts.value, [item]: count };
+        }
+        break;
+      }
       case LIB_ITEM.SUBJECTS: {
         const smartId = String(payload?.smartId || '');
         if (smartId) {
@@ -364,12 +441,16 @@ onMounted(async () => {
       applyCountUpdate(event.payload);
     }
   });
+  unlistenCullingStatus = await listen('culling-status-updated', () => {
+    void refreshCullingCounts();
+  });
 
   await Promise.all([
     refreshTotalCount(),
     refreshFavoriteCount(),
     refreshTodayCount(),
     refreshRatingCounts(),
+    refreshCullingCounts(),
   ]);
   initializing = false;
   pendingUpdates.forEach(applyCountUpdate);
@@ -377,6 +458,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unlistenLibraryItemCount?.();
+  unlistenCullingStatus?.();
 });
 
 </script>

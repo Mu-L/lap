@@ -20,6 +20,7 @@ export const LIB_ITEM = {
   FAV: 'favorites',
   TODAY: 'on-this-day',
   RATINGS: 'ratings',
+  CULLING: 'culling',
   SUBJECTS: 'subjects',
 } as const;
 
@@ -30,6 +31,12 @@ export const RATE = {
   ALL: -2,
   NONE: -1,
   UNRATED: 0,
+} as const;
+
+export const CULLING = {
+  PICK: 'pick',
+  REJECT: 'reject',
+  UNREVIEWED: 'unreviewed',
 } as const;
 
 // Thumbnail badge selection

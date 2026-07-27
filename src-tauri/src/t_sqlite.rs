@@ -859,6 +859,7 @@ pub struct AFile {
     // extra info
     pub is_favorite: Option<bool>, // is favorite
     pub rating: Option<i32>,       // 0-5 stars
+    pub culling_flag: Option<i32>, // 0: unreviewed, 1: pick, 2: reject
     pub rotate: Option<i32>,       // rotate angle (0, 90, 180, 270)
     pub comments: Option<String>,  // comments
     pub has_tags: Option<bool>,    // has tags
@@ -1262,6 +1263,8 @@ pub struct QueryParams {
     pub location_name: String,
     pub is_favorite: bool,
     pub rating: i64,
+    #[serde(default = "default_culling_flag")]
+    pub culling_flag: i64,
     pub tag_id: i64,
     pub person_id: i64,
     // GPS bounding box filter (e.g. for "photos in this map area")
@@ -1275,6 +1278,10 @@ pub struct QueryParams {
     pub gps_max_lon: Option<f64>,
     #[serde(default)]
     pub group_by: i64,
+}
+
+fn default_culling_flag() -> i64 {
+    -1
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1785,6 +1792,7 @@ impl AFile {
 
             is_favorite: None,
             rating: Some(0),
+            culling_flag: Some(0),
             rotate: None,
             comments: t_ai_png::extract_comment(file_path),
             has_tags: Some(false),
@@ -2291,7 +2299,7 @@ impl AFile {
                 a.name, a.name_pinyin, a.size, a.file_type, a.format_label, a.created_at, a.modified_at, a.inode,
                 a.taken_date,
                 a.width, a.height, a.duration,
-                a.is_favorite, a.rating, a.rotate, a.comments, a.has_tags,
+                a.is_favorite, a.rating, a.culling_flag, a.rotate, a.comments, a.has_tags,
                 a.e_make, a.e_model, a.e_date_time, a.e_software, a.e_artist, a.e_copyright, a.e_description, a.e_lens_make, a.e_lens_model, a.e_exposure_bias, a.e_exposure_time, a.e_f_number, a.e_focal_length, a.e_iso_speed, a.e_flash, a.e_orientation,
                 a.gps_latitude, a.gps_longitude, a.gps_altitude, a.geo_name, a.geo_admin1, a.geo_admin2, a.geo_cc,
                 b.path,
@@ -2339,49 +2347,50 @@ impl AFile {
 
             is_favorite: row.get(14)?,
             rating: row.get(15)?,
-            rotate: row.get(16)?,
-            comments: row.get(17)?,
-            has_tags: row.get(18)?,
+            culling_flag: row.get(16)?,
+            rotate: row.get(17)?,
+            comments: row.get(18)?,
+            has_tags: row.get(19)?,
 
-            e_make: row.get(19)?,
-            e_model: row.get(20)?,
-            e_date_time: row.get(21)?,
-            e_software: row.get(22)?,
-            e_artist: row.get(23)?,
-            e_copyright: row.get(24)?,
-            e_description: row.get(25)?,
-            e_lens_make: row.get(26)?,
-            e_lens_model: row.get(27)?,
-            e_exposure_bias: row.get(28)?,
-            e_exposure_time: row.get(29)?,
-            e_f_number: row.get(30)?,
-            e_focal_length: row.get(31)?,
-            e_iso_speed: row.get(32)?,
-            e_flash: row.get(33)?,
-            e_orientation: row.get(34)?,
+            e_make: row.get(20)?,
+            e_model: row.get(21)?,
+            e_date_time: row.get(22)?,
+            e_software: row.get(23)?,
+            e_artist: row.get(24)?,
+            e_copyright: row.get(25)?,
+            e_description: row.get(26)?,
+            e_lens_make: row.get(27)?,
+            e_lens_model: row.get(28)?,
+            e_exposure_bias: row.get(29)?,
+            e_exposure_time: row.get(30)?,
+            e_f_number: row.get(31)?,
+            e_focal_length: row.get(32)?,
+            e_iso_speed: row.get(33)?,
+            e_flash: row.get(34)?,
+            e_orientation: row.get(35)?,
 
-            gps_latitude: row.get(35)?,
-            gps_longitude: row.get(36)?,
-            gps_altitude: row.get(37)?,
-            geo_name: row.get(38)?,
-            geo_admin1: row.get(39)?,
-            geo_admin2: row.get(40)?,
-            geo_cc: row.get(41)?,
+            gps_latitude: row.get(36)?,
+            gps_longitude: row.get(37)?,
+            gps_altitude: row.get(38)?,
+            geo_name: row.get(39)?,
+            geo_admin1: row.get(40)?,
+            geo_admin2: row.get(41)?,
+            geo_cc: row.get(42)?,
 
             file_path: Some(t_utils::get_file_path(
-                row.get::<_, String>(42)?.as_str(),
+                row.get::<_, String>(43)?.as_str(),
                 row.get::<_, String>(2)?.as_str(),
             )),
-            album_id: row.get(43)?,
-            album_name: row.get(44)?,
-            has_thumbnail: row.get::<_, Option<i64>>(45)?.map(|v| v == 1),
-            has_embedding: row.get::<_, Option<i64>>(46)?.map(|v| v == 1),
-            has_faces: row.get::<_, Option<i32>>(47)?,
-            last_scan_time: row.get(48)?,
-            content_identifier: row.get(49)?,
-            media_subtype: row.get(50)?,
-            live_photo_video_id: row.get(51)?,
-            live_photo_video_path: row.get(52)?,
+            album_id: row.get(44)?,
+            album_name: row.get(45)?,
+            has_thumbnail: row.get::<_, Option<i64>>(46)?.map(|v| v == 1),
+            has_embedding: row.get::<_, Option<i64>>(47)?.map(|v| v == 1),
+            has_faces: row.get::<_, Option<i32>>(48)?,
+            last_scan_time: row.get(49)?,
+            content_identifier: row.get(50)?,
+            media_subtype: row.get(51)?,
+            live_photo_video_id: row.get(52)?,
+            live_photo_video_path: row.get(53)?,
         })
     }
 
@@ -2919,6 +2928,7 @@ impl AFile {
         file_ids: &[i64],
         is_favorite: Option<bool>,
         rating: Option<i32>,
+        culling_flag: Option<i32>,
         rotate_delta: Option<i32>,
         comment: Option<&str>,
     ) -> Result<usize, String> {
@@ -2944,6 +2954,17 @@ impl AFile {
             let clamped = value.clamp(0, 5);
             let mut stmt = tx
                 .prepare_cached("UPDATE afiles SET rating = ?1 WHERE id = ?2")
+                .map_err(|e| e.to_string())?;
+            for file_id in file_ids {
+                updated += stmt
+                    .execute(params![clamped, file_id])
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+        if let Some(value) = culling_flag {
+            let clamped = value.clamp(0, 2);
+            let mut stmt = tx
+                .prepare_cached("UPDATE afiles SET culling_flag = ?1 WHERE id = ?2")
                 .map_err(|e| e.to_string())?;
             for file_id in file_ids {
                 updated += stmt
@@ -3587,6 +3608,11 @@ impl AFile {
         } else if params.rating > 0 {
             conditions.push("a.rating = ?".to_string());
             sql_params.push(Box::new(params.rating));
+        }
+
+        if (0..=2).contains(&params.culling_flag) {
+            conditions.push("COALESCE(a.culling_flag, 0) = ?".to_string());
+            sql_params.push(Box::new(params.culling_flag));
         }
 
         if params.tag_id > 0 {
@@ -7810,6 +7836,7 @@ fn create_db_internal() -> Result<(), String> {
             duration INTEGER,
             is_favorite INTEGER,
             rating INTEGER NOT NULL DEFAULT 0,
+            culling_flag INTEGER NOT NULL DEFAULT 0,
             rotate INTEGER,
             comments TEXT,
             has_tags INTEGER,
@@ -7895,9 +7922,18 @@ fn create_db_internal() -> Result<(), String> {
         "ALTER TABLE afiles ADD COLUMN rating INTEGER NOT NULL DEFAULT 0",
         [],
     );
+    let _ = conn.execute(
+        "ALTER TABLE afiles ADD COLUMN culling_flag INTEGER NOT NULL DEFAULT 0",
+        [],
+    );
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_afiles_rating ON afiles(rating)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_afiles_culling_flag ON afiles(culling_flag)",
         [],
     )
     .map_err(|e| e.to_string())?;

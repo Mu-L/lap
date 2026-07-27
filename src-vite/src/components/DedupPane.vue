@@ -28,8 +28,7 @@
     </div>
 
     <div
-      class="mb-2 px-2 flex-1 min-h-0 overflow-x-hidden flex flex-col"
-      :class="activeTab === 'duplicates' ? 'overflow-hidden' : 'overflow-y-auto'"
+      class="mb-2 px-2 flex-1 min-h-0 overflow-hidden flex flex-col"
     >
       <template v-if="activeTab === 'similar'">
         <div v-if="similarLoading" class="p-4 flex-1 flex items-center justify-center">
@@ -58,24 +57,32 @@
             <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
             <p class="text-xs font-medium">{{ similarHasScanned ? $t('info_panel.dedup.similar.empty_title') : $t('info_panel.dedup.similar.find_title') }}</p>
             <p v-if="!similarHasScanned" class="text-xs text-base-content/30">{{ $t('info_panel.dedup.similar.description') }}</p>
-            <PanelActionButton v-if="!similarHasScanned" class="mx-auto" :icon="IconSimilar" primary :disabled="similarEligibleCount === 0" @click="startSimilar">
+            <PanelActionButton v-if="!similarHasScanned" class="mx-auto" :icon="IconSimilar" primary :disabled="similarEligibleCount === 0 || similarLoading" @click="startSimilar">
               {{ $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
             </PanelActionButton>
           </div>
         </div>
-        <template v-else>
-          <div class="border-t border-base-content/5 px-1 py-3 space-y-3">
-            <div class="flex items-center gap-2">
-              <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
-                {{ $t('info_panel.dedup.similar.groups_title') }}
-              </span>
-            </div>
+        <div v-else ref="similarSplitPaneRef" class="flex min-h-0 flex-1 flex-col">
+          <div
+            class="min-h-0 shrink-0 flex flex-col border-t border-base-content/5 px-1 py-3 space-y-3"
+            :style="{ height: `${config.dedup.duplicateSetsHeight}%` }"
+          >
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
+                  {{ $t('info_panel.dedup.similar.groups_title') }}
+                </span>
+                <span class="ml-auto sidebar-item-count">
+                  {{ similarTotalGroups.toLocaleString() }}
+                </span>
+              </div>
+            <div ref="similarGroupsScrollRef" class="min-h-0 flex-1 overflow-y-auto py-1" @scroll="loadMoreSimilarGroups">
             <div class="mx-2 grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-2">
               <button
                 v-for="group in visibleSimilarGroups"
                 :key="group.id"
                 class="group/thumb relative h-20 min-w-0 overflow-hidden rounded-box cursor-pointer"
                 :class="selectedSimilarGroupId === group.id ? 'ring-2 ring-primary' : ''"
+                :data-similar-group-id="group.id"
                 @click="selectSimilarGroup(group)"
               >
                 <img v-if="group.representative?.thumbnail" :src="group.representative.thumbnail" class="h-full w-full object-cover" loading="lazy" />
@@ -92,37 +99,59 @@
                   </div>
                 </div>
               </button>
-              <button
-                v-if="hiddenSimilarGroupCount > 0"
-                class="flex h-20 min-w-0 items-center justify-center rounded-box border border-dashed border-base-content/20 bg-base-100/50 text-xs font-semibold text-base-content/70"
-                @click="expandSimilarGroups"
-              >
-                +{{ hiddenSimilarGroupCount }}
-              </button>
             </div>
-            <PanelActionButton v-if="similarGroups.length < similarTotalGroups" class="mx-auto" :disabled="isLoadingMoreSimilarGroups" @click="loadMoreSimilarGroups">
-              {{ $t('info_panel.dedup.similar.load_more') }}
-            </PanelActionButton>
+            </div>
           </div>
-          <div v-if="activeSimilarGroup" class="border-t border-base-content/5 px-1 py-4 space-y-3">
+          <div
+            v-if="activeSimilarGroup"
+            class="-mx-2 z-10 flex h-1 border-b border-base-content/5 shrink-0 touch-none cursor-row-resize items-center select-none"
+            @pointerdown.prevent="startDraggingDuplicateSplitter"
+          >
+            <div class="h-1 w-full transition-colors hover:bg-primary" :class="{ 'bg-primary': isDraggingDuplicateSplitter }"></div>
+          </div>
+          <div v-if="activeSimilarGroup" class="min-h-0 flex-1 overflow-y-auto px-1 py-3 space-y-3">
             <div class="flex items-center gap-2">
               <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
                 {{ $t('info_panel.dedup.actions_title') }}
               </span>
               <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
-                {{ $t('info_panel.select_hint') }}
+                <template v-if="selectedSimilarCount > 0">
+                  {{ $t('toolbar.filter.select_count', { count: selectedSimilarCount.toLocaleString() }) }}
+                  ({{ formatFileSize(selectedSimilarBytes) }})
+                </template>
+                <template v-else>{{ $t('info_panel.select_hint') }}</template>
               </span>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <PanelActionButton :icon="IconCheckNone" :disabled="selectedSimilarCount === 0" @click="deselectSimilarGroup(activeSimilarGroup.id)">
+                {{ $t('menu.select.none') }}
+              </PanelActionButton>
+              <PanelActionButton :icon="IconSplitOn" :disabled="selectedSimilarCount < 2" @click="compareSelectedSimilarPhotos">
+                {{ $t('menu.file.compare_selected_images') }}
+              </PanelActionButton>
+              <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
+                {{ $t('info_panel.dedup.move_selected_to_trash') }}
+              </PanelActionButton>
             </div>
             <div class="space-y-2.5">
               <button
                 v-for="item in activeSimilarGroup.items"
                 :key="item.file_id"
                 class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
-                :class="getDedupItemClass(item.file_id)"
+                :class="getDedupItemClass(item.file_id, isSimilarSelected(activeSimilarGroup.id, item.file_id))"
                 @click="handleSimilarSelection(item.file_id)"
                 @dblclick="handleSimilarSelection(item.file_id, true)"
               >
                 <div class="flex items-center gap-2">
+                  <label class="flex items-center cursor-pointer shrink-0" @click.stop>
+                    <input
+                      type="checkbox"
+                      class="checkbox checkbox-xs"
+                      :class="isSimilarSelected(activeSimilarGroup.id, item.file_id) ? 'checkbox-error' : 'hover:checkbox-error'"
+                      :checked="isSimilarSelected(activeSimilarGroup.id, item.file_id)"
+                      @change="toggleSimilarSelected(activeSimilarGroup.id, item.file_id)"
+                    />
+                  </label>
                   <div class="w-10 h-10 rounded-box overflow-hidden shrink-0">
                     <img v-if="item.file?.thumbnail" :src="item.file.thumbnail" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full skeleton"></div>
@@ -146,7 +175,7 @@
               </button>
             </div>
           </div>
-        </template>
+        </div>
       </template>
       <template v-else>
       <div v-if="isDedupLoading" class="p-4 flex-1 flex items-center justify-center">
@@ -188,11 +217,8 @@
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.groups_title') }}
             </span>
-            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
-              {{ $t('info_panel.dedup.duplicate_files_summary', {
-                count: totalDuplicateFileCount.toLocaleString(),
-                size: formatFileSize(totalReclaimableBytes),
-              }) }}
+            <span class="ml-auto sidebar-item-count">
+              {{ totalGroupCount.toLocaleString() }}
             </span>
           </div>
           <div
@@ -369,7 +395,7 @@ import {
 } from '@/common/utils';
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
-import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconRefresh, IconSimilar, IconTrash } from '@/common/icons';
+import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconTrash } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
@@ -427,10 +453,13 @@ const emit = defineEmits<{
   'select-file': [fileId: number];
   'preview-file': [fileId: number];
   'trash-selected-duplicates': [groupId: string, fileIds: number[], reclaimableBytes: number];
+  'trash-selected-similar': [groupId: string, fileIds: number[], reclaimableBytes: number];
+  'compare-selected-photos': [files: any[]];
   'dedup-status-updated': [statuses: Record<number, 'keep' | 'dup'>];
 }>();
 
 const selectedDupIdsByGroup = ref<Map<number, Set<number>>>(new Map());
+const selectedSimilarIdsByGroup = ref<Map<number, Set<number>>>(new Map());
 const isDedupLoading = ref(false);
 const activeTab = ref<'duplicates' | 'similar'>(
   config.dedup.activeTab === 'similar' ? 'similar' : 'duplicates',
@@ -440,7 +469,6 @@ const similarStatus = ref<any>({ phase: 'idle', current: 0, total: 0 });
 const similarGroups = ref<any[]>([]);
 const similarTotalGroups = ref(0);
 const isLoadingMoreSimilarGroups = ref(false);
-const showAllSimilarGroups = ref(false);
 const selectedSimilarGroupId = ref<number | null>(null);
 const similarEligibleCount = ref(0);
 const similarHasScanned = ref(false);
@@ -462,7 +490,9 @@ const dedupStatusPollTimer = ref<ReturnType<typeof setInterval> | null>(null);
 const isPollingDedupStatus = ref(false);
 const loadedDuplicateGroupCount = ref(DEDUP_THUMBNAIL_PAGE_SIZE);
 const duplicateGroupsScrollRef = ref<HTMLElement | null>(null);
+const similarGroupsScrollRef = ref<HTMLElement | null>(null);
 const dedupSplitPaneRef = ref<HTMLElement | null>(null);
+const similarSplitPaneRef = ref<HTMLElement | null>(null);
 const isDraggingDuplicateSplitter = ref(false);
 const isLoadingMoreDuplicateThumbnails = ref(false);
 
@@ -490,16 +520,7 @@ const similarProgressLabel = computed(() => ({
   building_sets: t('info_panel.dedup.similar.building_sets'),
 })[similarStatus.value.phase] || t('info_panel.dedup.similar.analyzing'));
 const visibleDuplicateGroups = computed(() => duplicateGroups.value.slice(0, loadedDuplicateGroupCount.value));
-const visibleSimilarGroups = computed(() =>
-  showAllSimilarGroups.value
-    ? similarGroups.value
-    : similarGroups.value.slice(0, SIMILAR_SCAN.THUMBNAIL_LIMIT)
-);
-const hiddenSimilarGroupCount = computed(() =>
-  showAllSimilarGroups.value
-    ? 0
-    : Math.max(0, similarGroups.value.length - SIMILAR_SCAN.THUMBNAIL_LIMIT)
-);
+const visibleSimilarGroups = computed(() => similarGroups.value);
 
 function emitDedupStatuses() {
   const statuses: Record<number, 'keep' | 'dup'> = {};
@@ -523,6 +544,21 @@ const selectedDeleteBytes = computed(() => {
   }, 0);
 });
 
+const selectedSimilarCount = computed(() => {
+  if (!activeSimilarGroup.value) return 0;
+  return activeSimilarGroup.value.items.filter((item: any) =>
+    isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
+  ).length;
+});
+
+const selectedSimilarBytes = computed(() => {
+  if (!activeSimilarGroup.value) return 0;
+  return activeSimilarGroup.value.items.reduce((sum: number, item: any) =>
+    isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
+      ? sum + Number(item.file?.size || 0)
+      : sum, 0);
+});
+
 function getDupSelectedSet(groupId: number): Set<number> {
   const existing = selectedDupIdsByGroup.value.get(groupId);
   if (existing) return existing;
@@ -533,6 +569,43 @@ function getDupSelectedSet(groupId: number): Set<number> {
 
 function isDupSelected(groupId: number, fileId: number) {
   return getDupSelectedSet(groupId).has(fileId);
+}
+
+function getSimilarSelectedSet(groupId: number): Set<number> {
+  const existing = selectedSimilarIdsByGroup.value.get(groupId);
+  if (existing) return existing;
+  const selected = new Set<number>();
+  selectedSimilarIdsByGroup.value.set(groupId, selected);
+  return selected;
+}
+
+function isSimilarSelected(groupId: number, fileId: number) {
+  return getSimilarSelectedSet(groupId).has(fileId);
+}
+
+function toggleSimilarSelected(groupId: number, fileId: number) {
+  const selected = getSimilarSelectedSet(groupId);
+  if (selected.has(fileId)) selected.delete(fileId);
+  else selected.add(fileId);
+}
+
+function deselectSimilarGroup(groupId: number) {
+  getSimilarSelectedSet(groupId).clear();
+}
+
+function compareSelectedSimilarPhotos() {
+  if (!activeSimilarGroup.value) return;
+  const selected = getSimilarSelectedSet(activeSimilarGroup.value.id);
+  const files = activeSimilarGroup.value.items
+    .filter((item: any) => selected.has(Number(item.file_id)))
+    .map((item: any) => item.file)
+    .filter(Boolean);
+  if (files.length >= 2) emit('compare-selected-photos', files);
+}
+
+function trashSelectedSimilar(groupId: number, reclaimableBytes: number) {
+  const fileIds = Array.from(getSimilarSelectedSet(groupId));
+  if (fileIds.length > 0) emit('trash-selected-similar', String(groupId), fileIds, reclaimableBytes);
 }
 
 function getDedupItemClass(fileId: number, isDuplicateSelected = false) {
@@ -587,12 +660,6 @@ async function hydrateSimilarThumbnails(groups: any[], activeGroupId: number | n
   }));
 }
 
-async function expandSimilarGroups() {
-  showAllSimilarGroups.value = true;
-  await nextTick();
-  await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
-}
-
 async function fetchSimilarGroups(append = false) {
   const scopeKey = props.dedupScanKey;
   const offset = append ? similarGroups.value.length : 0;
@@ -618,13 +685,16 @@ async function fetchSimilarGroups(append = false) {
       catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
       if (scopeKey !== props.dedupScanKey) return;
       Object.assign(firstGroup, detail);
+      selectAllSimilarItems(firstGroup);
     }
   }
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
 }
 
-async function loadMoreSimilarGroups() {
+async function loadMoreSimilarGroups(event: Event) {
+  const target = event.currentTarget as HTMLElement;
   if (isLoadingMoreSimilarGroups.value || similarGroups.value.length >= similarTotalGroups.value) return;
+  if (target.scrollTop + target.clientHeight < target.scrollHeight - 24) return;
   isLoadingMoreSimilarGroups.value = true;
   try { await fetchSimilarGroups(true); }
   finally { isLoadingMoreSimilarGroups.value = false; }
@@ -677,6 +747,7 @@ function selectDuplicatesTab() {
 }
 
 async function startSimilar() {
+  if (similarLoading.value) return;
   const needsConfirmation = similarEligibleCount.value > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD;
   const message = t('info_panel.dedup.similar.large_scan_confirm', {
     count: similarEligibleCount.value.toLocaleString(),
@@ -709,8 +780,18 @@ async function selectSimilarGroup(group: any) {
     try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
     catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
   }
+  selectAllSimilarItems(group);
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
   if (group.representative?.id) emit('select-file', group.representative.id);
+}
+
+function selectAllSimilarItems(group: any) {
+  const groupId = Number(group?.id || 0);
+  if (!groupId || selectedSimilarIdsByGroup.value.has(groupId)) return;
+  selectedSimilarIdsByGroup.value.set(
+    groupId,
+    new Set((group.items || []).map((item: any) => Number(item.file_id))),
+  );
 }
 
 function selectDuplicateGroup(group: any) {
@@ -838,6 +919,27 @@ function applyDeletedFiles(groupId: number, deletedFileIds: number[]) {
     total_size: remainingItems.length * fileSize,
   };
   emitDedupStatuses();
+}
+
+function applyDeletedSimilarFiles(groupId: number, deletedFileIds: number[]) {
+  if (deletedFileIds.length === 0) return;
+  const index = similarGroups.value.findIndex((group: any) => Number(group.id) === groupId);
+  if (index < 0) return;
+  const deleted = new Set(deletedFileIds.map(Number));
+  const group = similarGroups.value[index];
+  const items = (group.items || []).filter((item: any) => !deleted.has(Number(item.file_id)));
+  const selected = selectedSimilarIdsByGroup.value.get(groupId);
+  deleted.forEach(fileId => selected?.delete(fileId));
+  if (items.length < 2) {
+    similarGroups.value.splice(index, 1);
+    selectedSimilarIdsByGroup.value.delete(groupId);
+    if (selectedSimilarGroupId.value === groupId) {
+      const next = similarGroups.value[index] || similarGroups.value[index - 1];
+      selectedSimilarGroupId.value = next ? Number(next.id) : null;
+    }
+    return;
+  }
+  similarGroups.value[index] = { ...group, items, file_count: items.length };
 }
 
 function formatDedupFolderPath(file: any): string {
@@ -1007,7 +1109,9 @@ function startDraggingDuplicateSplitter(event: PointerEvent) {
 }
 
 function handleDuplicateSplitterMouseMove(event: PointerEvent) {
-  const container = dedupSplitPaneRef.value;
+  const container = activeTab.value === 'similar'
+    ? similarSplitPaneRef.value
+    : dedupSplitPaneRef.value;
   if (!isDraggingDuplicateSplitter.value || !container) return;
   const rect = container.getBoundingClientRect();
   const nextHeight = ((event.clientY - rect.top) / rect.height) * 100;
@@ -1254,5 +1358,6 @@ onUnmounted(() => {
 
 defineExpose({
   applyDeletedFiles,
+  applyDeletedSimilarFiles,
 });
 </script>

@@ -245,10 +245,12 @@
             <FavoriteRatingControl
               :favorite="Boolean(fileInfo?.is_favorite)"
               :rating="Number(fileInfo?.rating || 0)"
+              :culling="Number(fileInfo?.culling_flag ?? fileInfo?.cullingFlag ?? 0)"
               label-class="text-base-content/30"
               inactive-rating-class="text-base-content/70"
               @favorite="emit('toggleFavorite')"
               @rating="(rating) => emit('setRating', rating)"
+              @culling="(cullingFlag) => emit('setCulling', cullingFlag)"
             />
 
             <!-- Tags -->
@@ -466,6 +468,7 @@ const emit = defineEmits([
   'success',
   'toggleFavorite',
   'setRating',
+  'setCulling',
   'rotate',
   'quickEditTag',
   'quickEditComment',

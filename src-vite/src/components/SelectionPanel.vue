@@ -98,6 +98,7 @@
         <FavoriteRatingControl
           :favorite="multiSelectFavorite"
           :rating="multiSelectRating"
+          :culling="multiSelectCulling"
           :disabled="selectedCount === 0"
           :favorite-label="$t('info_panel.favorite_all')"
           :unfavorite-label="$t('info_panel.unfavorite_all')"
@@ -105,6 +106,7 @@
           inactive-rating-class="text-base-content/70"
           @favorite="(favorite) => $emit(favorite ? 'favoriteAll' : 'unfavoriteAll')"
           @rating="(rating) => $emit('setRatingAll', rating)"
+          @culling="(cullingFlag) => $emit('setCullingAll', cullingFlag)"
         />
         <div class="flex flex-wrap items-center gap-1">
           <PanelActionButton
@@ -247,6 +249,7 @@ defineEmits([
   'favoriteAll',
   'unfavoriteAll',
   'setRatingAll',
+  'setCullingAll',
   'tagAll',
   'commentAll',
   'rotateAll',
@@ -304,6 +307,13 @@ const multiSelectFavorite = computed(() => {
   const favorites = props.selectedFiles.map((f: any) => Boolean(f.is_favorite));
   const first = favorites[0];
   return favorites.every((favorite: boolean) => favorite === first) ? first : null;
+});
+
+const multiSelectCulling = computed(() => {
+  if (!props.selectedFiles.length) return 0;
+  const cullingFlags = props.selectedFiles.map((file: any) => Number(file.culling_flag ?? file.cullingFlag ?? 0));
+  const first = cullingFlags[0];
+  return cullingFlags.every((cullingFlag: number) => cullingFlag === first) ? first : null;
 });
 
 const multiSelectRotate = computed(() => {

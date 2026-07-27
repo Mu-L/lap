@@ -240,6 +240,12 @@
     "two_stars": "2 stars",
     "one_star": "1 star"
   },
+  "culling": {
+    "title": "Culling",
+    "picks": "Picks",
+    "rejected": "Rejected",
+    "unreviewed": "Unreviewed"
+  },
   "tag": {
     "title": "Tags",
     "add_tag": "Add new tag",
@@ -440,6 +446,7 @@
         "building_sets": "Building similar sets",
         "analyzing": "Analyzing similar photos",
         "groups_title": "Similar Sets",
+        "groups_count": "{count} similar sets",
         "load_more": "Load more",
         "error_title": "Unable to load similar photos",
         "empty_title": "No similar photos found"
@@ -1306,6 +1313,9 @@
         "print": "Print",
         "toggle_favorite": "Toggle favorite",
         "set_clear_rating": "Set / clear rating",
+        "mark_pick": "Mark as pick",
+        "mark_rejected": "Mark as rejected",
+        "mark_unreviewed": "Mark as unreviewed",
         "clear_rating": "Clear rating",
         "rate_one": "Rate 1 star",
         "rate_two": "Rate 2 stars",

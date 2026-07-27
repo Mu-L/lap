@@ -240,6 +240,12 @@
     "two_stars": "2 星",
     "one_star": "1 星"
   },
+  "culling": {
+    "title": "选片",
+    "picks": "已选",
+    "rejected": "已拒绝",
+    "unreviewed": "未筛选"
+  },
   "tag": {
     "title": "标签",
     "add_tag": "添加新标签",
@@ -440,6 +446,7 @@
         "building_sets": "建立相似组",
         "analyzing": "分析相似照片",
         "groups_title": "相似组",
+        "groups_count": "{count} 个相似组",
         "load_more": "加载更多",
         "error_title": "无法加载相似照片",
         "empty_title": "未发现相似照片"
@@ -1306,6 +1313,9 @@
         "print": "打印",
         "toggle_favorite": "切换收藏",
         "set_clear_rating": "设置 / 清除评分",
+        "mark_pick": "标记为已选",
+        "mark_rejected": "标记为已拒绝",
+        "mark_unreviewed": "标记为未筛选",
         "clear_rating": "清除评分",
         "rate_one": "评分 1 星",
         "rate_two": "评分 2 星",

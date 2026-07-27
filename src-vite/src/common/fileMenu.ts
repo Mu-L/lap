@@ -21,6 +21,9 @@ import {
   IconImageEdit,
   IconExternal,
   IconHeartFilled,
+  IconFlag,
+  IconFlagFilled,
+  IconFlagOff,
   IconBookmarkOff,
   IconSplitOn,
   IconSplitOn4,
@@ -188,6 +191,37 @@ export const useFileMenuItems = (
             action: createAction('rating-1')
           },
         ]
+      },
+      {
+        label: localeMsg.value.culling.title,
+        icon: markRaw(
+          Number(f.culling_flag ?? f.cullingFlag ?? 0) === 1
+            ? IconFlagFilled
+            : Number(f.culling_flag ?? f.cullingFlag ?? 0) === 2
+              ? IconFlagOff
+              : IconFlag,
+        ),
+        submenuOpenDelay: 200,
+        children: [
+          {
+            label: localeMsg.value.culling.picks,
+            icon: markRaw(IconFlagFilled),
+            shortcut: shortcut('meta.culling.pick'),
+            action: createAction('culling-pick'),
+          },
+          {
+            label: localeMsg.value.culling.rejected,
+            icon: markRaw(IconFlagOff),
+            shortcut: shortcut('meta.culling.reject'),
+            action: createAction('culling-reject'),
+          },
+          {
+            label: localeMsg.value.culling.unreviewed,
+            icon: markRaw(IconFlag),
+            shortcut: shortcut('meta.culling.unreviewed'),
+            action: createAction('culling-unreviewed'),
+          },
+        ],
       },
       {
         label: localeMsg.value.menu.meta.tag,

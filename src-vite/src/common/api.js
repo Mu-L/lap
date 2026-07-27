@@ -1383,6 +1383,19 @@ export async function setFileRating(fileId, rating) {
   return null;
 }
 
+// set file culling status (0: unreviewed, 1: pick, 2: reject)
+export async function setFileCullingFlag(fileId, cullingFlag) {
+  try {
+    const result = await invoke('set_file_culling_flag', { fileId, cullingFlag });
+    if (result !== null && result !== undefined) {
+      return result;
+    }
+  } catch (error) {
+    console.log('Failed to set file culling flag:', error);
+  }
+  return null;
+}
+
 export async function batchUpdateFileMetadata(params) {
   try {
     return await invoke('batch_update_file_metadata', { params });

@@ -298,6 +298,7 @@ fn get_files_by_sizes(conn: &Connection) -> Result<Vec<AFile>, String> {
                 duration: row.get(13)?,
                 is_favorite: row.get(14)?,
                 rating: row.get(15)?,
+                culling_flag: None,
                 rotate: row.get(16)?,
                 comments: row.get(17)?,
                 has_tags: row.get(18)?,

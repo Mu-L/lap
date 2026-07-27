@@ -117,6 +117,11 @@ fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_similarity_items_file ON similarity_group_items(file_id);
             ",
         },
+        Migration {
+            version: 11,
+            description: "Add file culling status",
+            sql: "",
+        },
     ]
 }
 
@@ -368,6 +373,19 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                     CREATE INDEX IF NOT EXISTS idx_folder_scan_state_scanner_version
                         ON folder_scan_state(scanner, version);",
                 ).map_err(|e| format!("Migration 9 failed creating folder scan state: {}", e))?;
+            } else if migration.version == 11 {
+                if !table_has_column(conn, "afiles", "culling_flag")? {
+                    conn.execute(
+                        "ALTER TABLE afiles ADD COLUMN culling_flag INTEGER NOT NULL DEFAULT 0",
+                        [],
+                    )
+                    .map_err(|e| format!("Migration 11 failed adding culling_flag: {}", e))?;
+                }
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_afiles_culling_flag ON afiles(culling_flag)",
+                    [],
+                )
+                .map_err(|e| format!("Migration 11 failed adding culling_flag index: {}", e))?;
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;

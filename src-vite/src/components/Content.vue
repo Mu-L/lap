@@ -413,6 +413,8 @@
             @select-file="handleDedupSelectFile"
             @preview-file="handleDedupPreviewFile"
             @trash-selected-duplicates="handleDedupTrashSelectedDuplicates"
+            @trash-selected-similar="handleDedupTrashSelectedSimilar"
+            @compare-selected-photos="handleDedupCompareSelectedPhotos"
             @dedup-status-updated="dedupStatuses = $event"
           />
           <SelectionPanel
@@ -435,6 +437,7 @@
             @favorite-all="selectModeSetFavorites(true)"
             @unfavorite-all="selectModeSetFavorites(false)"
             @set-rating-all="selectModeSetRatings"
+            @set-culling-all="selectModeSetCullingFlags"
             @tag-all="clickTag"
             @comment-all="openCommentEditor"
             @rotate-all="clickRotate"
@@ -450,6 +453,7 @@
             @failed="onFileSaved(false)"
             @toggleFavorite="toggleFavorite"
             @setRating="setSelectedFileRating"
+            @setCulling="setSelectedFileCullingFlag"
             @rotate="clickRotate"
             @quick-edit-tag="clickTag"
             @quick-edit-comment="openCommentEditor"
@@ -650,7 +654,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getGroupedQueryRows, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
          copyImages, renameFile, moveFile, moveFileOutsideLibrary, copyFile, deleteFile, deleteFilePermanently, batchDeleteFiles, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
-         setFileRotate, setFileFavorite, setFileRating, batchUpdateFileMetadata, getTagsForFile, searchSimilarImages, generateEmbedding,
+         setFileRotate, setFileFavorite, setFileRating, setFileCullingFlag, batchUpdateFileMetadata, getTagsForFile, searchSimilarImages, generateEmbedding,
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
@@ -660,7 +664,7 @@ import { config, libConfig } from '@/common/config';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { DATE_SORT, GROUP, LIB_ITEM, RATE, SIDEBAR } from '@/common/constants';
+import { CULLING, DATE_SORT, GROUP, LIB_ITEM, RATE, SIDEBAR } from '@/common/constants';
 import { isWin, isMac, isLinux, setTheme, separator,
          formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl, getAssetSrc, getPreviewUrl,
          getCachedThumbnailDataUrl,
@@ -719,6 +723,7 @@ import {
   IconPrev,
   IconAdd,
   IconPhotoAll,
+  IconFlag,
   IconStar,
   IconStarFilled,
   IconSimilar,
@@ -1910,10 +1915,20 @@ const ratingActions: Array<{ actionId: ShortcutActionId; rating: number }> = [
   { actionId: 'meta.rating.four', rating: 4 },
   { actionId: 'meta.rating.five', rating: 5 },
 ];
+const cullingActions: Array<{ actionId: ShortcutActionId; cullingFlag: number }> = [
+  { actionId: 'meta.culling.pick', cullingFlag: 1 },
+  { actionId: 'meta.culling.reject', cullingFlag: 2 },
+  { actionId: 'meta.culling.unreviewed', cullingFlag: 0 },
+];
 
 function getMatchedRating(event: KeyboardEvent) {
   const match = ratingActions.find(({ actionId }) => matchesShortcut(actionId, event, shortcutPlatform));
   return match ? match.rating : null;
+}
+
+function getMatchedCulling(event: KeyboardEvent) {
+  const match = cullingActions.find(({ actionId }) => matchesShortcut(actionId, event, shortcutPlatform));
+  return match ? match.cullingFlag : null;
 }
 
 function getMatchedViewBackground(event: KeyboardEvent): number | null {
@@ -2474,6 +2489,7 @@ const currentQueryParams = ref({
   locationName: "",
   isFavorite: false,
   rating: -1,
+  cullingFlag: -1,
   tagId: 0,
   personId: 0,
 });
@@ -2511,6 +2527,7 @@ watch(contentReady, (ready) => {
   void tauriEmit('library-item-count-updated', {
     item: libConfig.library.item,
     rating: libConfig.rating.item,
+    cullingItem: libConfig.culling.item,
     smartId: libConfig.library.smartId,
     count: totalFileCount.value,
   });
@@ -2591,6 +2608,7 @@ const currentTitleIcon = computed(() => {
               case LIB_ITEM.ALL: return IconPhotoAll;
               case LIB_ITEM.FAV: return IconHeartFilled;
               case LIB_ITEM.RATINGS: return libConfig.rating.item > 0 || libConfig.rating.item === RATE.ALL ? IconStarFilled : IconStar;
+              case LIB_ITEM.CULLING: return IconFlag;
               case LIB_ITEM.SUBJECTS: return IconBolt;
               case LIB_ITEM.TODAY: return IconHistory;
               default: return IconPhotoAll;
@@ -3082,6 +3100,24 @@ function handleItemAction(payload: { action: string, index: number }) {
     return;
   }
 
+  if (action.startsWith('culling-')) {
+    const cullingFlag = action === 'culling-pick'
+      ? 1
+      : action === 'culling-reject'
+        ? 2
+        : action === 'culling-unreviewed'
+          ? 0
+          : -1;
+    if (cullingFlag >= 0) {
+      if (selectMode.value) {
+        void selectModeSetCullingFlags(cullingFlag);
+      } else {
+        void setSelectedFileCullingFlag(cullingFlag);
+      }
+    }
+    return;
+  }
+
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
     'print': () => void printImage(selectedItemIndex.value),
@@ -3413,6 +3449,17 @@ function handleLocalKeyDown(event: KeyboardEvent) {
       void selectModeSetRatings(ratingShortcut);
     } else {
       void setSelectedFileRating(ratingShortcut);
+    }
+    return;
+  }
+
+  const cullingShortcut = getMatchedCulling(event);
+  if (cullingShortcut !== null) {
+    event.preventDefault();
+    if (selectMode.value) {
+      void selectModeSetCullingFlags(cullingShortcut);
+    } else {
+      void setSelectedFileCullingFlag(cullingShortcut);
     }
     return;
   }
@@ -4651,6 +4698,7 @@ watch(
     libConfig.smartAlbum.type, libConfig.smartAlbum.id, JSON.stringify(libConfig.smartAlbums || []), // smart album
     uiStore.smartAlbumCountRequestTick,
     libConfig.rating.item, // rating
+    libConfig.culling.item, // culling
     config.search.fileType, config.search.sortType, config.search.sortOrder, // search and sort 
     config.settings.showSubfolderFiles,                                            // album folder view
     config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting
@@ -5403,6 +5451,7 @@ async function getFileList(
     locationName = '', 
     isFavorite = false, 
     rating = -1,
+    cullingFlag = -1,
     tagId = 0,
     personId = 0
   } = {},
@@ -5434,6 +5483,7 @@ async function getFileList(
     locationName,
     isFavorite,
     rating,
+    cullingFlag,
     tagId,
     personId,
   };
@@ -6043,21 +6093,37 @@ async function updateContent(force = false) {
         break;
       case LIB_ITEM.RATINGS:
         if (libConfig.rating.item === RATE.ALL) {
-          contentTitle.value = localeMsg.value.rating.rated;
+          contentTitle.value = `${localeMsg.value.rating.title} > ${localeMsg.value.rating.rated}`;
           getFileList({ rating: RATE.ALL }, requestId);
         } else if (libConfig.rating.item === RATE.UNRATED) {
-          contentTitle.value = localeMsg.value.rating.unrated;
+          contentTitle.value = `${localeMsg.value.rating.title} > ${localeMsg.value.rating.unrated}`;
           getFileList({ rating: RATE.UNRATED }, requestId);
         } else if ((libConfig.rating.item || 0) > 0) {
           const rating = Number(libConfig.rating.item || 0);
           const key = ratingLabelKey(rating);
-          contentTitle.value = key ? localeMsg.value.rating[key] : `${rating}★`;
+          contentTitle.value = `${localeMsg.value.rating.title} > ${key ? localeMsg.value.rating[key] : `${rating}★`}`;
           getFileList({ rating }, requestId);
         } else {
           contentTitle.value = localeMsg.value.rating.title;
           showEmptyContent(requestId);
         }
         break;
+      case LIB_ITEM.CULLING: {
+        const cullingItem = libConfig.culling.item;
+        const label = cullingItem === CULLING.PICK
+          ? localeMsg.value.culling.picks
+          : cullingItem === CULLING.REJECT
+            ? localeMsg.value.culling.rejected
+            : localeMsg.value.culling.unreviewed;
+        contentTitle.value = `${localeMsg.value.culling.title} > ${label}`;
+        const cullingFlag = cullingItem === CULLING.PICK
+          ? 1
+          : cullingItem === CULLING.REJECT
+            ? 2
+            : 0;
+        getFileList({ cullingFlag }, requestId);
+        break;
+      }
       case LIB_ITEM.SUBJECTS: {
         const smartId = libConfig.library.smartId;
         if (!smartId) {
@@ -7096,7 +7162,12 @@ const onTrashFile = async () => {
   const shouldUpdateDedup =
     isDedupPanelOpen.value &&
     !!dedupTrashGroupKey.value;
-  const currentDedupGroupId = Number(dedupTrashGroupKey.value);
+  const isSimilarDedupTrash = dedupTrashGroupKey.value.startsWith('similar:');
+  const currentDedupGroupId = Number(
+    isSimilarDedupTrash
+      ? dedupTrashGroupKey.value.slice('similar:'.length)
+      : dedupTrashGroupKey.value,
+  );
   try {
     if (dedupDeleteFileIds.value.length > 0) {
       const ids = [...dedupDeleteFileIds.value];
@@ -7239,7 +7310,11 @@ const onTrashFile = async () => {
     updateSelectedImage(selectedItemIndex.value);
 
     if (shouldUpdateDedup && deletedFileIds.length > 0) {
-      dedupPaneRef.value?.applyDeletedFiles(currentDedupGroupId, deletedFileIds);
+      if (isSimilarDedupTrash) {
+        dedupPaneRef.value?.applyDeletedSimilarFiles(currentDedupGroupId, deletedFileIds);
+      } else {
+        dedupPaneRef.value?.applyDeletedFiles(currentDedupGroupId, deletedFileIds);
+      }
     }
   } catch (error) {
     console.error(`Failed to ${permanently ? 'permanently delete' : 'trash'} file(s):`, error);
@@ -7516,6 +7591,43 @@ const selectModeSetRatings = async (rating: number) => {
     }
   }
 }
+
+const setSelectedFileCullingFlag = async (cullingFlag: number) => {
+  if (selectedItemIndex.value < 0) return;
+  const item = fileList.value[selectedItemIndex.value];
+  if (!item) return;
+  const normalized = Math.max(0, Math.min(2, cullingFlag));
+  const previous = Number(item.culling_flag ?? item.cullingFlag ?? 0);
+  item.culling_flag = normalized;
+  const result = await setFileCullingFlag(item.id, normalized);
+  if (result === null) {
+    item.culling_flag = previous;
+    return;
+  }
+  syncFileMetaToImageViewer(item.id, { culling_flag: normalized });
+  void tauriEmit('culling-status-updated');
+};
+
+const selectModeSetCullingFlags = async (cullingFlag: number) => {
+  if (!selectMode.value || selectedCount.value === 0) return;
+  const items = await getActionableSelectedItemsForAction();
+  if (!items) return;
+  if (!await confirmLargeBatch(items.length)) return;
+  const normalized = Math.max(0, Math.min(2, cullingFlag));
+  const result = await batchUpdateFileMetadata({
+    fileIds: items.map(item => item.id),
+    cullingFlag: normalized,
+  });
+  if (result === null) return;
+  items.forEach(item => {
+    item.culling_flag = normalized;
+  });
+  const activeItem = fileList.value[selectedItemIndex.value];
+  if (activeItem?.isSelected) {
+    syncFileMetaToImageViewer(activeItem.id, { culling_flag: normalized });
+  }
+  void tauriEmit('culling-status-updated');
+};
 
 // slide show
 let slideShowIntervalId: NodeJS.Timeout | null = null;
@@ -8056,6 +8168,20 @@ const handleDedupPreviewFile = (fileId: number) => {
 const handleDedupTrashSelectedDuplicates = (groupKey: string, fileIds: number[], reclaimableBytes: number) => {
   if (!groupKey || !fileIds || fileIds.length === 0) return;
   openTrashMsgbox(reclaimableBytes, groupKey, fileIds);
+};
+
+const handleDedupTrashSelectedSimilar = (groupKey: string, fileIds: number[], reclaimableBytes: number) => {
+  if (!groupKey || !fileIds || fileIds.length === 0) return;
+  openTrashMsgbox(reclaimableBytes, `similar:${groupKey}`, fileIds);
+};
+
+const handleDedupCompareSelectedPhotos = (files: any[]) => {
+  const photos = files.filter(file => file?.file_type === 1 || file?.file_type === 3);
+  if (photos.length < 2) return;
+  void openImageViewer(0, true, false, {
+    files: photos,
+    forceSplitCount: photos.length === 2 ? 2 : 4,
+  });
 };
 
 // file type options

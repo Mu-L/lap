@@ -2159,12 +2159,21 @@ pub fn set_file_rating(file_id: i64, rating: i32) -> Result<usize, String> {
         .map_err(|e| format!("Error while setting file rating: {}", e))
 }
 
+/// Set a file's culling status (0: unreviewed, 1: pick, 2: reject).
+#[tauri::command]
+pub fn set_file_culling_flag(file_id: i64, culling_flag: i32) -> Result<usize, String> {
+    let clamped = culling_flag.clamp(0, 2);
+    AFile::update_column(file_id, "culling_flag", &clamped)
+        .map_err(|e| format!("Error while setting file culling flag: {}", e))
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchFileMetadataUpdate {
     pub file_ids: Vec<i64>,
     pub is_favorite: Option<bool>,
     pub rating: Option<i32>,
+    pub culling_flag: Option<i32>,
     pub rotate_delta: Option<i32>,
     pub comment: Option<String>,
 }
@@ -2175,6 +2184,7 @@ pub fn batch_update_file_metadata(params: BatchFileMetadataUpdate) -> Result<usi
         &params.file_ids,
         params.is_favorite,
         params.rating,
+        params.culling_flag,
         params.rotate_delta,
         params.comment.as_deref(),
     )

@@ -117,6 +117,22 @@
               />
             </template>
           </ContextMenu>
+          <ContextMenu
+            :menuItems="cullingMenuItems"
+            :disabled="fileIndex < 0 || isSlideShow || !canInteract"
+            @open-change="handleMenuOpenChange"
+            @click.stop
+          >
+            <template #trigger="{ toggle }">
+              <TButton
+                :icon="Number(file?.culling_flag ?? file?.cullingFlag ?? 0) === 1 ? IconFlagFilled : Number(file?.culling_flag ?? file?.cullingFlag ?? 0) === 2 ? IconFlagOff : IconFlag"
+                :disabled="fileIndex < 0 || isSlideShow || !canInteract"
+                :selected="Number(file?.culling_flag ?? file?.cullingFlag ?? 0) > 0 && !isSlideShow"
+                :tooltip="$t('culling.title')"
+                @click.stop="toggle"
+              />
+            </template>
+          </ContextMenu>
           <TButton
             :icon="IconTag"
             :disabled="fileIndex < 0 || isSlideShow || !canInteract"
@@ -423,6 +439,9 @@ import {
   IconMore,
   IconHeart,
   IconHeartFilled,
+  IconFlag,
+  IconFlagFilled,
+  IconFlagOff,
   IconStar,
   IconStarFilled,
   IconTag,
@@ -713,6 +732,27 @@ const ratingMenuItems = computed(() => {
   ];
 });
 
+const cullingMenuItems = computed(() => [
+  {
+    label: localeMsg.value.culling.picks,
+    icon: Number(props.file?.culling_flag ?? props.file?.cullingFlag ?? 0) === 1 ? IconFlagFilled : IconFlag,
+    shortcut: shortcut('meta.culling.pick'),
+    action: () => emit('item-action', { action: 'culling-pick', index: props.fileIndex }),
+  },
+  {
+    label: localeMsg.value.culling.rejected,
+    icon: Number(props.file?.culling_flag ?? props.file?.cullingFlag ?? 0) === 2 ? IconFlagFilled : IconFlagOff,
+    shortcut: shortcut('meta.culling.reject'),
+    action: () => emit('item-action', { action: 'culling-reject', index: props.fileIndex }),
+  },
+  {
+    label: localeMsg.value.culling.unreviewed,
+    icon: Number(props.file?.culling_flag ?? props.file?.cullingFlag ?? 0) === 0 ? IconFlagFilled : IconFlag,
+    shortcut: shortcut('meta.culling.unreviewed'),
+    action: () => emit('item-action', { action: 'culling-unreviewed', index: props.fileIndex }),
+  },
+]);
+
 const slideShowIntervalOptions = [1, 3, 5, 10, 15, 30];
 const slideShowIntervalMenuItems = computed(() => {
   const currentInterval = getSlideShowInterval(effectiveSlideShowIntervalIndex.value);
@@ -749,7 +789,22 @@ const normalizedFileRotate = computed(() => {
 const quickViewStatusBadges = computed<StatusBadge[]>(() => {
   const badges: StatusBadge[] = [];
   const rating = Number(props.file?.rating || 0);
+  const cullingFlag = Number(props.file?.culling_flag ?? props.file?.cullingFlag ?? 0);
   const metaIcons: StatusBadge['icons'] = [];
+
+  if (cullingFlag === 1) {
+    badges.push({
+      key: 'culling-pick',
+      icon: IconFlagFilled,
+      iconClass: 'text-primary',
+    });
+  } else if (cullingFlag === 2) {
+    badges.push({
+      key: 'culling-reject',
+      icon: IconFlagOff,
+      iconClass: 'text-error',
+    });
+  }
 
   if (props.file?.is_favorite) {
     badges.push({

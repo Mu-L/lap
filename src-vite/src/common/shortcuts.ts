@@ -39,6 +39,9 @@ export type ShortcutActionId =
   | 'meta.rating.three'
   | 'meta.rating.four'
   | 'meta.rating.five'
+  | 'meta.culling.pick'
+  | 'meta.culling.reject'
+  | 'meta.culling.unreviewed'
   | 'meta.tag'
   | 'meta.comment'
   | 'meta.rotate'
@@ -288,6 +291,21 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
     defaultBindings: [{ key: '5', label: '5' }],
   },
   {
+    id: 'meta.culling.pick',
+    contexts: ['content', 'media-viewer', 'image-viewer'],
+    defaultBindings: [{ code: 'KeyP', allowShift: true, label: 'P' }],
+  },
+  {
+    id: 'meta.culling.reject',
+    contexts: ['content', 'media-viewer', 'image-viewer'],
+    defaultBindings: [{ code: 'KeyX', allowShift: true, label: 'X' }],
+  },
+  {
+    id: 'meta.culling.unreviewed',
+    contexts: ['content', 'media-viewer', 'image-viewer'],
+    defaultBindings: [{ code: 'KeyU', allowShift: true, label: 'U' }],
+  },
+  {
     id: 'meta.tag',
     contexts: ['content', 'media-viewer', 'image-viewer'],
     defaultBindings: [{ code: 'KeyT', allowShift: true, label: 'T' }],
@@ -404,7 +422,7 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
   {
     id: 'slideshow.toggle',
     contexts: ['content', 'media-viewer', 'image-viewer'],
-    defaultBindings: [{ code: 'KeyP', allowShift: true, label: 'P' }],
+    defaultBindings: [{ key: ' ', code: 'Space', label: 'Space' }],
   },
 ] as const;
 

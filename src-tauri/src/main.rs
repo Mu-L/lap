@@ -336,6 +336,7 @@ async fn main() {
             t_cmds::set_folder_search_excluded,
             t_cmds::set_file_favorite,
             t_cmds::set_file_rating,
+            t_cmds::set_file_culling_flag,
             t_cmds::batch_update_file_metadata,
             // tag
             t_cmds::get_all_tags,
