@@ -99,6 +99,7 @@
                     :lens-options="lensOptions"
                     :location-options="locationOptions"
                     :file-type-options="fileTypeOptions"
+                    :culling-options="cullingOptions"
                     :media-subtype-options="mediaSubtypeOptions"
                     :extension-options="extensionOptions"
                   />
@@ -190,6 +191,12 @@ const fileTypeOptions = computed(() => [
   { value: 2, label: localeMsg.value.toolbar.filter?.file_type_options?.[3] || 'Video' },
 ]);
 
+const cullingOptions = computed(() => [
+  { value: 0, label: t('culling.unreviewed') },
+  { value: 1, label: t('culling.picks') },
+  { value: 2, label: t('culling.rejected') },
+]);
+
 const mediaSubtypeOptions = computed(() => [
   { value: 'live_photo', label: t('album.smart_edit.media_subtypes.live_photo') },
 ]);
@@ -224,6 +231,7 @@ const fieldOptions = computed(() => [
   { value: 'date_modified', label: t('album.smart_edit.fields.date_modified') },
   { value: 'favorite', label: t('album.smart_edit.fields.favorite') },
   { value: 'rating', label: t('album.smart_edit.fields.rating') },
+  { value: 'culling', label: t('album.smart_edit.fields.culling') },
   { value: 'tag', label: t('album.smart_edit.fields.tag') },
   { value: 'person', label: t('album.smart_edit.fields.person') },
   { value: 'file_type', label: t('album.smart_edit.fields.file_type') },
@@ -281,6 +289,7 @@ function getOperatorOptions(field: string) {
   if (field === 'name') return [op('contains'), op('not_contains')];
   if (['file_type', 'media_subtype', 'extension', 'camera', 'lens', 'location'].includes(field)) return [op('is'), op('is_not')];
   if (field === 'favorite' || field === 'has_gps') return [op('is')];
+  if (field === 'culling') return [op('is'), op('is_not')];
   if (field === 'orientation') return [op('is')];
   if (field === 'rating') return [op('is'), op('is_not'), op('gt'), op('gte'), op('lt'), op('lte'), op('between'), op('empty'), op('not_empty')];
   if (isDateRuleField(field)) return [op('is'), op('before'), op('after'), op('between'), op('in_last'), op('older_than')];
@@ -306,6 +315,7 @@ function setDefaultRuleValue(rule: any) {
   else if (rule.field === 'favorite' || rule.field === 'has_gps') rule.value = true;
   else if (rule.field === 'orientation') rule.value = 'landscape';
   else if (rule.field === 'rating') rule.value = rule.operator === 'between' ? { min: 1, max: 5 } : 1;
+  else if (rule.field === 'culling') rule.value = 0;
   else if (isDateRuleField(rule.field)) {
     if (rule.operator === 'between') rule.value = { start: dateToUnix(new Date()), end: dateToUnix(addDays(new Date(), 1)) };
     else if (isRelativeDateOperator(rule.operator)) rule.value = { amount: 7, unit: 'day' };
@@ -624,6 +634,7 @@ const RuleValueControl = defineComponent({
     lensOptions: { type: Array, default: () => [] },
     locationOptions: { type: Array, default: () => [] },
     fileTypeOptions: { type: Array, default: () => [] },
+    cullingOptions: { type: Array, default: () => [] },
     mediaSubtypeOptions: { type: Array, default: () => [] },
     extensionOptions: { type: Array, default: () => [] },
   },
@@ -844,6 +855,7 @@ const RuleValueControl = defineComponent({
     return () => {
       if (['empty', 'not_empty'].includes(props.rule.operator) && !isDateRuleField(props.rule.field)) return h('span', { class: 'text-xs text-base-content/30' }, '-');
       if (props.rule.field === 'file_type') return fileTypeInput();
+      if (props.rule.field === 'culling') return selectInput(props.cullingOptions);
       if (props.rule.field === 'media_subtype') return mediaSubtypeInput();
       if (props.rule.field === 'extension') return extensionInput();
       if (props.rule.field === 'favorite' || props.rule.field === 'has_gps') return boolSelect();

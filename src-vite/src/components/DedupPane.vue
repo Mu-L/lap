@@ -32,7 +32,7 @@
     >
       <template v-if="activeTab === 'similar'">
         <div v-if="similarLoading" class="p-4 flex-1 flex items-center justify-center">
-          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+          <div class="text-center text-base-content/30 space-y-3 max-w-65">
             <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
             <p class="text-xs font-medium">{{ similarProgressLabel }}</p>
             <progress class="progress progress-primary w-full" :value="similarStatus.current" :max="Math.max(1, similarStatus.total)"></progress>
@@ -40,7 +40,7 @@
           </div>
         </div>
         <div v-else-if="similarError" class="p-4 flex-1 flex items-center justify-center">
-          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+          <div class="text-center text-base-content/30 space-y-3 max-w-65">
             <p class="text-xs font-medium">{{ $t('info_panel.dedup.similar.error_title') }}</p>
             <PanelActionButton
               class="mx-auto"
@@ -53,11 +53,11 @@
           </div>
         </div>
         <div v-else-if="similarGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
-          <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+          <div class="text-center text-base-content/30 space-y-3 max-w-65">
             <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
-            <p class="text-xs font-medium">{{ similarHasScanned ? $t('info_panel.dedup.similar.empty_title') : $t('info_panel.dedup.similar.find_title') }}</p>
-            <p v-if="!similarHasScanned" class="text-xs text-base-content/30">{{ $t('info_panel.dedup.similar.description') }}</p>
-            <PanelActionButton v-if="!similarHasScanned" class="mx-auto" :icon="IconSimilar" primary :disabled="similarEligibleCount === 0 || similarLoading" @click="startSimilar">
+            <p v-if="similarHasScanned" class="text-xs font-medium">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
+            <p v-else class="text-xs leading-5 text-base-content/50">{{ $t('info_panel.dedup.similar.description') }}</p>
+            <PanelActionButton v-if="!similarHasScanned" :icon="IconSimilar" :disabled="similarEligibleCount === 0 || similarLoading" @click="startSimilar">
               {{ $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
             </PanelActionButton>
           </div>
@@ -114,13 +114,6 @@
               <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
                 {{ $t('info_panel.dedup.actions_title') }}
               </span>
-              <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
-                <template v-if="selectedSimilarCount > 0">
-                  {{ $t('toolbar.filter.select_count', { count: selectedSimilarCount.toLocaleString() }) }}
-                  ({{ formatFileSize(selectedSimilarBytes) }})
-                </template>
-                <template v-else>{{ $t('info_panel.select_hint') }}</template>
-              </span>
             </div>
             <div class="flex flex-wrap gap-1">
               <PanelActionButton :icon="IconCheckNone" :disabled="selectedSimilarCount === 0" @click="deselectSimilarGroup(activeSimilarGroup.id)">
@@ -130,7 +123,7 @@
                 {{ $t('menu.file.compare_selected_images') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
-                {{ $t('info_panel.dedup.move_selected_to_trash') }}
+                {{ $t('info_panel.dedup.move_selected_to_trash', { count: selectedSimilarCount.toLocaleString(), size: formatFileSize(selectedSimilarBytes) }) }}
               </PanelActionButton>
             </div>
             <div class="space-y-2.5">
@@ -179,14 +172,14 @@
       </template>
       <template v-else>
       <div v-if="isDedupLoading" class="p-4 flex-1 flex items-center justify-center">
-        <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+        <div class="text-center text-base-content/30 space-y-3 max-w-65">
           <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.scanning') }}</p>
         </div>
       </div>
 
       <div v-else-if="dedupScanError" class="p-4 flex-1 flex items-center justify-center">
-        <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+        <div class="text-center text-base-content/30 space-y-3 max-w-65">
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.error_title') }}</p>
           <p class="text-xs text-base-content/30">{{ $t('info_panel.dedup.error_desc') }}</p>
           <PanelActionButton
@@ -201,7 +194,7 @@
       </div>
 
       <div v-else-if="duplicateGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
-        <div class="text-center text-base-content/30 space-y-3 max-w-[260px]">
+        <div class="text-center text-base-content/30 space-y-3 max-w-65">
           <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.empty_title') }}</p>
           <p class="text-xs text-base-content/30">{{ $t('info_panel.dedup.empty_desc') }}</p>
@@ -270,13 +263,6 @@
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.actions_title') }}
             </span>
-            <span class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70">
-              <template v-if="selectedDeleteCount > 0">
-                {{ $t('toolbar.filter.select_count', { count: selectedDeleteCount.toLocaleString() }) }}
-                ({{ formatFileSize(selectedDeleteBytes) }})
-              </template>
-              <template v-else>{{ $t('info_panel.select_hint') }}</template>
-            </span>
           </div>
 
           <div class="flex flex-wrap gap-1">
@@ -292,7 +278,7 @@
               danger
               @click="trashSelectedDuplicates(activeGroup.id, selectedDeleteBytes)"
             >
-              {{ $t('info_panel.dedup.move_selected_to_trash') }}
+              {{ $t('info_panel.dedup.move_selected_to_trash', { count: selectedDeleteCount.toLocaleString(), size: formatFileSize(selectedDeleteBytes) }) }}
             </PanelActionButton>
           </div>
           <div class="space-y-2.5">
@@ -379,6 +365,15 @@
       </template>
     </div>
   </div>
+  <MessageBox
+    v-if="showLargeSimilarScanConfirm"
+    :title="$t('info_panel.dedup.tabs.similar')"
+    :message="$t('info_panel.dedup.similar.large_scan_confirm', { count: similarEligibleCount.toLocaleString() })"
+    :OkText="$t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() })"
+    :cancelText="$t('msgbox.cancel')"
+    @ok="confirmLargeSimilarScan"
+    @cancel="showLargeSimilarScanConfirm = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -395,6 +390,7 @@ import {
 } from '@/common/utils';
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
+import MessageBox from '@/components/MessageBox.vue';
 import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconTrash } from '@/common/icons';
 import {
   dedupStartScan,
@@ -474,6 +470,7 @@ const similarEligibleCount = ref(0);
 const similarHasScanned = ref(false);
 const similarError = ref(false);
 const similarLoadedScope = ref('');
+const showLargeSimilarScanConfirm = ref(false);
 const unlistenSimilarProgress = ref<null | (() => void)>(null);
 const dedupScanError = ref(false);
 const unlistenDedupProgress = ref<null | (() => void)>(null);
@@ -744,15 +741,26 @@ async function openSimilarTab(forceReload = false) {
 function selectDuplicatesTab() {
   activeTab.value = 'duplicates';
   config.dedup.activeTab = 'duplicates';
+  const keepFileId = Number(activeGroup.value?.keepItem?.file_id || 0);
+  if (keepFileId > 0) emit('select-file', keepFileId);
 }
 
 async function startSimilar() {
   if (similarLoading.value) return;
-  const needsConfirmation = similarEligibleCount.value > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD;
-  const message = t('info_panel.dedup.similar.large_scan_confirm', {
-    count: similarEligibleCount.value.toLocaleString(),
-  });
-  if (needsConfirmation && !window.confirm(message)) return;
+  if (similarEligibleCount.value > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD) {
+    showLargeSimilarScanConfirm.value = true;
+    return;
+  }
+  await runSimilarScan();
+}
+
+async function confirmLargeSimilarScan() {
+  showLargeSimilarScanConfirm.value = false;
+  await runSimilarScan();
+}
+
+async function runSimilarScan() {
+  if (similarLoading.value) return;
   similarLoading.value = true;
   try {
     const sourceVersion = Number(props.dedupScanKey.match(/\|version:(\d+)$/)?.[1] || 0);
@@ -1257,17 +1265,20 @@ async function triggerBackendDedup(force = false) {
 watch(
   () => props.dedupScanKey,
   (newKey) => {
-    // Similar scans are scoped to the full content result. Never retain a previous scope's groups.
+    // Similar scans are scoped to the current file list. A refreshed list must
+    // start from a clean state and offer analysis for its new scope.
     similarGroups.value = [];
     similarTotalGroups.value = 0;
     isLoadingMoreSimilarGroups.value = false;
-    showAllSimilarGroups.value = false;
+    selectedSimilarIdsByGroup.value.clear();
     selectedSimilarGroupId.value = null;
     similarEligibleCount.value = 0;
     similarHasScanned.value = false;
     similarError.value = false;
     similarLoadedScope.value = '';
     similarLoading.value = false;
+    showLargeSimilarScanConfirm.value = false;
+    selectedGroupId.value = null;
     if (!newKey) {
       scanGeneration.value++;
       stopDedupStatusPolling();
@@ -1291,7 +1302,7 @@ watch(selectedGroupId, async (groupId, prevGroupId) => {
   await nextTick();
   scrollSelectedDuplicateGroupIntoView(groupId);
   await hydrateGroupThumbnails(rawGroups.value, groupId);
-  if (selectedGroupId.value !== groupId) return;
+  if (selectedGroupId.value !== groupId || activeTab.value !== 'duplicates') return;
   const group = duplicateGroups.value.find((item: any) => item.id === groupId);
   const keepId = group?.keepItem?.file_id;
   if (keepId) {

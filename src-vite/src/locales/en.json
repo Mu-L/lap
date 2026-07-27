@@ -102,6 +102,7 @@
         "extension": "Extension",
         "favorite": "Favorite",
         "rating": "Rating",
+        "culling": "Culling",
         "date": "Date",
         "date_taken": "Taken date",
         "date_created": "Created date",
@@ -436,10 +437,9 @@
       "similar_title": "Similar photos are coming next",
       "similar_desc": "This tab will be used for visually similar photos after the exact-duplicate workflow is expanded.",
       "similar": {
-        "find_title": "Find similar photos",
-        "description": "Analyze visually similar photos in the current results.",
+        "description": "Identify visually similar photos in the current results.",
         "analyze": "Analyze {count} photos",
-        "large_scan_confirm": "Analyze {count} photos? This may take several minutes.",
+        "large_scan_confirm": "Analyze {count} photos to find visually similar ones? This may take several minutes.",
         "cancel": "Cancel",
         "preparing": "Preparing current results",
         "finding_matches": "Finding nearest matches",
@@ -462,8 +462,8 @@
         "oldest_modified": "Prefer oldest modified"
       },
       "keep_label": "Keep",
-      "move_selected_to_trash": "Move selected to trash",
-      "set_keep": "Keep this",
+      "move_selected_to_trash": "Move to trash ({count} selected · {size})",
+      "set_keep": "Keep",
       "duplicate_files_summary": "{count} duplicates ({size})"
     }
   },

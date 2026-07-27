@@ -102,6 +102,7 @@
         "extension": "Extension",
         "favorite": "Favori",
         "rating": "Note",
+        "culling": "Sélection",
         "date": "Date",
         "date_taken": "Date de prise",
         "date_created": "Date de création",
@@ -436,8 +437,7 @@
       "similar_title": "Les photos similaires arrivent ensuite",
       "similar_desc": "Cet onglet sera utilisé pour les photos visuellement similaires lorsque le flux des doublons exacts sera étendu.",
       "similar": {
-        "find_title": "Trouver des photos similaires",
-        "description": "Analysez les photos visuellement similaires dans les résultats actuels.",
+        "description": "Trouvez des photos visuellement similaires dans les résultats actuels.",
         "analyze": "Analyser {count} photos",
         "large_scan_confirm": "Analyser {count} photos ? Cela peut prendre plusieurs minutes.",
         "cancel": "Annuler",
@@ -462,8 +462,8 @@
         "oldest_modified": "Préférer le plus ancien (modification)"
       },
       "keep_label": "Conserver",
-      "move_selected_to_trash": "Mettre la sélection à la corbeille",
-      "set_keep": "Conserver celui-ci",
+      "move_selected_to_trash": "Mettre à la corbeille ({count} sélectionnés · {size})",
+      "set_keep": "Conserver",
       "duplicate_files_summary": "{count} doublons ({size})"
     }
   },

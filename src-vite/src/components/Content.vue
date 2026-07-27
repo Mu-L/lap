@@ -402,7 +402,6 @@
           <DedupPane
             v-if="!selectMode && config.rightPanel.mode === 'dedup'"
             ref="dedupPaneRef"
-            :key="dedupScanKey"
             :file-list="fileList"
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
@@ -895,6 +894,14 @@ const isItemRow = (item: any) => item?.type === 'item';
 const selectedFileIds = markRaw(new Set<number>());
 const selectionVersion = ref(0);
 const selectedFilesVersion = ref(0);
+type SelectionRestoreState = {
+  selectedIds: Set<number>;
+  selectedSizes: Map<number, number>;
+  selectedSize: number;
+  fallbackFileId: number;
+};
+let pendingSelectionRestore: SelectionRestoreState | null = null;
+let isRestoringSelection = false;
 const setItemSelected = (index: number, selected: boolean) => {
   if (index < 0 || index >= fileList.value.length) return;
   if (!fileList.value[index] && !ensureGroupedFileAtIndex(index)) return;
@@ -1004,6 +1011,17 @@ const LARGE_BATCH_CONFIRM_THRESHOLD = 1000;
 const FILE_OPERATION_CONCURRENCY = 8;
 
 function clearSelectionForFileListUpdate() {
+  if (pendingSelectionRestore) {
+    clearLoadedSelectionFlags();
+    selectedCount.value = 0;
+    selectedSize.value = 0;
+    lastSelectedIndex.value = -1;
+    keyboardSelectionAnchorIndex.value = -1;
+    groupSelectedCountMap.value = {};
+    groupSelectedSizeMap.value = {};
+    syncSelectionVersions();
+    return;
+  }
   selectMode.value = false;
   resetSelectionSummary();
   lastSelectedIndex.value = -1;
@@ -1011,6 +1029,88 @@ function clearSelectionForFileListUpdate() {
   groupSelectedCountMap.value = {};
   groupSelectedSizeMap.value = {};
 }
+
+function captureSelectionForFileListRefresh() {
+  if (!selectMode.value) return;
+
+  const selectedSizes = new Map<number, number>();
+  for (const file of fileList.value) {
+    const fileId = Number(file?.id || 0);
+    if (fileId > 0 && selectedFileIds.has(fileId)) {
+      selectedSizes.set(fileId, Number(file?.size || 0));
+    }
+  }
+  pendingSelectionRestore = {
+    selectedIds: new Set(selectedFileIds),
+    selectedSizes,
+    selectedSize: selectedSize.value,
+    fallbackFileId: Number(fileList.value[selectedItemIndex.value]?.id || 0),
+  };
+}
+
+async function restoreSelectionAfterFileListRefresh() {
+  const restoreState = pendingSelectionRestore;
+  if (!restoreState || isRestoringSelection || fileList.value.length === 0) return;
+
+  isRestoringSelection = true;
+  const requestId = currentContentRequestId;
+  try {
+    const currentIds = await getCurrentQueryFileIds();
+    if (requestId !== currentContentRequestId || pendingSelectionRestore !== restoreState) return;
+
+    const currentFileIds = Array.isArray(currentIds) ? currentIds : [];
+    const availableIds = new Set(
+      currentFileIds
+        .map(Number)
+        .filter(id => Number.isFinite(id) && id > 0),
+    );
+    const nextSelectedIds = new Set(
+      Array.from(restoreState.selectedIds).filter(id => availableIds.has(id)),
+    );
+
+    if (nextSelectedIds.size === 0) {
+      const fallbackFileId = availableIds.has(restoreState.fallbackFileId)
+        ? restoreState.fallbackFileId
+        : Number(currentFileIds[0] || 0);
+      if (fallbackFileId > 0) nextSelectedIds.add(fallbackFileId);
+    }
+
+    const fallbackIndex = currentFileIds.findIndex(
+      (fileId: number) => Number(fileId) === restoreState.fallbackFileId,
+    );
+    if (fallbackIndex >= 0) selectedItemIndex.value = fallbackIndex;
+
+    selectedFileIds.clear();
+    for (const fileId of nextSelectedIds) selectedFileIds.add(fileId);
+    for (const file of fileList.value) {
+      if (isRealFileItem(file)) file.isSelected = selectedFileIds.has(Number(file.id));
+    }
+    selectedCount.value = selectedFileIds.size;
+    selectedSize.value = nextSelectedIds.size === restoreState.selectedIds.size
+      ? restoreState.selectedSize
+      : Array.from(selectedFileIds).reduce(
+          (total, fileId) => total + Number(restoreState.selectedSizes.get(fileId) || 0),
+          0,
+        );
+    selectMode.value = true;
+    syncSelectionVersions();
+    pendingSelectionRestore = null;
+  } catch (error) {
+    console.error('restoreSelectionAfterFileListRefresh error:', error);
+    pendingSelectionRestore = null;
+  } finally {
+    isRestoringSelection = false;
+    if (pendingSelectionRestore && fileList.value.length > 0) {
+      void restoreSelectionAfterFileListRefresh();
+    }
+  }
+}
+
+watch(fileList, () => {
+  if (pendingSelectionRestore && fileList.value.length > 0) {
+    void restoreSelectionAfterFileListRefresh();
+  }
+});
 
 function clearLoadedSelectionFlags() {
   for (const file of fileList.value) {
@@ -4679,7 +4779,6 @@ watch(
     scheduleContentRefresh(() => {
       // Only update content if we are currently in the Image Search view
       if (config.main.sidebarIndex === SIDEBAR.SEARCH) {
-        if (isDedupPanelOpen.value) config.rightPanel.show = false;
         refreshContentFromSelectionChange();
       }
     });
@@ -4709,12 +4808,9 @@ watch(
     libConfig.camera.make, libConfig.camera.model,                                    // camera 
     config.camera.isCamera, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel, // lens
   ], 
-  (_newValues, oldValues) => {
+  () => {
     // Clear active adjustments when the file list changes to avoid unnecessary confirmation dialogs
     uiStore.clearActiveAdjustments();
-    if (oldValues && isDedupPanelOpen.value) {
-      config.rightPanel.show = false;
-    }
 
     // Entering the temporary person result updates person.id so face overlays
     // can identify the matched person. Ignore only that internal sync; later
@@ -6009,7 +6105,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
 
 let contentUpdateSeq = 0;
 
-async function updateContent(force = false) {
+async function updateContent(force = false, preserveMultiSelection = selectMode.value) {
   const updateSeq = ++contentUpdateSeq;
   const newIndex = config.main.sidebarIndex;
   const isCurrentAlbumIndexing =
@@ -6046,6 +6142,12 @@ async function updateContent(force = false) {
 
   contentReady.value = false;
   isCurrentFolderExcluded.value = false;
+
+  if (preserveMultiSelection) {
+    captureSelectionForFileListRefresh();
+  } else {
+    pendingSelectionRestore = null;
+  }
 
   // Reset file list immediately to reflect UI change
   clearSelectionForFileListUpdate();

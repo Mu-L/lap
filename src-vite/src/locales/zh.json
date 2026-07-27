@@ -102,6 +102,7 @@
         "extension": "扩展名",
         "favorite": "收藏",
         "rating": "评分",
+        "culling": "挑选",
         "date": "日期",
         "date_taken": "拍摄时间",
         "date_created": "创建时间",
@@ -436,8 +437,7 @@
       "similar_title": "相似照片功能将在下一步提供",
       "similar_desc": "这个标签页将用于视觉上相似的照片分组，当前先保留完全重复的清理流程。",
       "similar": {
-        "find_title": "查找相似照片",
-        "description": "在当前结果中分析视觉上相似的照片。",
+        "description": "在当前结果中查找视觉上相似的照片。",
         "analyze": "分析 {count} 张照片",
         "large_scan_confirm": "要分析 {count} 张照片吗？这可能需要几分钟。",
         "cancel": "取消",
@@ -462,8 +462,8 @@
         "oldest_modified": "优先最早修改"
       },
       "keep_label": "保留",
-      "move_selected_to_trash": "将所选项移到废纸篓",
-      "set_keep": "保留此项",
+      "move_selected_to_trash": "移到废纸篓（已选 {count} 项 · {size}）",
+      "set_keep": "保留",
       "duplicate_files_summary": "{count} 个重复项（{size}）"
     }
   },

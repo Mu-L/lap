@@ -4370,6 +4370,17 @@ impl AFile {
                 Self::push_numeric_rule(&mut conditions, sql_params, "a.rating", operator, value)?;
                 Ok(conditions.pop().unwrap_or_else(|| "1 = 1".to_string()))
             }
+            "culling" => {
+                let mut conditions = Vec::new();
+                Self::push_numeric_rule(
+                    &mut conditions,
+                    sql_params,
+                    "COALESCE(a.culling_flag, 0)",
+                    operator,
+                    value,
+                )?;
+                Ok(conditions.pop().unwrap_or_else(|| "1 = 1".to_string()))
+            }
             "date_taken" | "date_created" | "date_modified" => {
                 let date_col = Self::smart_rule_date_column(field)?;
                 match operator {

@@ -102,6 +102,7 @@
         "extension": "확장자",
         "favorite": "즐겨찾기",
         "rating": "평점",
+        "culling": "선별",
         "date": "날짜",
         "date_taken": "촬영일",
         "date_created": "생성일",
@@ -436,8 +437,7 @@
       "similar_title": "유사 사진 기능은 다음 단계로 준비 중입니다",
       "similar_desc": "정확한 중복 워크플로를 확장한 뒤 이 탭은 시각적으로 유사한 사진을 위해 사용됩니다.",
       "similar": {
-        "find_title": "유사한 사진 찾기",
-        "description": "현재 결과에서 시각적으로 유사한 사진을 분석합니다.",
+        "description": "현재 결과에서 시각적으로 유사한 사진을 찾습니다.",
         "analyze": "사진 {count}장 분석",
         "large_scan_confirm": "사진 {count}장을 분석할까요? 몇 분 정도 걸릴 수 있습니다.",
         "cancel": "취소",
@@ -462,8 +462,8 @@
         "oldest_modified": "오래된 수정일 우선"
       },
       "keep_label": "유지",
-      "move_selected_to_trash": "선택 항목을 휴지통으로",
-      "set_keep": "이 항목 유지",
+      "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
+      "set_keep": "유지",
       "duplicate_files_summary": "중복 {count}개 ({size})"
     }
   },

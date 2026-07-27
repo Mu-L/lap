@@ -102,6 +102,7 @@
         "extension": "拡張子",
         "favorite": "お気に入り",
         "rating": "評価",
+        "culling": "選別",
         "date": "日付",
         "date_taken": "撮影日",
         "date_created": "作成日",
@@ -436,8 +437,7 @@
       "similar_title": "類似写真は次に対応予定です",
       "similar_desc": "完全一致の重複ワークフローを拡張した後、このタブは見た目が似ている写真に使われます。",
       "similar": {
-        "find_title": "類似写真を検索",
-        "description": "現在の結果から視覚的に類似した写真を分析します。",
+        "description": "現在の結果から視覚的に類似した写真を見つけます。",
         "analyze": "{count} 枚の写真を分析",
         "large_scan_confirm": "{count} 枚の写真を分析しますか？数分かかる場合があります。",
         "cancel": "キャンセル",
@@ -462,8 +462,8 @@
         "oldest_modified": "修正日が最も古いものを優先"
       },
       "keep_label": "保持",
-      "move_selected_to_trash": "選択項目をゴミ箱へ",
-      "set_keep": "これを保持",
+      "move_selected_to_trash": "ゴミ箱に入れる（{count}件を選択 · {size}）",
+      "set_keep": "保持",
       "duplicate_files_summary": "重複 {count} 件（{size}）"
     }
   },

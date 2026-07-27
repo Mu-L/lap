@@ -102,6 +102,7 @@
         "extension": "Erweiterung",
         "favorite": "Favorit",
         "rating": "Bewertung",
+        "culling": "Auswahl",
         "date": "Datum",
         "date_taken": "Aufnahmedatum",
         "date_created": "Erstellungsdatum",
@@ -436,8 +437,7 @@
       "similar_title": "Ähnliche Fotos folgen als Nächstes",
       "similar_desc": "Dieser Tab wird für visuell ähnliche Fotos verwendet, sobald der Workflow für exakte Duplikate erweitert wurde.",
       "similar": {
-        "find_title": "Ähnliche Fotos finden",
-        "description": "Visuell ähnliche Fotos in den aktuellen Ergebnissen analysieren.",
+        "description": "Finde visuell ähnliche Fotos in den aktuellen Ergebnissen.",
         "analyze": "{count} Fotos analysieren",
         "large_scan_confirm": "{count} Fotos analysieren? Das kann mehrere Minuten dauern.",
         "cancel": "Abbrechen",
@@ -462,8 +462,8 @@
         "oldest_modified": "Älteste nach Änderung bevorzugen"
       },
       "keep_label": "Behalten",
-      "move_selected_to_trash": "Auswahl in den Papierkorb",
-      "set_keep": "Dieses behalten",
+      "move_selected_to_trash": "In Papierkorb ({count} ausgewählt · {size})",
+      "set_keep": "Behalten",
       "duplicate_files_summary": "{count} Duplikate ({size})"
     }
   },

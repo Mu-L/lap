@@ -102,6 +102,7 @@
         "extension": "Extensão",
         "favorite": "Favorito",
         "rating": "Avaliação",
+        "culling": "Seleção",
         "date": "Data",
         "date_taken": "Data de captura",
         "date_created": "Data de criação",
@@ -436,8 +437,7 @@
       "similar_title": "As fotos semelhantes vêm em seguida",
       "similar_desc": "Esta aba será usada para fotos visualmente semelhantes quando o fluxo de duplicatas exatas for expandido.",
       "similar": {
-        "find_title": "Encontrar fotos semelhantes",
-        "description": "Analise fotos visualmente semelhantes nos resultados atuais.",
+        "description": "Encontre fotos visualmente semelhantes nos resultados atuais.",
         "analyze": "Analisar {count} fotos",
         "large_scan_confirm": "Analisar {count} fotos? Isso pode levar alguns minutos.",
         "cancel": "Cancelar",
@@ -462,8 +462,8 @@
         "oldest_modified": "Preferir mais antigo (modificação)"
       },
       "keep_label": "Manter",
-      "move_selected_to_trash": "Mover seleção para o lixo",
-      "set_keep": "Manter este",
+      "move_selected_to_trash": "Mover para lixeira ({count} selecionados · {size})",
+      "set_keep": "Manter",
       "duplicate_files_summary": "{count} duplicados ({size})"
     }
   },
