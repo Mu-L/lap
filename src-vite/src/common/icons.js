@@ -118,6 +118,7 @@ export { default as IconDragHandle } from '@/assets/icons/drag-handle.svg';
 export { default as IconExternal } from '@/assets/icons/external.svg';
 export { default as IconOk } from '@/assets/icons/ok.svg';
 export { default as IconList } from '@/assets/icons/list.svg';
+export { default as IconFilter } from '@/assets/icons/filter.svg';
 
 // ======================
 // IMAGE EDITOR ICONS

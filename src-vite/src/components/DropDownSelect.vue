@@ -3,16 +3,17 @@
 
     <!-- Dropdown Trigger -->
     <button tabindex="-1"
-      class="px-2 py-1 w-full h-8 flex items-center outline-none rounded-box border transition-colors duration-300 text-sm whitespace-nowrap"
+      class="px-2 py-1 w-full h-8 flex items-center outline-none rounded-box gap-1 border transition-colors duration-300 text-sm whitespace-nowrap"
       :class="[
         disabled ? 'text-base-content/30 cursor-default' : 'hover:bg-base-100/30 hover:text-base-content cursor-pointer',
-        selected ? 'border-primary text-primary' : 'border-base-content/30'
+        selected ? 'border-primary text-primary' : 'border-base-content/15'
       ]"
       :disabled="disabled"
       @click="toggleDropdown"
     >
-      {{ triggerLabel }}{{ !multiSelect && extendOptions.length > 0 ? (extendIndex == 0 ? '↑' : '↓') : '' }}
-      <IconArrowDown class="ml-1 w-3 h-3 shrink-0 opacity-50" />
+      <component v-if="icon" :is="icon" class="w-4 h-4 shrink-0" />
+      <span>{{ triggerLabel }}</span>
+      <IconArrowDown class="w-3 h-3 shrink-0 opacity-50" />
     </button>
 
     <!-- Dropdown Menu -->
@@ -105,6 +106,10 @@ const props = defineProps({
   separatorsAfter: {
     type: Array,
     default: () => [],
+  },
+  icon: {
+    type: Object,
+    default: null,
   },
 });
 

@@ -220,7 +220,7 @@ import {
   IconSearch,
   IconSettings,
   IconDot,
-  IconStack,
+  IconPhotoAll,
   IconArrowDown,
   IconCalendarDay,
   IconFolders,
@@ -353,7 +353,7 @@ const {
 
 // buttons
 const buttons = computed(() =>  [
-  { index: SIDEBAR.LIBRARY, icon: IconStack, component: Library, text: localeMsg.value.sidebar.library },
+  { index: SIDEBAR.LIBRARY, icon: IconPhotoAll, component: Library, text: localeMsg.value.sidebar.library },
   { index: SIDEBAR.ALBUM, icon: IconFolders, component: AlbumList, text: localeMsg.value.sidebar.album, props: { selectionSource: 'album' } },
   { index: SIDEBAR.SMART_ALBUM, icon: IconFolderCog, component: SmartAlbumList, text: localeMsg.value.album.smart_album_list },
   { index: SIDEBAR.SEARCH, icon: IconSearch, component: ImageSearch, text: localeMsg.value.sidebar.search },

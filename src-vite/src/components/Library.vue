@@ -181,7 +181,7 @@ import { listen } from '@tauri-apps/api/event';
 import { config, libConfig } from '@/common/config';
 import { CULLING, LIB_ITEM, RATE, type LibItem } from '@/common/constants';
 
-import { IconPhotoAll, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
+import { IconFiles, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
 import { getQueryCountAndSum, getTotalCountAndSum } from '@/common/api';
 import { SMART_TAG_CATEGORIES } from '@/common/smartTags';
 
@@ -245,7 +245,7 @@ const libraryItems = computed(() => [
   {
     id: LIB_ITEM.ALL,
     label: localeMsg.value.library.all_files,
-    icon: IconPhotoAll,
+    icon: IconFiles,
     count: totalCount.value,
   },
   {

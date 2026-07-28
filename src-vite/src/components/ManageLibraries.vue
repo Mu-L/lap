@@ -66,7 +66,7 @@
                 @click.stop
               />
               <div v-else class="min-w-0 flex items-center">
-                <IconStack
+                <IconPhotoAll
                   class="w-4 h-4 mr-2 shrink-0"
                   :class="lib.id === currentLibraryId ? 'text-primary' : lib.hidden ? 'text-base-content/30' : 'text-base-content/70'"
                 />
@@ -202,7 +202,7 @@ import {
   IconHide,
   IconUnhide,
   IconAdd,
-  IconStack,
+  IconPhotoAll,
 } from '@/common/icons';
 
 const props = defineProps({

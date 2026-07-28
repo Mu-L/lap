@@ -57,6 +57,7 @@
 
         <!-- file type options -->
         <DropDownSelect
+          :icon="IconFilter"
           :options="fileTypeOptions"
           :multiSelect="true"
           :selectedValues="fileTypeSelectedValues"
@@ -69,6 +70,7 @@
 
         <!-- sort type options -->
         <DropDownSelect
+          :icon="config.search.sortOrder === 0 ? IconSortingAsc : IconSortingDesc"
           :options="toolbarSortOptions"
           :defaultIndex="toolbarSortType"
           :extendOptions="toolbarSortExtendOptions"
@@ -80,6 +82,7 @@
 
         <!-- global grouping options for query-backed grid views -->
         <DropDownSelect
+          :icon="IconStack"
           :options="toolbarGroupOptions"
           :defaultIndex="toolbarGroupIndex"
           :separatorsAfter="toolbarGroupOptions.length > 1 ? [0] : []"
@@ -90,7 +93,7 @@
 
         <!-- select and layout section -->
         <div class="flex flex-row items-center">
-          <IconSeparator class="t-icon-size text-base-content/30" />
+          <IconSeparator class="t-icon-size text-base-content/15" />
           
           <!-- refresh file list -->
           <!-- Bugfix: need to update album files when the album is updated -->
@@ -130,7 +133,7 @@
             @click="toggleFilmstripView"
           />
 
-          <IconSeparator class="t-icon-size text-base-content/30" />
+          <IconSeparator class="t-icon-size text-base-content/15" />
           <!-- toggle select mode -->
           <TButton
             :icon="IconSelection"
@@ -694,6 +697,7 @@ import StatusBar from '@/components/StatusBar.vue';
 
 import {
   IconFolders,
+  IconStack,
   IconFiles,
   IconFolder,
   IconFolderCog,
@@ -721,8 +725,9 @@ import {
   IconDownload,
   IconPrev,
   IconAdd,
-  IconPhotoAll,
   IconFlag,
+  IconFlagFilled,
+  IconFlagOff,
   IconStar,
   IconStarFilled,
   IconSimilar,
@@ -732,6 +737,9 @@ import {
   IconBookmark,
   IconFileSearch,
   IconPerson,
+  IconSortingAsc,
+  IconSortingDesc,
+  IconFilter,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -2705,13 +2713,18 @@ const currentTitleIcon = computed(() => {
         switch (config.main.sidebarIndex) {
           case SIDEBAR.LIBRARY:
             switch (libConfig.library.item) {
-              case LIB_ITEM.ALL: return IconPhotoAll;
+              case LIB_ITEM.ALL: return IconFiles;
               case LIB_ITEM.FAV: return IconHeartFilled;
               case LIB_ITEM.RATINGS: return libConfig.rating.item > 0 || libConfig.rating.item === RATE.ALL ? IconStarFilled : IconStar;
-              case LIB_ITEM.CULLING: return IconFlag;
+              case LIB_ITEM.CULLING:
+                return libConfig.culling.item === CULLING.PICK
+                  ? IconFlagFilled
+                  : libConfig.culling.item === CULLING.REJECT
+                    ? IconFlagOff
+                    : IconFlag;
               case LIB_ITEM.SUBJECTS: return IconBolt;
               case LIB_ITEM.TODAY: return IconHistory;
-              default: return IconPhotoAll;
+              default: return IconFiles;
             }
           case SIDEBAR.ALBUM:
               return libConfig.album.selected || config.settings.showSubfolderFiles ? IconFolders : IconFolder;
