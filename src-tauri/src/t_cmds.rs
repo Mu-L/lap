@@ -102,6 +102,7 @@ fn extension_description(ext: &str) -> &'static str {
         "jp2" => "JPEG 2000 Image",
         "jpc" => "JPEG 2000 Codestream",
         "jpeg" => "Joint Photographic Experts Group",
+        "jfif" => "JPEG File Interchange Format",
         "jpf" => "JPEG 2000 Image",
         "jpg" => "Joint Photographic Experts Group",
         "jpx" => "JPEG 2000 Extended Image",

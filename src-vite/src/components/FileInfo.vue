@@ -646,7 +646,7 @@ const quickSave = async (): Promise<boolean> => {
 
   const adj = uiStore.activeAdjustments as any;
   const ext = getFileExtension(props.fileInfo.name).toLowerCase();
-  const outputFormat = (ext === 'jpg' || ext === 'jpeg') ? 'jpg' : ext;
+  const outputFormat = ['jpg', 'jpeg', 'jfif'].includes(ext) ? 'jpg' : ext;
 
   const editParams = {
     sourceFilePath: props.fileInfo.file_path,

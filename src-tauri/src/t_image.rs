@@ -458,7 +458,7 @@ pub fn is_jpeg_path(file_path: &str) -> bool {
     Path::new(file_path)
         .extension()
         .and_then(|ext| ext.to_str())
-        .map(|ext| matches!(ext.to_ascii_lowercase().as_str(), "jpg" | "jpeg" | "jpe"))
+        .map(|ext| matches!(ext.to_ascii_lowercase().as_str(), "jpg" | "jpeg" | "jpe" | "jfif"))
         .unwrap_or(false)
 }
 

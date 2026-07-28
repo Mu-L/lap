@@ -1057,7 +1057,7 @@ const combinedFormatOptions = computed(() => {
 
 const canOverwriteOriginal = computed(() => {
   const ext = getFileExtension(fileInfo.value?.name || fileInfo.value?.file_path || '').toLowerCase();
-  return ['jpg', 'jpeg', 'png', 'webp'].includes(ext);
+  return ['jpg', 'jpeg', 'jfif', 'png', 'webp'].includes(ext);
 });
 const effectiveSaveAsNew = computed(() => config.imageEditor.saveAs === 1 || !canOverwriteOriginal.value);
 
@@ -1072,7 +1072,7 @@ const handleOverwriteConfirm = () => {
 
   const originalPath = fileInfo.value.file_path;
   const ext = getFileExtension(fileInfo.value.name).toLowerCase();
-  const outputFormat = (ext === 'jpg' || ext === 'jpeg') ? 'jpg' : ext;
+  const outputFormat = ['jpg', 'jpeg', 'jfif'].includes(ext) ? 'jpg' : ext;
 
   executeSave({
     destFilePath: originalPath,
