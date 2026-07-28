@@ -57,8 +57,8 @@
             <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
             <p v-if="similarHasScanned" class="text-xs font-medium">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
             <p v-else class="text-xs leading-5 text-base-content/50">{{ $t('info_panel.dedup.similar.description') }}</p>
-            <PanelActionButton v-if="!similarHasScanned" :icon="IconSimilar" :disabled="similarEligibleCount === 0 || similarLoading" @click="startSimilar">
-              {{ $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
+            <PanelActionButton v-if="!similarHasScanned" :icon="IconSimilar" :disabled="similarEligibleCountLoading || similarEligibleCount === 0 || similarLoading" @click="startSimilar">
+              {{ similarEligibleCountLoading ? $t('tooltip.loading') : $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
             </PanelActionButton>
           </div>
         </div>
@@ -116,8 +116,11 @@
               </span>
             </div>
             <div class="flex flex-wrap gap-1">
-              <PanelActionButton :icon="IconCheckNone" :disabled="selectedSimilarCount === 0" @click="deselectSimilarGroup(activeSimilarGroup.id)">
-                {{ $t('menu.select.none') }}
+              <PanelActionButton
+                :icon="isAllSimilarItemsSelected(activeSimilarGroup.id) ? IconCheckNone : IconCheckAll"
+                @click="selectAllSimilarItems(activeSimilarGroup)"
+              >
+                {{ isAllSimilarItemsSelected(activeSimilarGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconSplitOn" :disabled="selectedSimilarCount < 2" @click="compareSelectedSimilarPhotos">
                 {{ $t('menu.file.compare_selected_images') }}
@@ -127,13 +130,19 @@
               </PanelActionButton>
             </div>
             <div class="space-y-2.5">
-              <button
+              <div
                 v-for="item in activeSimilarGroup.items"
                 :key="item.file_id"
+                role="button"
+                tabindex="0"
                 class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
                 :class="getDedupItemClass(item.file_id, isSimilarSelected(activeSimilarGroup.id, item.file_id))"
+                @mouseenter="hoveredSimilarFileId = Number(item.file_id)"
+                @mouseleave="hoveredSimilarFileId = null"
                 @click="handleSimilarSelection(item.file_id)"
                 @dblclick="handleSimilarSelection(item.file_id, true)"
+                @keydown.enter.self="handleSimilarSelection(item.file_id)"
+                @keydown.space.self.prevent="handleSimilarSelection(item.file_id)"
               >
                 <div class="flex items-center gap-2">
                   <label class="flex items-center cursor-pointer shrink-0" @click.stop>
@@ -161,11 +170,47 @@
                       {{ $t('file_info.modified_at') }}: {{ formatTimestamp(item.file.modified_at, $t('format.date_time')) }}
                     </div>
                   </div>
-                  <div class="shrink-0 text-[11px] text-base-content/30">
-                    {{ Math.round((item.score || 0) * 100) }}%
+                  <div class="shrink-0 w-16 min-h-10 flex items-center justify-center">
+                    <div v-if="showSimilarCullingActions(item.file_id)" class="flex items-center gap-0.5" @click.stop>
+                      <button
+                        class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
+                        :class="getSimilarCullingIconClass(item.file, 1)"
+                        :title="$t('culling.picks')"
+                        :aria-label="$t('culling.picks')"
+                        @click.stop="setSimilarCullingFlag(item, 1)"
+                      >
+                        <IconFlagFilled class="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
+                        :class="getSimilarCullingIconClass(item.file, 2)"
+                        :title="$t('culling.rejected')"
+                        :aria-label="$t('culling.rejected')"
+                        @click.stop="setSimilarCullingFlag(item, 2)"
+                      >
+                        <IconFlagOff class="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
+                        :class="getSimilarCullingIconClass(item.file, 0)"
+                        :title="$t('culling.unreviewed')"
+                        :aria-label="$t('culling.unreviewed')"
+                        @click.stop="setSimilarCullingFlag(item, 0)"
+                      >
+                        <IconFlag class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <span v-else class="flex items-center gap-1 text-[11px] text-base-content/30">
+                      <component
+                        :is="getSimilarCullingIcon(item.file)"
+                        class="w-3.5 h-3.5"
+                        :class="getSimilarCullingStatusClass(item.file)"
+                      />
+                      {{ Math.round((item.score || 0) * 100) }}%
+                    </span>
                   </div>
                 </div>
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -391,7 +436,7 @@ import {
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconTrash } from '@/common/icons';
+import { IconCheckAll, IconCheckNone, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconTrash } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
@@ -410,6 +455,7 @@ import {
   similarGetGroup,
   similarHasScan,
   listenSimilarScanProgress,
+  setFileCullingFlag,
 } from '@/common/api';
 import { config } from '@/common/config';
 import { SIMILAR_SCAN } from '@/common/constants';
@@ -451,6 +497,7 @@ const emit = defineEmits<{
   'trash-selected-duplicates': [groupId: string, fileIds: number[], reclaimableBytes: number];
   'trash-selected-similar': [groupId: string, fileIds: number[], reclaimableBytes: number];
   'compare-selected-photos': [files: any[]];
+  'culling-status-updated': [fileId: number, cullingFlag: number];
   'dedup-status-updated': [statuses: Record<number, 'keep' | 'dup'>];
 }>();
 
@@ -466,7 +513,9 @@ const similarGroups = ref<any[]>([]);
 const similarTotalGroups = ref(0);
 const isLoadingMoreSimilarGroups = ref(false);
 const selectedSimilarGroupId = ref<number | null>(null);
+const hoveredSimilarFileId = ref<number | null>(null);
 const similarEligibleCount = ref(0);
+const similarEligibleCountLoading = ref(false);
 const similarHasScanned = ref(false);
 const similarError = ref(false);
 const similarLoadedScope = ref('');
@@ -580,14 +629,67 @@ function isSimilarSelected(groupId: number, fileId: number) {
   return getSimilarSelectedSet(groupId).has(fileId);
 }
 
+function showSimilarCullingActions(fileId: number) {
+  return hoveredSimilarFileId.value === Number(fileId) || Number(props.selectedFileId) === Number(fileId);
+}
+
+function getSimilarCullingIconClass(file: any, cullingFlag: number) {
+  const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
+  if (current === cullingFlag) return cullingFlag === 2 ? 'text-error' : 'text-primary';
+  return cullingFlag === 2
+    ? 'text-base-content/30 hover:text-error/70'
+    : 'text-base-content/30 hover:text-primary/70';
+}
+
+function getSimilarCullingIcon(file: any) {
+  const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
+  return current === 1 ? IconFlagFilled : current === 2 ? IconFlagOff : IconFlag;
+}
+
+function getSimilarCullingStatusClass(file: any) {
+  const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
+  return current === 1 ? 'text-primary' : current === 2 ? 'text-error' : 'text-base-content/30';
+}
+
+async function setSimilarCullingFlag(item: any, cullingFlag: number) {
+  const file = item?.file;
+  const fileId = Number(file?.id || item?.file_id || 0);
+  if (!file || fileId <= 0) return;
+  const normalized = Math.max(0, Math.min(2, cullingFlag));
+  const previous = Number(file.culling_flag ?? file.cullingFlag ?? 0);
+  file.culling_flag = normalized;
+  file.cullingFlag = normalized;
+  const result = await setFileCullingFlag(fileId, normalized);
+  if (result === null) {
+    file.culling_flag = previous;
+    file.cullingFlag = previous;
+    return;
+  }
+  emit('culling-status-updated', fileId, normalized);
+}
+
 function toggleSimilarSelected(groupId: number, fileId: number) {
   const selected = getSimilarSelectedSet(groupId);
   if (selected.has(fileId)) selected.delete(fileId);
   else selected.add(fileId);
 }
 
-function deselectSimilarGroup(groupId: number) {
-  getSimilarSelectedSet(groupId).clear();
+function isAllSimilarItemsSelected(groupId: number) {
+  if (!activeSimilarGroup.value?.items?.length || activeSimilarGroup.value.id !== groupId) return false;
+  const selected = getSimilarSelectedSet(groupId);
+  return activeSimilarGroup.value.items.every((item: any) => selected.has(Number(item.file_id)));
+}
+
+function selectAllSimilarItems(group: any) {
+  const groupId = Number(group?.id || 0);
+  if (!groupId) return;
+  const selected = getSimilarSelectedSet(groupId);
+  if (isAllSimilarItemsSelected(groupId)) {
+    selected.clear();
+    return;
+  }
+  selected.clear();
+  for (const item of group.items || []) selected.add(Number(item.file_id));
 }
 
 function compareSelectedSimilarPhotos() {
@@ -682,7 +784,6 @@ async function fetchSimilarGroups(append = false) {
       catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
       if (scopeKey !== props.dedupScanKey) return;
       Object.assign(firstGroup, detail);
-      selectAllSimilarItems(firstGroup);
     }
   }
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
@@ -702,28 +803,47 @@ async function openSimilarTab(forceReload = false) {
   config.dedup.activeTab = 'similar';
   if (!props.dedupScanKey) return;
   const scopeKey = props.dedupScanKey;
+  if (!similarHasScanned.value) similarEligibleCountLoading.value = true;
   if (forceReload) similarLoadedScope.value = '';
   similarError.value = false;
   let status;
   try { status = await similarGetScanStatus(); }
-  catch (error) { console.error('getSimilarScanStatus error:', error); similarError.value = true; return; }
+  catch (error) {
+    console.error('getSimilarScanStatus error:', error);
+    similarEligibleCountLoading.value = false;
+    similarError.value = true;
+    return;
+  }
   if (scopeKey !== props.dedupScanKey) return;
   if (status?.scopeKey === props.dedupScanKey && (status.state === 'running' || status.isScanning)) {
     similarStatus.value = status;
     similarLoading.value = true;
+    similarEligibleCountLoading.value = false;
     return;
   }
   if (similarLoadedScope.value !== props.dedupScanKey) await fetchSimilarGroups();
   if (scopeKey !== props.dedupScanKey) return;
-  if (similarError.value) return;
+  if (similarError.value) {
+    similarEligibleCountLoading.value = false;
+    return;
+  }
   const hasCachedGroups = similarGroups.value.length > 0;
   let hasPersistedScan = false;
   try { hasPersistedScan = await similarHasScan(props.dedupScanKey); }
-  catch (error) { console.error('similarHasScan error:', error); similarError.value = true; return; }
+  catch (error) {
+    console.error('similarHasScan error:', error);
+    similarEligibleCountLoading.value = false;
+    similarError.value = true;
+    return;
+  }
   if (scopeKey !== props.dedupScanKey) return;
   similarHasScanned.value = hasCachedGroups
     || (status?.scopeKey === props.dedupScanKey && status?.state === 'finished')
     || hasPersistedScan;
+  if (similarHasScanned.value) {
+    similarEligibleCountLoading.value = false;
+    return;
+  }
   if (!similarHasScanned.value) {
     let eligibleCount;
     try {
@@ -732,7 +852,13 @@ async function openSimilarTab(forceReload = false) {
         props.dedupFileIds === null ? props.dedupCollectionId : null,
         props.dedupFileIds,
       ));
-    } catch (error) { console.error('getSimilarEligibleCount error:', error); similarError.value = true; return; }
+    } catch (error) {
+      console.error('getSimilarEligibleCount error:', error);
+      similarError.value = true;
+      return;
+    } finally {
+      if (scopeKey === props.dedupScanKey) similarEligibleCountLoading.value = false;
+    }
     if (scopeKey !== props.dedupScanKey) return;
     similarEligibleCount.value = eligibleCount;
   }
@@ -788,18 +914,8 @@ async function selectSimilarGroup(group: any) {
     try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
     catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
   }
-  selectAllSimilarItems(group);
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
   if (group.representative?.id) emit('select-file', group.representative.id);
-}
-
-function selectAllSimilarItems(group: any) {
-  const groupId = Number(group?.id || 0);
-  if (!groupId || selectedSimilarIdsByGroup.value.has(groupId)) return;
-  selectedSimilarIdsByGroup.value.set(
-    groupId,
-    new Set((group.items || []).map((item: any) => Number(item.file_id))),
-  );
 }
 
 function selectDuplicateGroup(group: any) {
@@ -1273,6 +1389,7 @@ watch(
     selectedSimilarIdsByGroup.value.clear();
     selectedSimilarGroupId.value = null;
     similarEligibleCount.value = 0;
+    similarEligibleCountLoading.value = false;
     similarHasScanned.value = false;
     similarError.value = false;
     similarLoadedScope.value = '';
@@ -1317,8 +1434,6 @@ watch(selectedSimilarGroupId, async (groupId, prevGroupId) => {
 
 onMounted(async () => {
   isDedupLoading.value = true;
-  if (!props.dedupScanKey) return;
-
   await nextTick();
 
   unlistenDedupProgress.value = await listenDedupScanProgress(async (event: any) => {
@@ -1353,6 +1468,10 @@ onMounted(async () => {
     }
   });
 
+  if (!props.dedupScanKey) {
+    isDedupLoading.value = false;
+    return;
+  }
   triggerBackendDedup();
   if (activeTab.value === 'similar') await openSimilarTab();
 });

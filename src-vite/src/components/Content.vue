@@ -417,6 +417,7 @@
             @trash-selected-duplicates="handleDedupTrashSelectedDuplicates"
             @trash-selected-similar="handleDedupTrashSelectedSimilar"
             @compare-selected-photos="handleDedupCompareSelectedPhotos"
+            @culling-status-updated="handleDedupCullingStatusUpdated"
             @dedup-status-updated="dedupStatuses = $event"
           />
           <SelectionPanel
@@ -2605,6 +2606,7 @@ const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('que
 const currentSmartQueryParams = ref<any | null>(null);
 const currentCollectionId = ref<number | null>(null);
 const currentSearchFileIds = ref<number[]>([]);
+const dedupSmartFileIds = ref<number[] | null>(null);
 
 const scanStreamRequestInFlight = ref(false);
 const scanStreamPullPending = ref(false);
@@ -2697,11 +2699,16 @@ const dedupCollectionId = computed(() =>
   currentQuerySource.value === 'collection' ? currentCollectionId.value : null
 );
 const dedupFileIds = computed(() =>
-  currentQuerySource.value === 'search' ? [...currentSearchFileIds.value] : null
+  currentQuerySource.value === 'search'
+    ? [...currentSearchFileIds.value]
+    : currentQuerySource.value === 'smart'
+      ? dedupSmartFileIds.value
+      : null
 );
 
 const dedupScanKey = computed(() => {
   if (dedupSourceVersion.value <= 0) return '';
+  if (currentQuerySource.value === 'smart' && dedupFileIds.value === null) return '';
   return `query:${JSON.stringify(dedupQueryParams.value)}|collection:${dedupCollectionId.value ?? ''}|files:${JSON.stringify(dedupFileIds.value)}|version:${dedupSourceVersion.value}`;
 });
 
@@ -5001,6 +5008,21 @@ const getCurrentQueryFileIds = () => {
   return getQueryFileIds(getGroupingQueryParams());
 };
 
+async function refreshDedupSmartFileIds(requestId: number, params: any) {
+  try {
+    const fileIds = await getSmartQueryFileIds(params);
+    if (requestId !== currentContentRequestId || currentQuerySource.value !== 'smart') return;
+    dedupSmartFileIds.value = (Array.isArray(fileIds) ? fileIds : [])
+      .map((id: any) => Number(id))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
+  } catch (error) {
+    console.error('refreshDedupSmartFileIds error:', error);
+    if (requestId === currentContentRequestId && currentQuerySource.value === 'smart') {
+      dedupSmartFileIds.value = [];
+    }
+  }
+}
+
 const getCurrentQueryFilePosition = async (fileId: number) => {
   if (currentQuerySource.value === 'search') {
     return currentSearchFileIds.value.findIndex(id => Number(id) === Number(fileId));
@@ -5781,6 +5803,7 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
   currentQuerySource.value = 'smart';
   currentCollectionId.value = null;
   currentSearchFileIds.value = [];
+  dedupSmartFileIds.value = null;
   currentSmartQueryParams.value = {
     version: Number(query.version || 1),
     match: query.match === 'any' ? 'any' : 'all',
@@ -5792,6 +5815,7 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
     categorySort: Number(config.settings.categorySort || 0),
     groupBy: effectiveGroupBy.value,
   };
+  void refreshDedupSmartFileIds(requestId, currentSmartQueryParams.value);
   void updateSmartAlbumCover(smartAlbum, requestId);
 
   isLoading.value = true;
@@ -7596,6 +7620,13 @@ const syncFileMetaToImageViewer = async (fileId: number, changes: Record<string,
     changes,
   });
 };
+
+function handleDedupCullingStatusUpdated(fileId: number, cullingFlag: number) {
+  const file = fileList.value.find(item => Number(item.id) === Number(fileId));
+  if (file) file.culling_flag = cullingFlag;
+  void syncFileMetaToImageViewer(fileId, { culling_flag: cullingFlag });
+  void tauriEmit('culling-status-updated');
+}
 
 type SavedFilePayload = {
   saveAsNew?: boolean;
