@@ -4577,27 +4577,56 @@ onMounted( async() => {
   unlistenThumbnailReady = await listen('thumbnail_ready', async (event: any) => {
     const { file_ids } = event.payload || {};
     if (!Array.isArray(file_ids) || file_ids.length === 0) return;
-    if (fileList.value.length === 0) return;
 
     const readyIds = new Set(
       file_ids.map((id: any) => Number(id)).filter((id: number) => Number.isFinite(id) && id > 0)
     );
     if (readyIds.size === 0) return;
 
+    // The backend has just replaced these thumbnails after detecting a changed
+    // file. Drop their data-URL entries even when this view is empty, so a
+    // later list render cannot reuse an outdated image from memory.
+    for (const fileId of readyIds) {
+      clearCachedThumbnailDataUrl(fileId, config.settings.thumbnailSize);
+    }
+    if (fileList.value.length === 0) return;
+
     const loadedFiles = fileList.value.filter(
       (file: any) => file && !file.isPlaceholder && readyIds.has(Number(file.id || 0))
     );
     if (loadedFiles.length === 0) return;
 
-    // Only fetch thumbnails for files that don't already have one loaded
-    const pendingFiles = loadedFiles.filter((f: any) => !f.thumbnail);
-    if (pendingFiles.length === 0) return;
+    // Pick up the new modified_at value before rebuilding URLs; it is the
+    // persistent cache version for this file's contents.
+    await Promise.all(loadedFiles.map(async (file: any) => {
+      const refreshed = await getFileInfo(Number(file.id));
+      if (refreshed && fileList.value.includes(file)) Object.assign(file, refreshed);
+    }));
 
-    getFileListThumb(pendingFiles, 0, 8, true);
+    // Reload the regenerated thumbnails instead of retaining the old values
+    // that arrived with the refreshed file list.
+    for (const file of loadedFiles) {
+      file.thumbnail = '';
+    }
+
+    // Match Refresh file info: changing filePath makes Image.vue reload the
+    // currently displayed file after its on-disk contents have changed.
+    const activeFile = fileList.value[selectedItemIndex.value];
+    if (activeFile && readyIds.has(Number(activeFile.id || 0)) && activeFile.file_path) {
+      const activePath = activeFile.file_path;
+      activeFile.file_path = '';
+      await nextTick();
+      activeFile.file_path = activePath;
+    }
+
+    getFileListThumb(loadedFiles, 0, 8, true);
   });
 
   // listen for external refresh requests (e.g. from folder context menu)
   unlistenRefreshContent = await listen('refresh-content', () => {
+    // A manual folder refresh must bypass the mtime-sync debounce; otherwise
+    // revisiting an already selected folder only reloads stale DB rows.
+    lastSyncedAlbumFolder = '';
     updateContent();
   });
 
@@ -7539,7 +7568,7 @@ const updateThumbForFile = async (file: any) => {
   );
   if (thumb) {
     if (thumb.error_code === 0 || thumb.error_code === 2) {
-      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true, config.settings.thumbnailSize, file.file_path);
+      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true, config.settings.thumbnailSize, file.file_path, Number(file.modified_at || 0));
     } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
@@ -8500,7 +8529,7 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, 
     if (!thumb) return;
 
     if (thumb.error_code === 0 || thumb.error_code === 2) {
-      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, bustCache, thumbnailSize, file.file_path);
+      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, bustCache, thumbnailSize, file.file_path, Number(file.modified_at || 0));
     } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
@@ -8816,8 +8845,8 @@ async function printImage(index: number) {
 
   try {
     printImageSrc.value = shouldUseBackendPreview(selectedFile.file_path, fileType)
-      ? getPreviewUrl(fileId, selectedFile.file_path)
-      : getAssetSrc(selectedFile.file_path);
+      ? getPreviewUrl(fileId, selectedFile.file_path, false, Number(selectedFile.modified_at || 0))
+      : getAssetSrc(selectedFile.file_path, Number(selectedFile.modified_at || 0));
     await waitForPrintImage();
     // Defer to let the context menu / UI close before the synchronous print dialog opens
     setTimeout(() => {

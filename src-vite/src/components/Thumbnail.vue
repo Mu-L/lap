@@ -308,7 +308,7 @@ function retryThumbnail() {
   }
   thumbnailRetryCount++;
   isThumbnailLoaded.value = false;
-  thumbnailSrc.value = getThumbUrl(props.file.id, true, config.settings.thumbnailSize);
+  thumbnailSrc.value = getThumbUrl(props.file.id, true, config.settings.thumbnailSize, Number(props.file.modified_at || 0));
 }
 
 // Robust ResizeObserver setup using watch to handle v-if

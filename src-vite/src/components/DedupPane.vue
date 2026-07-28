@@ -653,7 +653,7 @@ async function hydrateSimilarThumbnails(groups: any[], activeGroupId: number | n
       config.settings.thumbnailSize,
       false,
     );
-    file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path);
+    file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path, Number(file.modified_at || 0));
   }));
 }
 
@@ -1019,7 +1019,7 @@ async function hydrateGroupThumbnails(groups: any[], activeGroupId: number | nul
           config.settings.thumbnailSize,
           false
         );
-        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path);
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path, Number(file.modified_at || 0));
       })());
     }
   }

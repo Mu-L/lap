@@ -346,6 +346,7 @@
           :filePath="file?.file_path"
           :fileId="file?.id"
           :fileType="file?.file_type"
+          :fileVersion="file?.modified_at || 0"
           :imageWidth="file?.width"
           :imageHeight="file?.height"
           :thumbnailSrc="file?.thumbnail || ''"

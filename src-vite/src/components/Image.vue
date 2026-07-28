@@ -227,6 +227,10 @@ const props = defineProps({
     type: Number,
     default: 1,
   },
+  fileVersion: {
+    type: Number,
+    default: 0,
+  },
   imageWidth: {
     type: Number,
     default: 0,
@@ -399,7 +403,7 @@ async function getEffectiveThumbnailSrc() {
   if (props.thumbnailSrc) return props.thumbnailSrc;
   const fileId = props.fileId;
   if (!fileId) return '';
-  const thumbUrl = getThumbUrl(fileId, false, config.settings.thumbnailSize);
+  const thumbUrl = getThumbUrl(fileId, false, config.settings.thumbnailSize, props.fileVersion);
   if (!isWin) return thumbUrl;
   if (thumbUrl.startsWith('data:')) {
     resolvedThumbnailSrc.value = thumbUrl;
@@ -413,7 +417,7 @@ async function getEffectiveThumbnailSrc() {
     fileId,
     config.settings.thumbnailSize,
     getFileThumbById(fileId, config.settings.thumbnailSize, false)
-      .then(thumb => getThumbnailDataUrl(thumb, '', false, config.settings.thumbnailSize))
+      .then(thumb => getThumbnailDataUrl(thumb, '', false, config.settings.thumbnailSize, props.filePath, props.fileVersion))
   ));
   if (props.fileId === fileId && !props.thumbnailSrc && dataUrl) {
     resolvedThumbnailSrc.value = dataUrl;
@@ -519,7 +523,7 @@ function loadImageResource(filePath?: string) {
     };
 
     if (shouldUseBackendPreview(filePath, Number(props.fileType || 0))) {
-      src = getPreviewUrl(props.fileId, filePath);
+      src = getPreviewUrl(props.fileId, filePath, false, props.fileVersion);
       if (!src) {
         preloadCache.delete(filePath);
         reject(new Error(`Failed to resolve RAW/TIFF preview source: ${filePath}`));
@@ -530,7 +534,7 @@ function loadImageResource(filePath?: string) {
     }
 
     try {
-      src = getAssetSrc(filePath);
+      src = getAssetSrc(filePath, props.fileVersion);
     } catch (error) {
       preloadCache.delete(filePath);
       reject(error);
@@ -1177,11 +1181,14 @@ const updatePosition = () => {
 };
 
 // watch filePath changes
-watch(() => props.filePath, async (newFilePath) => {
+watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newFileVersion], [oldFilePath, oldFileVersion]) => {
   // Cancel previous loading
   currentLoadingId.value++;
   const loadingId = currentLoadingId.value;
   cancelWarmImageScheduling();
+  if (newFilePath && newFilePath === oldFilePath && newFileVersion !== oldFileVersion) {
+    preloadCache.delete(newFilePath);
+  }
   clearStalePreloadEntries(newFilePath || '', props.nextFilePath || '');
 
   if (loadingTimeout) {
@@ -1324,7 +1331,7 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
   
   // We check if it's the full original image by checking the src. 
   // For backend preview, the full image src is from getPreviewUrl.
-  const isCurrentlyShowingFullImage = imageSrc.value[activeIndex] === getPreviewUrl(props.fileId, currentFilePath);
+  const isCurrentlyShowingFullImage = imageSrc.value[activeIndex] === getPreviewUrl(props.fileId, currentFilePath, false, props.fileVersion);
   
   if (isCurrentlyShowingFullImage) return;
 

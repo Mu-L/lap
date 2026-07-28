@@ -489,7 +489,8 @@ export function setThumbnailDataUrlInflight(
 export function getThumbUrl(
   fileId: number | null | undefined,
   bustCache = false,
-  thumbnailSize = 0
+  thumbnailSize = 0,
+  fileVersion = 0,
 ): string {
   if (!fileId || fileId <= 0) return '';
   if (isWin && !bustCache) {
@@ -498,31 +499,33 @@ export function getThumbUrl(
   }
   const scheme = isWin ? 'http://thumb.localhost' : 'thumb://localhost';
   const base = `${scheme}/${_thumbLibraryId}/${fileId}`;
-  return bustCache ? `${base}?t=${Date.now()}` : base;
+  const params = new URLSearchParams();
+  if (fileVersion > 0) params.set('v', String(fileVersion));
+  if (bustCache) params.set('t', String(Date.now()));
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function getPreviewUrl(
   fileId: number | null | undefined,
   filePath?: string | null,
   bustCache = false,
+  fileVersion = 0,
 ): string {
   if (!fileId || fileId <= 0) return '';
   const scheme = isWin ? 'http://preview.localhost' : 'preview://localhost';
   const base = `${scheme}/${_thumbLibraryId}/${fileId}`;
 
-  if (bustCache) {
-    return `${base}?t=${Date.now()}`;
-  }
-
+  const params = new URLSearchParams();
+  if (fileVersion > 0) params.set('v', String(fileVersion));
   if (filePath) {
     const uiStore = useUIStore();
-    const version = uiStore.getFileVersion(filePath);
-    if (version > 0) {
-      return `${base}?v=${version}`;
-    }
+    const localVersion = uiStore.getFileVersion(filePath);
+    if (localVersion > 0) params.set('u', String(localVersion));
   }
-
-  return base;
+  if (bustCache) params.set('t', String(Date.now()));
+  const query = params.toString();
+  return query ? `${base}?${query}` : base;
 }
 
 export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
@@ -545,14 +548,15 @@ export function getThumbnailDataUrl(
   placeholder = '',
   bustCache = false,
   thumbnailSize = 0,
-  filePath?: string | null
+  filePath?: string | null,
+  fileVersion = 0,
 ): string {
   if (!thumb || thumb.file_id == null || thumb.file_id <= 0) {
     return placeholder;
   }
   if (thumb.error_code === 2) {
-    if (filePath) return getAssetSrc(filePath);
-    return getThumbUrl(thumb.file_id, bustCache, thumbnailSize) || placeholder;
+    if (filePath) return getAssetSrc(filePath, fileVersion);
+    return getThumbUrl(thumb.file_id, bustCache, thumbnailSize, fileVersion) || placeholder;
   }
   if (thumb.error_code !== 0) {
     return placeholder;
@@ -563,7 +567,7 @@ export function getThumbnailDataUrl(
     setCachedThumbnailDataUrl(thumb.file_id, dataUrl, thumbnailSize);
     return dataUrl;
   }
-  return getThumbUrl(thumb.file_id, bustCache, thumbnailSize) || placeholder;
+  return getThumbUrl(thumb.file_id, bustCache, thumbnailSize, fileVersion) || placeholder;
 }
 
 export function getRelativePath(path: string, basePath: string): string {
@@ -667,14 +671,18 @@ export function scrollToFolder(folderId: number) {
 }
 
 // get image file asset source url with version number
-export function getAssetSrc(filePath: string): string {
+export function getAssetSrc(filePath: string, fileVersion = 0): string {
   if (!filePath) {
     return '';
   }
   const uiStore = useUIStore();
-  const version = uiStore.getFileVersion(filePath);
+  const localVersion = uiStore.getFileVersion(filePath);
   const assetUrl = convertFileSrc(filePath);
-  return version > 0 ? `${assetUrl}?v=${version}` : assetUrl;
+  const params = new URLSearchParams();
+  if (fileVersion > 0) params.set('v', String(fileVersion));
+  if (localVersion > 0) params.set('u', String(localVersion));
+  const query = params.toString();
+  return query ? `${assetUrl}?${query}` : assetUrl;
 }
 
 // get country name from country code
