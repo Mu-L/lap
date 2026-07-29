@@ -356,9 +356,7 @@
         "Name",
         "Größe",
         "Dimension",
-        "Dauer",
-        "Bewertung",
-        "Zufällig"
+        "Dauer"
       ],
       "sort_order_options": [
         "Aufsteigend",

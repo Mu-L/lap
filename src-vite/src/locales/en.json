@@ -356,9 +356,7 @@
         "Name",
         "Size",
         "Dimension",
-        "Duration",
-        "Rating",
-        "Random"
+        "Duration"
       ],
       "sort_order_options": [
         "Ascending",

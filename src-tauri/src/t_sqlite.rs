@@ -4058,8 +4058,6 @@ impl AFile {
             4 => format!("a.size {}, a.id {}", dir, dir),
             5 => format!("a.width {}, a.height {}, a.id {}", dir, dir, dir),
             6 => format!("a.duration {}, a.id {}", dir, dir),
-            7 => format!("a.rating {}, a.id {}", dir, dir),
-            8 => "RANDOM()".to_string(),
             9 => "a.id ASC".to_string(), // internal: stable append order during scanning
             _ => format!("a.taken_date {}, a.id {}", dir, dir),
         }

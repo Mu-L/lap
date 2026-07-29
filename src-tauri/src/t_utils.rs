@@ -1538,40 +1538,31 @@ pub fn get_folder_files(
     files = hide_live_photo_companion_videos(files);
     files.retain(|file| matches_file_type_filter(file_type, file.file_type.unwrap_or_default()));
 
-    // sort
-    if sort_type == 8 {
-        // random
-        use rand::seq::SliceRandom;
-        let mut rng = rand::thread_rng();
-        files.shuffle(&mut rng);
-    } else {
-        files.sort_by(|a, b| {
-            let ordering = match sort_type {
-                0 => a.taken_date.cmp(&b.taken_date),   // Taken Date
-                1 => a.created_at.cmp(&b.created_at),   // Created Date
-                2 => a.modified_at.cmp(&b.modified_at), // Modified Date
-                3 => natural_sort_key(&a.name.to_lowercase()) // name
-                    .cmp(&natural_sort_key(&b.name.to_lowercase())), // support pinyin
-                4 => a.size.cmp(&b.size),               // size
-                5 => {
-                    if a.width == b.width {
-                        a.height.cmp(&b.height)
-                    } else {
-                        a.width.cmp(&b.width)
-                    }
-                } // dimension
-                6 => a.duration.cmp(&b.duration),       // duration
-                7 => a.rating.cmp(&b.rating),           // rating
-                9 => a.id.cmp(&b.id),                   // ID sort
-                _ => a.taken_date.cmp(&b.taken_date),   // Default to taken date
-            };
-            if sort_order == 1 {
-                ordering.reverse()
-            } else {
-                ordering
-            }
-        });
-    }
+    files.sort_by(|a, b| {
+        let ordering = match sort_type {
+            0 => a.taken_date.cmp(&b.taken_date),   // Taken Date
+            1 => a.created_at.cmp(&b.created_at),   // Created Date
+            2 => a.modified_at.cmp(&b.modified_at), // Modified Date
+            3 => natural_sort_key(&a.name.to_lowercase()) // name
+                .cmp(&natural_sort_key(&b.name.to_lowercase())), // support pinyin
+            4 => a.size.cmp(&b.size),               // size
+            5 => {
+                if a.width == b.width {
+                    a.height.cmp(&b.height)
+                } else {
+                    a.width.cmp(&b.width)
+                }
+            } // dimension
+            6 => a.duration.cmp(&b.duration),       // duration
+            9 => a.id.cmp(&b.id),                   // ID sort
+            _ => a.taken_date.cmp(&b.taken_date),   // Default to taken date
+        };
+        if sort_order == 1 {
+            ordering.reverse()
+        } else {
+            ordering
+        }
+    });
 
     (files, new_count, updated_count)
 }

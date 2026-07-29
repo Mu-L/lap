@@ -356,9 +356,7 @@
         "Nombre",
         "Tamaño",
         "Dimensión",
-        "Duración",
-        "Valoración",
-        "Aleatorio"
+        "Duración"
       ],
       "sort_order_options": [
         "Ascendente",

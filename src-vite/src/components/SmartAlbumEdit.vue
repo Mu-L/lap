@@ -211,7 +211,7 @@ function indexedOptions(labels: unknown, fallbacks: string[]) {
 
 const sortOptions = computed(() => indexedOptions(
   localeMsg.value.toolbar.filter?.sort_type_options,
-  ['Taken Date', 'Created Date', 'Modified Date', 'Name', 'Size', 'Dimension', 'Duration', 'Rating', 'Random'],
+  ['Taken Date', 'Created Date', 'Modified Date', 'Name', 'Size', 'Dimension', 'Duration'],
 ));
 
 const sortOrderOptions = computed(() => indexedOptions(

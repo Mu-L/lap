@@ -356,9 +356,7 @@
         "Nom",
         "Taille",
         "Dimension",
-        "Durée",
-        "Note",
-        "Aléatoire"
+        "Durée"
       ],
       "sort_order_options": [
         "Croissant",
