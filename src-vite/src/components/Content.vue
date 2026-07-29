@@ -461,7 +461,6 @@
             @quick-edit-tag="clickTag"
             @quick-edit-comment="openCommentEditor"
             @navigate-folder="handleInfoNavigateFolder"
-            @edit-album="openAlbumEdit"
           />
         </div>
       </div>
@@ -4487,6 +4486,9 @@ onMounted( async() => {
           if (index !== -1) {
             Object.assign(fileList.value[index], changes);
           }
+          if (changes.culling_flag !== undefined || changes.cullingFlag !== undefined) {
+            void tauriEmit('culling-status-updated');
+          }
         }
         break;
       default:
@@ -8111,12 +8113,6 @@ const handleInfoNavigateFolder = (folderPath: string) => {
   const targetFile = fileList.value[selectedItemIndex.value];
   if (!folderPath || !targetFile?.album_id) return;
   enterAlbumPreviewMode(targetFile, folderPath);
-};
-
-const openAlbumEdit = (albumId: number) => {
-  if (Number(albumId || 0) > 0) {
-    tauriEmit('edit-album-requested', { albumId });
-  }
 };
 
 const FILE_TYPE_IMAGE = 1;

@@ -90,14 +90,6 @@
                 <div class="absolute left-1 top-1 rounded bg-base-300/85 px-1.5 py-0.5 text-[10px] font-semibold text-base-content/70 backdrop-blur-sm">
                   {{ group.file_count }}
                 </div>
-                <div
-                  class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left text-[10px] leading-tight text-white/90 opacity-0 transition-opacity group-hover/thumb:opacity-100"
-                  :class="{ 'opacity-100': selectedSimilarGroupId === group.id }"
-                >
-                  <div v-if="group.representative?.width && group.representative?.height" class="text-white/70">
-                    {{ group.representative.width }} x {{ group.representative.height }}
-                  </div>
-                </div>
               </button>
             </div>
             </div>
@@ -114,6 +106,9 @@
               <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
                 {{ $t('info_panel.dedup.actions_title') }}
               </span>
+              <span class="ml-auto text-[11px] font-semibold text-base-content/50">
+                {{ $t('toolbar.filter.select_count', { count: selectedSimilarCount.toLocaleString() }) }} · {{ formatFileSize(selectedSimilarBytes) }}
+              </span>
             </div>
             <div class="flex flex-wrap gap-1">
               <PanelActionButton
@@ -122,11 +117,11 @@
               >
                 {{ isAllSimilarItemsSelected(activeSimilarGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
               </PanelActionButton>
-              <PanelActionButton :icon="IconSplitOn" :disabled="selectedSimilarCount < 2" @click="compareSelectedSimilarPhotos">
-                {{ $t('menu.file.compare_selected_images') }}
+              <PanelActionButton :icon="selectedSimilarCount >= 3 ? IconSplitOn4 : IconSplitOn" :disabled="selectedSimilarCount < 2" @click="compareSelectedSimilarPhotos">
+                {{ $t('info_panel.dedup.compare') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
-                {{ $t('info_panel.dedup.move_selected_to_trash', { count: selectedSimilarCount.toLocaleString(), size: formatFileSize(selectedSimilarBytes) }) }}
+                {{ $t('menu.file.move_to_trash') }}
               </PanelActionButton>
             </div>
             <div class="space-y-2.5">
@@ -137,15 +132,13 @@
                 tabindex="0"
                 class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
                 :class="getDedupItemClass(item.file_id, isSimilarSelected(activeSimilarGroup.id, item.file_id))"
-                @mouseenter="hoveredSimilarFileId = Number(item.file_id)"
-                @mouseleave="hoveredSimilarFileId = null"
                 @click="handleSimilarSelection(item.file_id)"
                 @dblclick="handleSimilarSelection(item.file_id, true)"
                 @keydown.enter.self="handleSimilarSelection(item.file_id)"
                 @keydown.space.self.prevent="handleSimilarSelection(item.file_id)"
               >
                 <div class="flex items-center gap-2">
-                  <label class="flex items-center cursor-pointer shrink-0" @click.stop>
+                  <label class="flex items-center cursor-pointer shrink-0" @click.stop @dblclick.stop>
                     <input
                       type="checkbox"
                       class="checkbox checkbox-xs"
@@ -160,18 +153,22 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <div class="text-xs font-semibold text-base-content/70 truncate">{{ item.file?.name }}</div>
-                    <div
-                      class="text-[11px] text-base-content/30 truncate"
-                      :title="formatDedupFolderPath(item.file)"
-                    >
-                      {{ formatDedupFolderPath(item.file) }}
+                    <div class="text-[11px] text-base-content/30 truncate">
+                      <template v-if="item.file?.width && item.file?.height">
+                        {{ item.file.width }} × {{ item.file.height }}
+                      </template>
+                      <template v-else>—</template>
+                      · {{ formatFileSize(Number(item.file?.size || 0)) }}
                     </div>
                     <div v-if="item.file?.modified_at" class="text-[11px] text-base-content/30">
                       {{ $t('file_info.modified_at') }}: {{ formatTimestamp(item.file.modified_at, $t('format.date_time')) }}
                     </div>
                   </div>
-                  <div class="shrink-0 w-16 min-h-10 flex items-center justify-center">
-                    <div v-if="showSimilarCullingActions(item.file_id)" class="flex items-center gap-0.5" @click.stop>
+                  <div class="shrink-0 w-16 min-h-10 flex flex-col items-center justify-center gap-0.5">
+                    <span class="text-[11px] leading-none text-base-content/30">
+                      {{ Math.round((item.score || 0) * 100) }}%
+                    </span>
+                    <div class="flex items-center gap-0.5" @click.stop>
                       <button
                         class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
                         :class="getSimilarCullingIconClass(item.file, 1)"
@@ -200,14 +197,6 @@
                         <IconFlag class="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <span v-else class="flex items-center gap-1 text-[11px] text-base-content/30">
-                      <component
-                        :is="getSimilarCullingIcon(item.file)"
-                        class="w-3.5 h-3.5"
-                        :class="getSimilarCullingStatusClass(item.file)"
-                      />
-                      {{ Math.round((item.score || 0) * 100) }}%
-                    </span>
                   </div>
                 </div>
               </div>
@@ -308,6 +297,9 @@
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.actions_title') }}
             </span>
+            <span class="ml-auto text-[11px] font-semibold text-base-content/50">
+              {{ $t('toolbar.filter.select_count', { count: selectedDeleteCount.toLocaleString() }) }} · {{ formatFileSize(selectedDeleteBytes) }}
+            </span>
           </div>
 
           <div class="flex flex-wrap gap-1">
@@ -323,56 +315,24 @@
               danger
               @click="trashSelectedDuplicates(activeGroup.id, selectedDeleteBytes)"
             >
-              {{ $t('info_panel.dedup.move_selected_to_trash', { count: selectedDeleteCount.toLocaleString(), size: formatFileSize(selectedDeleteBytes) }) }}
+              {{ $t('menu.file.move_to_trash') }}
             </PanelActionButton>
           </div>
           <div class="space-y-2.5">
-            <button
-              v-if="activeGroup.keepItem?.file"
-              :key="`keep-${activeGroup.keepItem.file_id}`"
-              class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
-              :class="getDedupItemClass(activeGroup.keepItem.file_id)"
-              @click="emit('select-file', activeGroup.keepItem.file_id)"
-              @dblclick="emit('preview-file', activeGroup.keepItem.file_id)"
-            >
-              <div class="flex items-center gap-2">
-                <div class="shrink-0 text-base-content/70" :title="$t('info_panel.dedup.keep_label')">
-                  <IconLock class="w-4 h-4" />
-                </div>
-                <div class="w-10 h-10 rounded-box overflow-hidden shrink-0">
-                  <img v-if="activeGroup.keepItem.file.thumbnail" :src="activeGroup.keepItem.file.thumbnail" class="w-full h-full object-cover" />
-                  <div v-else class="w-full h-full skeleton"></div>
-                </div>
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-semibold text-base-content/70 truncate">{{ activeGroup.keepItem.file.name }}</div>
-                  <div
-                    class="text-[11px] text-base-content/30 truncate"
-                    :title="formatDedupFolderPath(activeGroup.keepItem.file)"
-                  >
-                    {{ formatDedupFolderPath(activeGroup.keepItem.file) }}
-                  </div>
-                  <div v-if="activeGroup.keepItem.file?.modified_at" class="text-[11px] text-base-content/30">
-                    {{ $t('file_info.modified_at') }}: {{ formatTimestamp(activeGroup.keepItem.file.modified_at, $t('format.date_time')) }}
-                  </div>
-                </div>
-              </div>
-            </button>
-
-            <button
-              v-for="item in activeGroup.duplicateItems"
+            <div
+              v-for="item in activeGroup.items"
               :key="item.file_id"
+              role="button"
+              tabindex="0"
               class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
-              :class="getDedupItemClass(
-                item.file_id,
-                isDupSelected(activeGroup.id, item.file_id),
-              )"
+              :class="getDedupItemClass(item.file_id, item.is_keep !== 1 && isDupSelected(activeGroup.id, item.file_id))"
               @click="handleDuplicateSelection(item.file_id)"
               @dblclick="handleDuplicateSelection(item.file_id, true)"
+              @keydown.enter.self="handleDuplicateSelection(item.file_id)"
+              @keydown.space.self.prevent="handleDuplicateSelection(item.file_id)"
             >
-              <div class="flex items-center gap-2" 
-                @dblclick.stop
-              >
-                <label class="flex items-center cursor-pointer shrink-0" @click.stop>
+              <div class="flex items-center gap-2">
+                <label v-if="item.is_keep !== 1" class="flex items-center cursor-pointer shrink-0" @click.stop @dblclick.stop>
                   <input
                     type="checkbox"
                     class="checkbox checkbox-xs"
@@ -383,6 +343,7 @@
                     @change="toggleDupSelected(activeGroup.id, item.file_id)"
                   />
                 </label>
+                <div v-else class="w-4 shrink-0"></div>
                 <div class="w-10 h-10 rounded-box overflow-hidden shrink-0">
                   <img v-if="item.file?.thumbnail" :src="item.file.thumbnail" class="w-full h-full object-cover" />
                   <div v-else class="w-full h-full skeleton"></div>
@@ -399,11 +360,21 @@
                     {{ $t('file_info.modified_at') }}: {{ formatTimestamp(item.file.modified_at, $t('format.date_time')) }}
                   </div>
                 </div>
-                <PanelActionButton class="shrink-0" primary @click.stop="setKeep(activeGroup.id, item.file_id)">
-                  {{ $t('info_panel.dedup.set_keep') }}
-                </PanelActionButton>
+                <div class="shrink-0 w-16 min-h-10 flex items-center justify-center">
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
+                    :class="item.is_keep === 1 ? 'text-primary' : 'text-base-content/30 hover:text-primary'"
+                    :title="$t('info_panel.dedup.keep_label')"
+                    :aria-label="$t('info_panel.dedup.keep_label')"
+                    :aria-current="item.is_keep === 1 ? 'true' : undefined"
+                    @click.stop="item.is_keep !== 1 && setKeep(activeGroup.id, item.file_id)"
+                  >
+                    <IconLock class="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -423,6 +394,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted, nextTick, PropType } from 'vue';
+import { listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import {
   formatFileSize,
@@ -436,7 +408,7 @@ import {
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import { IconCheckAll, IconCheckNone, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconTrash } from '@/common/icons';
+import { IconCheckAll, IconCheckNone, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
@@ -513,7 +485,6 @@ const similarGroups = ref<any[]>([]);
 const similarTotalGroups = ref(0);
 const isLoadingMoreSimilarGroups = ref(false);
 const selectedSimilarGroupId = ref<number | null>(null);
-const hoveredSimilarFileId = ref<number | null>(null);
 const similarEligibleCount = ref(0);
 const similarEligibleCountLoading = ref(false);
 const similarHasScanned = ref(false);
@@ -521,6 +492,7 @@ const similarError = ref(false);
 const similarLoadedScope = ref('');
 const showLargeSimilarScanConfirm = ref(false);
 const unlistenSimilarProgress = ref<null | (() => void)>(null);
+const unlistenCullingStatus = ref<null | (() => void)>(null);
 const dedupScanError = ref(false);
 const unlistenDedupProgress = ref<null | (() => void)>(null);
 const queuedDedupScan = ref(false);
@@ -629,10 +601,6 @@ function isSimilarSelected(groupId: number, fileId: number) {
   return getSimilarSelectedSet(groupId).has(fileId);
 }
 
-function showSimilarCullingActions(fileId: number) {
-  return hoveredSimilarFileId.value === Number(fileId) || Number(props.selectedFileId) === Number(fileId);
-}
-
 function getSimilarCullingIconClass(file: any, cullingFlag: number) {
   const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
   if (current === cullingFlag) return cullingFlag === 2 ? 'text-error' : 'text-primary';
@@ -641,14 +609,11 @@ function getSimilarCullingIconClass(file: any, cullingFlag: number) {
     : 'text-base-content/30 hover:text-primary/70';
 }
 
-function getSimilarCullingIcon(file: any) {
-  const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
-  return current === 1 ? IconFlagFilled : current === 2 ? IconFlagOff : IconFlag;
-}
-
-function getSimilarCullingStatusClass(file: any) {
-  const current = Number(file?.culling_flag ?? file?.cullingFlag ?? 0);
-  return current === 1 ? 'text-primary' : current === 2 ? 'text-error' : 'text-base-content/30';
+async function refreshActiveSimilarGroup() {
+  const group = activeSimilarGroup.value;
+  if (!group) return;
+  try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
+  catch (error) { console.error('refreshActiveSimilarGroup error:', error); }
 }
 
 async function setSimilarCullingFlag(item: any, cullingFlag: number) {
@@ -910,10 +875,8 @@ async function cancelSimilar() {
 }
 async function selectSimilarGroup(group: any) {
   selectedSimilarGroupId.value = Number(group.id);
-  if (!group.items) {
-    try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
-    catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
-  }
+  try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
+  catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
   if (group.representative?.id) emit('select-file', group.representative.id);
 }
@@ -1467,6 +1430,9 @@ onMounted(async () => {
       similarLoading.value = false;
     }
   });
+  unlistenCullingStatus.value = await listen('culling-status-updated', () => {
+    void refreshActiveSimilarGroup();
+  });
 
   if (!props.dedupScanKey) {
     isDedupLoading.value = false;
@@ -1484,6 +1450,7 @@ onUnmounted(() => {
     unlistenDedupProgress.value = null;
   }
   if (unlistenSimilarProgress.value) unlistenSimilarProgress.value();
+  if (unlistenCullingStatus.value) unlistenCullingStatus.value();
 });
 
 defineExpose({

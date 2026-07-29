@@ -171,17 +171,10 @@
                   class="ml-1 text-[12px] text-base-content/70 whitespace-nowrap"
                 >.{{ renamingExt }}</span>
               </div>
-              <span v-else 
-                class="text-[12px] font-medium text-base-content/80 break-all flex-1 min-w-0"
+              <span v-else
+                class="text-[12px] font-medium text-base-content/80 break-all flex-1 min-w-0 cursor-text"
+                @dblclick.stop="startRename"
               >{{ fileInfo?.name }}</span>
-              <TButton
-                v-if="!isRenaming"
-                :icon="IconEdit"
-                :tooltip="$t('menu.file.rename')"
-                :buttonSize="'small'"
-                class="opacity-0 pointer-events-none transition-opacity duration-200 ease-in-out group-hover/general:opacity-30 group-hover/general:pointer-events-auto group-hover/field:opacity-100! group-focus-within/field:opacity-100! group-focus-within/field:pointer-events-auto"
-                @click.stop="startRename"
-              />
             </div>
 
             <!-- Path -->
@@ -195,15 +188,8 @@
 
             <!-- Album -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.album_name') }}</div>
-            <div class="group/field flex items-center gap-1 min-w-0">
-              <span class="flex-1 min-w-0 text-[12px] font-medium text-base-content/80 break-all">{{ fileInfo?.album_name }}</span>
-              <TButton
-                :icon="IconEdit"
-                :tooltip="$t('menu.album.edit')"
-                :buttonSize="'small'"
-                class="shrink-0 opacity-0 pointer-events-none transition-opacity duration-150 group-hover/general:opacity-30 group-hover/general:pointer-events-auto group-hover/field:opacity-100! group-focus-within/field:opacity-100! group-focus-within/field:pointer-events-auto"
-                @click.stop="emit('editAlbum', fileInfo?.album_id)"
-              />
+            <div class="flex items-center min-w-0">
+              <span class="min-w-0 text-[12px] font-medium text-base-content/80 break-all">{{ fileInfo?.album_name }}</span>
             </div>
 
             <!-- Size -->
@@ -241,7 +227,7 @@
               </div>
             </div>
 
-            <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('menu.meta.favorite') }}</div>
+            <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.marks') }}</div>
             <FavoriteRatingControl
               :favorite="Boolean(fileInfo?.is_favorite)"
               :rating="Number(fileInfo?.rating || 0)"
@@ -256,7 +242,15 @@
             <!-- Tags -->
             <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('file_info.tags') }}</div>
             <div class="group/field flex items-center min-h-6 gap-1">
-              <div class="text-[12px] text-base-content/75 flex flex-wrap gap-1 flex-1 min-w-0">
+              <TButton
+                v-if="!fileInfo?.tags?.length"
+                :icon="IconEdit"
+                :tooltip="$t('menu.meta.tag')"
+                :buttonSize="'small'"
+                class="shrink-0"
+                @click.stop="emit('quickEditTag')"
+              />
+              <div class="text-[12px] text-base-content/75 flex flex-wrap gap-1 flex-1 min-w-0 cursor-pointer" @click.stop="fileInfo?.tags?.length && emit('quickEditTag')">
                 <template v-if="fileInfo?.tags && fileInfo.tags.length">
                   <span
                     v-for="tag in fileInfo.tags"
@@ -265,26 +259,20 @@
                   >{{ tag.name }}</span>
                 </template>
               </div>
-              <TButton
-                :icon="IconEdit"
-                :tooltip="$t('menu.meta.tag')"
-                :buttonSize="'small'"
-                class="opacity-0 pointer-events-none transition-opacity duration-200 ease-in-out group-hover/general:opacity-30 group-hover/general:pointer-events-auto group-hover/field:opacity-100! group-focus-within/field:opacity-100! group-focus-within/field:pointer-events-auto"
-                @click.stop="emit('quickEditTag')"
-              />
             </div>
 
             <!-- Comment -->
             <div class="flex items-start text-[11px] text-base-content/45 py-1.5">{{ $t('file_info.comment') }}</div>
             <div class="group/field flex items-start gap-1">
-              <div class="text-[12px] leading-5 text-base-content/75 wrap-break-words whitespace-pre-wrap flex-1 min-w-0">{{ fileInfo?.comments }}</div>
               <TButton
+                v-if="!fileInfo?.comments"
                 :icon="IconEdit"
                 :tooltip="$t('menu.meta.comment')"
                 :buttonSize="'small'"
-                class="opacity-0 pointer-events-none transition-opacity duration-200 ease-in-out group-hover/general:opacity-30 group-hover/general:pointer-events-auto group-hover/field:opacity-100! group-focus-within/field:opacity-100! group-focus-within/field:pointer-events-auto"
+                class="shrink-0"
                 @click.stop="emit('quickEditComment')"
               />
+              <div class="text-[12px] leading-5 text-base-content/75 wrap-break-words whitespace-pre-wrap flex-1 min-w-0 cursor-pointer" @click.stop="fileInfo?.comments && emit('quickEditComment')">{{ fileInfo?.comments }}</div>
             </div>
 
             <!-- Rotate Display -->
@@ -473,7 +461,6 @@ const emit = defineEmits([
   'quickEditTag',
   'quickEditComment',
   'navigateFolder',
-  'editAlbum',
 ]);
 
 const toast = useToast();
