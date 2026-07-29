@@ -253,6 +253,7 @@ type Pane = 'left' | 'right' | 'bottomLeft' | 'bottomRight';
 const allPanes: Pane[] = ['left', 'right', 'bottomLeft', 'bottomRight'];
 const paneViewerRefs = new Map<Pane, any>();
 const isFullScreen = ref(false);
+const wasMaximizedBeforeFullScreen = ref(false);
 const isZoomFit = ref(true);
 const rightIsZoomFit = ref(true);
 const splitCount = ref<1 | 2 | 4>(1);
@@ -876,9 +877,34 @@ watch(() => isFullScreen.value, async (newFullScreen) => {
   config.imageViewer.isFullScreen = newFullScreen;
 
   if(isWin) {
-    await appWindow.setFullscreen(newFullScreen);
-    await appWindow.setResizable(!newFullScreen);
-    // await appWindow.setDecorations(false);
+    const pauseWindowTransition = () => new Promise(resolve => setTimeout(resolve, 80));
+
+    if (newFullScreen) {
+      wasMaximizedBeforeFullScreen.value = await appWindow.isMaximized();
+      await appWindow.setResizable(true);
+
+      if (wasMaximizedBeforeFullScreen.value) {
+        await appWindow.unmaximize();
+        await pauseWindowTransition();
+      }
+
+      if (!(await appWindow.isFullscreen())) {
+        await appWindow.setFullscreen(true);
+      }
+    } else {
+      if (await appWindow.isFullscreen()) {
+        await appWindow.setFullscreen(false);
+        await pauseWindowTransition();
+      }
+
+      await appWindow.setResizable(true);
+
+      if (wasMaximizedBeforeFullScreen.value) {
+        await appWindow.maximize();
+      }
+
+      wasMaximizedBeforeFullScreen.value = false;
+    }
   } else if (isMac) {
       if (newFullScreen !== await appWindow.isFullscreen()) {
         await appWindow.setFullscreen(newFullScreen);
