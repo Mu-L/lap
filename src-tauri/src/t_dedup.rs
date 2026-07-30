@@ -331,6 +331,7 @@ fn get_files_by_sizes(conn: &Connection) -> Result<Vec<AFile>, String> {
                 album_id: None,
                 album_name: None,
                 has_thumbnail: None,
+                has_collections: None,
                 has_embedding: None,
                 last_scan_time: Some(0),
                 content_identifier: None,

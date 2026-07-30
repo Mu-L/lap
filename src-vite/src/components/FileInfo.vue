@@ -245,7 +245,7 @@
               <TButton
                 v-if="!fileInfo?.tags?.length"
                 :icon="IconEdit"
-                :tooltip="$t('menu.meta.tag')"
+                :tooltip="$t('settings.shortcuts.actions.edit_tags')"
                 :buttonSize="'small'"
                 class="shrink-0"
                 @click.stop="emit('quickEditTag')"
@@ -267,13 +267,30 @@
               <TButton
                 v-if="!fileInfo?.comments"
                 :icon="IconEdit"
-                :tooltip="$t('menu.meta.comment')"
+                :tooltip="$t('settings.shortcuts.actions.edit_comment')"
                 :buttonSize="'small'"
                 class="shrink-0"
                 @click.stop="emit('quickEditComment')"
               />
               <div class="text-[12px] leading-5 text-base-content/75 wrap-break-words whitespace-pre-wrap flex-1 min-w-0 cursor-pointer" @click.stop="fileInfo?.comments && emit('quickEditComment')">{{ fileInfo?.comments }}</div>
             </div>
+
+            <!-- Collections -->
+            <template v-if="fileCollections.length > 0">
+              <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('collection.title') }}</div>
+              <div class="flex items-center min-h-6 gap-x-3 gap-y-1 flex-wrap">
+                <button
+                  v-for="collection in fileCollections"
+                  :key="collection.id"
+                  type="button"
+                  class="inline-flex items-center gap-1 text-[12px] font-medium text-base-content/70 transition-colors hover:text-base-content cursor-pointer"
+                  @click.stop="emit('navigateCollection', collection.id)"
+                >
+                  <IconBookmark class="h-3.5 w-3.5 shrink-0" />
+                  {{ collection.name }}
+                </button>
+              </div>
+            </template>
 
             <!-- Rotate Display -->
             <template v-if="fileInfo?.rotate && fileInfo?.rotate !== 0">
@@ -402,7 +419,7 @@ import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { isWebViewVideoPlaybackDisabled } from '@/common/video';
-import { renameFile, editImage, getAlbum, revealPath } from '@/common/api';
+import { renameFile, editImage, getAlbum, getFileCollections, revealPath } from '@/common/api';
 import { 
   extractFileName, 
   getFileExtension,
@@ -419,19 +436,20 @@ import {
   combineFileName,
   isValidFileName,
   getAssetSrc,
-  isMac
 } from '@/common/utils';
 import { 
-  IconClose, IconLocation, IconRight, IconCameraAperture, 
-  IconFile, IconFolderSearch, IconEdit,
+  IconClose,
+  IconRight, 
+  IconFile,
+  IconEdit,
   IconFolder,
   IconPhoto,
   IconRotate,
   IconVideo,
   IconZoomIn,
   IconZoomOut,
-  IconExternal,
   IconLivePhoto,
+  IconBookmark,
 } from '@/common/icons';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import TButton from '@/components/TButton.vue';
@@ -461,6 +479,7 @@ const emit = defineEmits([
   'quickEditTag',
   'quickEditComment',
   'navigateFolder',
+  'navigateCollection',
 ]);
 
 const toast = useToast();
@@ -510,6 +529,8 @@ const histogramChannelLabel = computed(() => {
 const previewVideoRef = ref<HTMLVideoElement | null>(null);
 const showVideoPreview = ref(false);
 const isVideoPreviewReady = ref(false);
+const fileCollections = ref<Array<{ id: number; name: string }>>([]);
+let fileCollectionsRequestSeq = 0;
 const normalizedRotate = computed(() => {
   const rotate = Number(props.fileInfo?.rotate || 0) % 360;
   return rotate < 0 ? rotate + 360 : rotate;
@@ -600,6 +621,19 @@ watch(
 );
 
 onBeforeUnmount(stopPreviewVideo);
+
+watch(
+  () => [props.fileInfo?.id, Boolean(props.fileInfo?.has_collections), props.fileInfo?.collectionVersion] as const,
+  async ([fileId, hasCollections]) => {
+    const requestSeq = ++fileCollectionsRequestSeq;
+    fileCollections.value = [];
+    if (!fileId || !hasCollections) return;
+    const collections = await getFileCollections(Number(fileId));
+    if (requestSeq !== fileCollectionsRequestSeq || Number(props.fileInfo?.id) !== Number(fileId)) return;
+    fileCollections.value = Array.isArray(collections) ? collections : [];
+  },
+  { immediate: true }
+);
 
 function increasePreviewScale() {
   const index = previewScaleOptions.indexOf(previewScale.value);

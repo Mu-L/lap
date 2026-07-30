@@ -882,6 +882,15 @@ export async function getCollectionFileIds(collectionId) {
   return null;
 }
 
+export async function getFileCollections(fileId) {
+  try {
+    return await invoke('get_file_collections', { fileId });
+  } catch (error) {
+    console.error('Failed to get file collections:', error);
+  }
+  return [];
+}
+
 export async function getCollectionCountAndSum(collectionId, params) {
   try {
     return await invoke('get_collection_count_and_sum', { collectionId, params });

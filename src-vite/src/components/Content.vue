@@ -461,6 +461,7 @@
             @quick-edit-tag="clickTag"
             @quick-edit-comment="openCommentEditor"
             @navigate-folder="handleInfoNavigateFolder"
+            @navigate-collection="handleInfoNavigateCollection"
           />
         </div>
       </div>
@@ -2578,6 +2579,13 @@ async function clearContentInternalDrag(event?: PointerEvent) {
         }
         if (skipped > 0) {
           toast.info(t('collection.already_exists_toast', { count: skipped }));
+        }
+        const addedFileIds = new Set(files.map((file: any) => Number(file.id)).filter((id: number) => id > 0));
+        for (const file of fileList.value) {
+          if (addedFileIds.has(Number(file?.id))) {
+            file.has_collections = true;
+            file.collectionVersion = Number(file.collectionVersion || 0) + 1;
+          }
         }
       }
       await tauriEmit('collection-files-dropped', {
@@ -8235,6 +8243,13 @@ const handleInfoNavigateFolder = (folderPath: string) => {
   const targetFile = fileList.value[selectedItemIndex.value];
   if (!folderPath || !targetFile?.album_id) return;
   enterAlbumPreviewMode(targetFile, folderPath);
+};
+
+const handleInfoNavigateCollection = (collectionId: number) => {
+  const id = Number(collectionId);
+  if (!Number.isFinite(id) || id <= 0) return;
+  libConfig.activePane = 'collection';
+  libConfig.collection.selectedId = id;
 };
 
 const FILE_TYPE_IMAGE = 1;

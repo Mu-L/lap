@@ -899,6 +899,7 @@ pub struct AFile {
     pub album_id: Option<i64>,              // album id (for webview)
     pub album_name: Option<String>,         // album name (for webview)
     pub has_thumbnail: Option<bool>,        // has thumbnail (for webview)
+    pub has_collections: Option<bool>,      // belongs to one or more collections
     pub has_embedding: Option<bool>,        // has embedding (for webview)
     pub last_scan_time: Option<i64>,        // last scan timestamp
     pub content_identifier: Option<String>, // Apple Live Photo content identifier
@@ -923,6 +924,13 @@ pub struct ACollection {
 pub struct ACollectionOrder {
     pub id: i64,
     pub sort_order: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AFileCollection {
+    pub id: i64,
+    pub name: String,
 }
 
 impl ACollection {
@@ -1226,6 +1234,33 @@ impl ACollection {
             ids.push(id.map_err(|e| e.to_string())?);
         }
         Ok(ids)
+    }
+
+    pub fn for_file(file_id: i64) -> Result<Vec<AFileCollection>, String> {
+        let conn = open_conn()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT c.id, c.name
+                FROM acollections_files cf
+                JOIN acollections c ON c.id = cf.collection_id
+                WHERE cf.file_id = ?1
+                ORDER BY c.sort_order ASC, c.id ASC",
+            )
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![file_id], |row| {
+                Ok(AFileCollection {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut collections = Vec::new();
+        for row in rows {
+            collections.push(row.map_err(|e| e.to_string())?);
+        }
+        Ok(collections)
     }
 }
 
@@ -1828,6 +1863,7 @@ impl AFile {
             album_id: None,
             album_name: None,
             has_thumbnail: None,
+            has_collections: None,
             has_embedding: None,
             last_scan_time: Some(0),
             content_identifier,
@@ -2305,6 +2341,7 @@ impl AFile {
                 b.path,
                 c.id AS album_id, c.name AS album_name,
                 (SELECT 1 FROM athumbs t WHERE t.file_id = a.id LIMIT 1) AS has_thumbnail,
+                (SELECT 1 FROM acollections_files cf WHERE cf.file_id = a.id LIMIT 1) AS has_collections,
                 CASE WHEN a.embeds IS NOT NULL THEN 1 ELSE 0 END AS has_embedding,
                 a.has_faces,
                 a.last_scan_time,
@@ -2384,13 +2421,14 @@ impl AFile {
             album_id: row.get(44)?,
             album_name: row.get(45)?,
             has_thumbnail: row.get::<_, Option<i64>>(46)?.map(|v| v == 1),
-            has_embedding: row.get::<_, Option<i64>>(47)?.map(|v| v == 1),
-            has_faces: row.get::<_, Option<i32>>(48)?,
-            last_scan_time: row.get(49)?,
-            content_identifier: row.get(50)?,
-            media_subtype: row.get(51)?,
-            live_photo_video_id: row.get(52)?,
-            live_photo_video_path: row.get(53)?,
+            has_collections: row.get::<_, Option<i64>>(47)?.map(|v| v == 1),
+            has_embedding: row.get::<_, Option<i64>>(48)?.map(|v| v == 1),
+            has_faces: row.get::<_, Option<i32>>(49)?,
+            last_scan_time: row.get(50)?,
+            content_identifier: row.get(51)?,
+            media_subtype: row.get(52)?,
+            live_photo_video_id: row.get(53)?,
+            live_photo_video_path: row.get(54)?,
         })
     }
 

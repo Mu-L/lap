@@ -216,6 +216,7 @@ import {
   IconMore,
   IconHeartFilled,
   IconTag,
+  IconBookmark,
   IconRotate,
   IconComment,
   IconStarFilled,
@@ -570,9 +571,9 @@ const hasBottomMediaBadges = computed(() => (
 
 const statusBadges = computed<ThumbnailBadge[]>(() => {
   const badges: ThumbnailBadge[] = [];
+  const metaIcons: ThumbnailBadge['icons'] = [];
   const rating = Number(props.file.rating || 0);
   const cullingFlag = Number(props.file.culling_flag ?? props.file.cullingFlag ?? 0);
-  const metaIcons: ThumbnailBadge['icons'] = [];
   const cullingIcon = cullingFlag === 1
     ? IconFlagFilled
     : cullingFlag === 2
@@ -610,34 +611,19 @@ const statusBadges = computed<ThumbnailBadge[]>(() => {
     });
   }
   
-  if (props.file.has_tags) {
-    metaIcons.push({
-      icon: IconTag,
-    });
-  }
-
-  if (props.file.comments?.length > 0) {
-    metaIcons.push({
-      icon: IconComment,
-    });
-  }
-
+  if (props.file.has_tags) metaIcons.push({ icon: IconTag });
+  if (props.file.comments?.length > 0) metaIcons.push({ icon: IconComment });
+  if (props.file.has_collections) metaIcons.push({ icon: IconBookmark });
   if (normalizedRotate.value > 0) {
     metaIcons.push({
       icon: IconRotate,
-      style: {
-        transform: `rotate(${normalizedRotate.value}deg)`,
-      },
+      style: { transform: `rotate(${normalizedRotate.value}deg)` },
     });
   }
-
   if (metaIcons.length > 0) {
-    const visibleIcons = metaIcons.slice(0, 3);
-    const extraCount = metaIcons.length - visibleIcons.length;
     badges.push({
       key: 'meta',
-      icons: visibleIcons,
-      label: extraCount > 0 ? `+${extraCount}` : undefined,
+      icons: metaIcons,
     });
   }
 

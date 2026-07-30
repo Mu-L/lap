@@ -15,7 +15,7 @@ use crate::t_apple_sidecar::{
 };
 use crate::t_similar;
 use crate::t_sqlite::{
-    ACamera, ACollection, ACollectionOrder, AFile, AFolder, ALens, ALocation, ATag, ATagFileState,
+    ACamera, ACollection, ACollectionOrder, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
     ATagSelectionCount, AThumb, ATimeLine, Album, GroupedQueryResult, ImageSearchParams, Person,
     PersonPage, QueryParams, SmartQueryParams,
 };
@@ -817,6 +817,12 @@ pub fn clear_collection(collection_id: i64) -> Result<usize, String> {
 pub fn get_collection_file_ids(collection_id: i64) -> Result<Vec<i64>, String> {
     ACollection::file_ids(collection_id)
         .map_err(|e| format!("Error while getting collection file ids: {}", e))
+}
+
+#[tauri::command]
+pub fn get_file_collections(file_id: i64) -> Result<Vec<AFileCollection>, String> {
+    ACollection::for_file(file_id)
+        .map_err(|e| format!("Error while getting file collections: {}", e))
 }
 
 #[tauri::command]
