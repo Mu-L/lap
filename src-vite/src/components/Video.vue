@@ -1031,9 +1031,11 @@ function applyViewportState(
     const height = (isRotated ? videoWidth : videoHeight) * scale.value;
     const normX = Math.min(Math.max(Number(viewport.normX ?? 0.5), 0), 1);
     const normY = Math.min(Math.max(Number(viewport.normY ?? 0.5), 0), 1);
+    const localX = (normX - 0.5) * width;
+    const localY = (normY - 0.5) * height;
     viewportOffset.value = {
-      x: width > containerWidth ? (normX - 0.5) * (width - containerWidth) : 0,
-      y: height > containerHeight ? (normY - 0.5) * (height - containerHeight) : 0,
+      x: width > containerWidth ? -localX : 0,
+      y: height > containerHeight ? -localY : 0,
     };
   } else {
     viewportOffset.value = { x: 0, y: 0 };
