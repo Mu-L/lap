@@ -784,6 +784,13 @@
       "files_error": "永久删除所选文件失败。",
       "folder_error": "永久删除文件夹失败。"
     },
+    "trash_failed": {
+      "title": "移到废纸篓失败",
+      "file_content": "文件 '{file}' 无法移到废纸篓。\n\n是否改为永久删除？",
+      "files_content": "所选 {count} 个文件无法移到废纸篓。\n\n是否改为永久删除？",
+      "folder_content": "文件夹 '{folder}' 无法移到废纸篓。\n\n是否改为永久删除？",
+      "ok": "永久删除"
+    },
     "open_external_many": {
       "title": "要在外部应用中打开 {count} 个文件吗？",
       "message": "一次打开大量文件可能使外部应用变慢或无响应，并占用较多系统资源。是否继续？",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "照片查看器",
+    "title": "图像查看器",
     "loading": "加载中...",
     "loading_original": "加载原始照片...",
     "failed": "加载照片失败。文件不存在或已损坏。",

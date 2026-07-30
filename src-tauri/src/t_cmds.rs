@@ -613,7 +613,9 @@ pub fn copy_folder(
 #[tauri::command]
 pub fn delete_folder(folder_path: &str) -> Result<usize, String> {
     // trash the folder
-    t_utils::trash_path(folder_path)?;
+    if t_utils::trash_path(folder_path).is_err() {
+        return Ok(0);
+    }
 
     // delete the folder and all children from db
     AFolder::delete_folder(folder_path)
@@ -1689,7 +1691,16 @@ fn delete_file_group(
     } else {
         t_utils::trash_path(file_path)
     };
-    primary_result?;
+    if let Err(error) = primary_result {
+        if permanently {
+            return Err(error);
+        }
+        return Ok(BatchDeleteResult {
+            failed_count: 1,
+            deleted_file_ids: Vec::new(),
+            trash_failed_file_ids: vec![file_id],
+        });
+    }
     deleted_file_ids.push(file_id);
 
     for component in &component_files {
@@ -1727,6 +1738,7 @@ fn delete_file_group(
     Ok(BatchDeleteResult {
         failed_count,
         deleted_file_ids,
+        trash_failed_file_ids: Vec::new(),
     })
 }
 
@@ -1749,6 +1761,7 @@ pub struct BatchDeleteFile {
 pub struct BatchDeleteResult {
     pub deleted_file_ids: Vec<i64>,
     pub failed_count: usize,
+    pub trash_failed_file_ids: Vec<i64>,
 }
 
 #[tauri::command]
@@ -1798,6 +1811,7 @@ pub async fn batch_delete_files(
 
         let mut deleted_file_ids = Vec::new();
         let mut failed_count = 0usize;
+        let mut trash_failed_file_ids = Vec::new();
         for group in &delete_groups {
             let result = if permanently {
                 t_utils::delete_file_permanently(&group.primary_path)
@@ -1806,6 +1820,9 @@ pub async fn batch_delete_files(
             };
             if result.is_err() {
                 failed_count += 1;
+                if !permanently {
+                    trash_failed_file_ids.push(group.primary_id);
+                }
                 continue;
             }
             deleted_file_ids.push(group.primary_id);
@@ -1847,6 +1864,7 @@ pub async fn batch_delete_files(
         Ok(BatchDeleteResult {
             failed_count,
             deleted_file_ids,
+            trash_failed_file_ids,
         })
     })
     .await

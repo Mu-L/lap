@@ -784,6 +784,13 @@
       "files_error": "Impossible de supprimer définitivement les fichiers sélectionnés.",
       "folder_error": "Impossible de supprimer définitivement le dossier."
     },
+    "trash_failed": {
+      "title": "Échec du déplacement vers la Corbeille",
+      "file_content": "Le fichier '{file}' n’a pas pu être déplacé vers la Corbeille.\n\nVoulez-vous le supprimer définitivement à la place ?",
+      "files_content": "{count} fichiers sélectionnés n’ont pas pu être déplacés vers la Corbeille.\n\nVoulez-vous les supprimer définitivement à la place ?",
+      "folder_content": "Le dossier '{folder}' n’a pas pu être déplacé vers la Corbeille.\n\nVoulez-vous le supprimer définitivement à la place ?",
+      "ok": "Supprimer définitivement"
+    },
     "open_external_many": {
       "title": "Ouvrir {count} fichiers dans une application externe ?",
       "message": "L’ouverture simultanée d’un grand nombre de fichiers peut ralentir ou bloquer l’application externe et affecter les performances du système. Voulez-vous continuer ?",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "Visionneuse de photos",
+    "title": "Visionneuse d’images",
     "loading": "Chargement...",
     "loading_original": "Chargement de la photo originale...",
     "failed": "Impossible de charger la photo. Le fichier est manquant ou corrompu.",

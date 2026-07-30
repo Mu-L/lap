@@ -42,6 +42,7 @@ pub struct DedupDeleteResult {
     pub deleted_file_ids: Vec<i64>,
     pub failed_count: usize,
     pub errors: Vec<String>,
+    pub trash_failed_file_ids: Vec<i64>,
 }
 
 #[derive(Default)]
@@ -870,8 +871,10 @@ pub fn delete_selected(
 
     let mut failures: Vec<String> = Vec::new();
     let mut deleted_file_ids: Vec<i64> = Vec::new();
+    let mut trash_failed_file_ids: Vec<i64> = Vec::new();
     for (file_id, file_path) in files_to_delete {
         if let Err(e) = t_utils::trash_path(&file_path) {
+            trash_failed_file_ids.push(file_id);
             failures.push(format!("Failed to move to trash: {} ({})", file_path, e));
             continue;
         }
@@ -903,5 +906,6 @@ pub fn delete_selected(
         deleted_file_ids,
         failed_count: failures.len(),
         errors: failures,
+        trash_failed_file_ids,
     })
 }

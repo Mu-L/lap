@@ -784,6 +784,13 @@
       "files_error": "No se pudieron eliminar permanentemente los archivos seleccionados.",
       "folder_error": "No se pudo eliminar permanentemente la carpeta."
     },
+    "trash_failed": {
+      "title": "No se pudo mover a la papelera",
+      "file_content": "El archivo '{file}' no se pudo mover a la papelera.\n\n¿Quieres eliminarlo permanentemente en su lugar?",
+      "files_content": "{count} archivos seleccionados no se pudieron mover a la papelera.\n\n¿Quieres eliminarlos permanentemente en su lugar?",
+      "folder_content": "La carpeta '{folder}' no se pudo mover a la papelera.\n\n¿Quieres eliminarla permanentemente en su lugar?",
+      "ok": "Eliminar permanentemente"
+    },
     "open_external_many": {
       "title": "¿Abrir {count} archivos en una aplicación externa?",
       "message": "Abrir muchos archivos a la vez puede ralentizar o bloquear la aplicación externa y afectar al rendimiento del sistema. ¿Quieres continuar?",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "Visor de fotos",
+    "title": "Visor de imagenes",
     "loading": "Cargando...",
     "loading_original": "Cargando foto original...",
     "failed": "No se pudo cargar la foto. El archivo falta o está dañado.",

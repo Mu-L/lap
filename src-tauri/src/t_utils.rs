@@ -51,7 +51,7 @@ pub fn trash_path(path: &str) -> Result<(), String> {
         return Err(format!("Path does not exist: {}", path));
     }
 
-    move_to_trash(path).map_err(|e| e.to_string())?;
+    move_to_trash(path)?;
 
     if path_exists(path) {
         return Err(format!(
@@ -64,7 +64,7 @@ pub fn trash_path(path: &str) -> Result<(), String> {
 }
 
 #[cfg(target_os = "macos")]
-fn move_to_trash(path: &str) -> Result<(), trash::Error> {
+fn move_to_trash(path: &str) -> Result<(), String> {
     use trash::macos::{DeleteMethod, TrashContextExtMacos};
 
     // NsFileManager is fast but requires Automation permission that users may deny.
@@ -72,18 +72,18 @@ fn move_to_trash(path: &str) -> Result<(), trash::Error> {
     // always preserves Put Back metadata and does not require special permissions.
     let mut context = trash::TrashContext::default();
     context.set_delete_method(DeleteMethod::NsFileManager);
-    if context.delete(path).is_err() {
+    if let Err(_error) = context.delete(path) {
         let mut fallback = trash::TrashContext::default();
         fallback.set_delete_method(DeleteMethod::Finder);
-        fallback.delete(path)
+        fallback.delete(path).map_err(|fallback_error| fallback_error.to_string())
     } else {
         Ok(())
     }
 }
 
-#[cfg(not(target_os = "macos"))]
-fn move_to_trash(path: &str) -> Result<(), trash::Error> {
-    trash::delete(path)
+#[cfg(all(not(target_os = "macos")))]
+fn move_to_trash(path: &str) -> Result<(), String> {
+    trash::delete(path).map_err(|error| error.to_string())
 }
 
 pub fn delete_file_permanently(path: &str) -> Result<(), String> {

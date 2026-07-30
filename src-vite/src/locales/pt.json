@@ -784,6 +784,13 @@
       "files_error": "Falha ao excluir permanentemente os arquivos selecionados.",
       "folder_error": "Falha ao excluir permanentemente a pasta."
     },
+    "trash_failed": {
+      "title": "Falha ao mover para a lixeira",
+      "file_content": "O arquivo '{file}' não pôde ser movido para a lixeira.\n\nDeseja excluí-lo permanentemente em vez disso?",
+      "files_content": "{count} arquivos selecionados não puderam ser movidos para a lixeira.\n\nDeseja excluí-los permanentemente em vez disso?",
+      "folder_content": "A pasta '{folder}' não pôde ser movida para a lixeira.\n\nDeseja excluí-la permanentemente em vez disso?",
+      "ok": "Excluir permanentemente"
+    },
     "open_external_many": {
       "title": "Abrir {count} arquivos em um aplicativo externo?",
       "message": "Abrir muitos arquivos de uma vez pode deixar o aplicativo externo lento ou sem resposta e afetar o desempenho do sistema. Deseja continuar?",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "Visualizador de fotos",
+    "title": "Visualizador de imagens",
     "loading": "Carregando...",
     "loading_original": "Carregando foto original...",
     "failed": "Falha ao carregar a foto. O arquivo está ausente ou corrompido.",

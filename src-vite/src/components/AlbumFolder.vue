@@ -109,6 +109,17 @@
     @checkbox-change="deletePermanently = $event"
   />
 
+  <MessageBox
+    v-if="showTrashFailedFolderMsgbox"
+    :title="$t('msgbox.trash_failed.title')"
+    :message="$t('msgbox.trash_failed.folder_content', { folder: selectedFolder?.name || '' })"
+    :OkText="$t('msgbox.trash_failed.ok')"
+    :cancelText="$t('msgbox.cancel')"
+    :warningOk="true"
+    @ok="confirmTrashFailedFolderDelete"
+    @cancel="showTrashFailedFolderMsgbox = false"
+  />
+
   <!-- move within library -->
   <MoveTo
     v-if="showMoveTo"
@@ -233,6 +244,7 @@ const originalFolderName = ref(''); // restore original folder name when cancel 
 // message boxes
 const showNewFolderMsgbox = ref(false);
 const showTrashFolderMsgbox = ref(false);
+const showTrashFailedFolderMsgbox = ref(false);
 const showMoveTo = ref(false);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -779,7 +791,28 @@ const clickTrashFolder = async () => {
   const folderName = selectedFolder.value?.name || '';
   permanentDeleteChecked.value = deletePermanently.value;
   const deleteFn = deletePermanently.value ? deleteFolderPermanently : deleteFolder;
-  const isDeleted = await deleteFn(selection.folderPath.value);
+  let deleteResult = 0;
+  let deleteErrored = false;
+  try {
+    deleteResult = await deleteFn(selection.folderPath.value);
+  } catch (error) {
+    deleteErrored = true;
+    console.error('Failed to delete folder:', error);
+  }
+  if (deleteErrored) {
+    toast.error(
+      deletePermanently.value
+        ? t('msgbox.permanent_delete.folder_error')
+        : t('msgbox.move_to_trash.folder_error')
+    );
+    return;
+  }
+  if (!deletePermanently.value && !deleteResult) {
+    showTrashFolderMsgbox.value = false;
+    showTrashFailedFolderMsgbox.value = true;
+    return;
+  }
+  const isDeleted = !!deleteResult;
   if (isDeleted) {
     const deletedFolderPath = selection.folderPath.value;
 
@@ -816,6 +849,19 @@ const clickTrashFolder = async () => {
         ? t('msgbox.permanent_delete.folder_error')
         : t('msgbox.move_to_trash.folder_error')
     );
+  }
+};
+
+const confirmTrashFailedFolderDelete = async () => {
+  const previousDeletePermanently = deletePermanently.value;
+  const previousPermanentDeleteChecked = permanentDeleteChecked.value;
+  showTrashFailedFolderMsgbox.value = false;
+  deletePermanently.value = true;
+  try {
+    await clickTrashFolder();
+  } finally {
+    deletePermanently.value = previousDeletePermanently;
+    permanentDeleteChecked.value = previousPermanentDeleteChecked;
   }
 };
 

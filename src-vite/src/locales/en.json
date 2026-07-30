@@ -784,6 +784,13 @@
       "files_error": "Failed to permanently delete selected files.",
       "folder_error": "Failed to permanently delete the folder."
     },
+    "trash_failed": {
+      "title": "Trash failed",
+      "file_content": "The file '{file}' could not be moved to trash.\n\nDo you want to permanently delete it instead?",
+      "files_content": "{count} selected files could not be moved to trash.\n\nDo you want to permanently delete them instead?",
+      "folder_content": "The folder '{folder}' could not be moved to trash.\n\nDo you want to permanently delete it instead?",
+      "ok": "Delete permanently"
+    },
     "open_external_many": {
       "title": "Open {count} files in an external app?",
       "message": "Opening a large number of files at once may make the external app slow or unresponsive and can affect system performance. Do you want to continue?",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "Photo viewer",
+    "title": "Image viewer",
     "loading": "Loading...",
     "loading_original": "Loading original photo...",
     "failed": "Failed to load photo. The file is missing or corrupted.",

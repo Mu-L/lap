@@ -784,6 +784,13 @@
       "files_error": "Ausgewählte Dateien konnten nicht endgültig gelöscht werden.",
       "folder_error": "Ordner konnte nicht endgültig gelöscht werden."
     },
+    "trash_failed": {
+      "title": "Verschieben in den Papierkorb fehlgeschlagen",
+      "file_content": "Die Datei '{file}' konnte nicht in den Papierkorb verschoben werden.\n\nMöchtest du sie stattdessen endgültig löschen?",
+      "files_content": "{count} ausgewählte Dateien konnten nicht in den Papierkorb verschoben werden.\n\nMöchtest du sie stattdessen endgültig löschen?",
+      "folder_content": "Der Ordner '{folder}' konnte nicht in den Papierkorb verschoben werden.\n\nMöchtest du ihn stattdessen endgültig löschen?",
+      "ok": "Endgültig löschen"
+    },
     "open_external_many": {
       "title": "{count} Dateien in einer externen App öffnen?",
       "message": "Das gleichzeitige Öffnen vieler Dateien kann die externe App verlangsamen oder blockieren und die Systemleistung beeinträchtigen. Möchten Sie fortfahren?",
@@ -999,7 +1006,7 @@
     }
   },
   "image_viewer": {
-    "title": "Fotoanzeige",
+    "title": "Bildanzeige",
     "loading": "Lade...",
     "loading_original": "Originalfoto wird geladen...",
     "failed": "Foto konnte nicht geladen werden. Die Datei fehlt oder ist beschädigt.",

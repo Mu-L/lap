@@ -649,13 +649,11 @@ export async function copyFolder(folderPath, newFolderPath, newAlbumId = 0, conf
 export async function deleteFolder(folderPath) {
   try {
     const result = await invoke('delete_folder', { folderPath });
-    if(result) {
-      return result;
-    };
+    return result;
   } catch (error) {
     console.log('Failed to delete folder:', error);
+    throw error;
   }
-  return null;
 };
 
 // permanently delete a folder (skip trash)
@@ -664,8 +662,8 @@ export async function deleteFolderPermanently(folderPath) {
     return await invoke('delete_folder_permanently', { folderPath });
   } catch (error) {
     console.error('Failed to permanently delete folder:', error);
+    throw error;
   }
-  return null;
 };
 
 /// reveal a file or folder in file explorer (or finder)
@@ -1073,7 +1071,7 @@ export async function deleteFile(fileId, filePath) {
     return await invoke('delete_file', { fileId, filePath });
   } catch (error) {
     console.error('deleteFile error:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -1083,7 +1081,7 @@ export async function deleteFilePermanently(fileId, filePath) {
     return await invoke('delete_file_permanently', { fileId, filePath });
   } catch (error) {
     console.error('deleteFilePermanently error:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -1101,7 +1099,7 @@ export async function batchDeleteFiles(files, permanently = false) {
     return await invoke('batch_delete_files', { files, permanently });
   } catch (error) {
     console.error('batchDeleteFiles error:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -1828,6 +1826,7 @@ export async function dedupDeleteSelected(groupIds = null, fileIds = null) {
     return result;
   } catch (error) {
     console.error('dedupDeleteSelected error:', error);
+    throw error;
   }
 }
 
