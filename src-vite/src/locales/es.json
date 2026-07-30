@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "Todos los archivos",
-    "on_this_day": "Un día como hoy"
+    "on_this_day": "Un día como hoy",
+    "review": "Revisar"
   },
   "album": {
     "album_list": "Álbumes",

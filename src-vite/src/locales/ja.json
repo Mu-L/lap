@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "すべてのファイル",
-    "on_this_day": "この日"
+    "on_this_day": "この日",
+    "review": "レビュー"
   },
   "album": {
     "album_list": "アルバム",

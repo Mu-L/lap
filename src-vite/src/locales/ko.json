@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "모든 파일",
-    "on_this_day": "과거의 오늘"
+    "on_this_day": "과거의 오늘",
+    "review": "검토"
   },
   "album": {
     "album_list": "앨범",

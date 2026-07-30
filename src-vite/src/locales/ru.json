@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "Все файлы",
-    "on_this_day": "В этот день"
+    "on_this_day": "В этот день",
+    "review": "Проверка"
   },
   "album": {
     "album_list": "Альбомы",

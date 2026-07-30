@@ -293,7 +293,7 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
   {
     id: 'meta.culling.pick',
     contexts: ['content', 'media-viewer', 'image-viewer'],
-    defaultBindings: [{ code: 'KeyP', allowShift: true, label: 'P' }],
+    defaultBindings: [{ code: 'KeyP', label: 'P' }],
   },
   {
     id: 'meta.culling.reject',
@@ -422,7 +422,13 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
   {
     id: 'slideshow.toggle',
     contexts: ['content', 'media-viewer', 'image-viewer'],
-    defaultBindings: [{ key: ' ', code: 'Space', label: 'Space' }],
+    defaultBindings: [
+      {
+        code: 'KeyP',
+        modifiers: ['shift'],
+        label: { mac: '⇧P', windows: 'Shift+P', linux: 'Shift+P' },
+      },
+    ],
   },
 ] as const;
 

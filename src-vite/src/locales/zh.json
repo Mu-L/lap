@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "所有文件",
-    "on_this_day": "历史上的今天"
+    "on_this_day": "历史上的今天",
+    "review": "审阅"
   },
   "album": {
     "album_list": "相册",

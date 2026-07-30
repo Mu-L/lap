@@ -6,9 +6,11 @@
     </div>
 
     <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
+      <template v-for="item in libraryItems" :key="item.id">
+      <div v-if="item.id === LIB_ITEM.FAV" class="sidebar-panel-header">
+        <span class="sidebar-panel-header-title flex-1">{{ localeMsg.library.review }}</span>
+      </div>
       <div
-        v-for="item in libraryItems"
-        :key="item.id"
         :class="[
           'sidebar-item',
           libConfig.library.item === item.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
@@ -25,6 +27,7 @@
           </span>
         </div>
       </div>
+      </template>
 
       <div class="sidebar-item sidebar-item-hover" @click="toggleRatings">
         <IconRight
@@ -249,16 +252,16 @@ const libraryItems = computed(() => [
     count: totalCount.value,
   },
   {
-    id: LIB_ITEM.FAV,
-    label: localeMsg.value.favorite.files,
-    icon: IconHeartFilled,
-    count: favoriteCount.value,
-  },
-  {
     id: LIB_ITEM.TODAY,
     label: localeMsg.value.library.on_this_day,
     icon: IconHistory,
     count: todayCount.value,
+  },
+  {
+    id: LIB_ITEM.FAV,
+    label: localeMsg.value.favorite.files,
+    icon: IconHeartFilled,
+    count: favoriteCount.value,
   },
 ]);
 

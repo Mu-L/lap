@@ -1209,6 +1209,7 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
   }, 500);
 
   const usesBackendPreview = shouldUseBackendPreview(newFilePath, Number(props.fileType || 0));
+  const isRawPreview = Number(props.fileType || 0) === 3;
 
   try {
     const imageResultPromise = loadImageResource(newFilePath)
@@ -1265,9 +1266,9 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
 
       if (showingPlaceholderForCurrentFile) {
         noTransition.value = true;
-        // The source pixels change here, but the displayed image geometry must
-        // not. Reuse the placeholder slot's layout size so the thumbnail and
-        // full image share the exact same size, scale, and position.
+        // Reuse the placeholder layout so replacing source pixels does not
+        // change the displayed geometry. In particular, RAW thumbnails use
+        // the complete image dimensions, preserving their scale on replacement.
         const placeholderLayout = { ...imageSize.value[activeIndex] };
         setImageSlot(
           activeIndex,
@@ -1279,7 +1280,12 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
           placeholderLayout.height,
         );
 
-        if (containerSize.value.width > 0 && isZoomFit.value) {
+        if (isRawPreview && containerSize.value.width > 0) {
+          // Keep the thumbnail's current transform. Both the thumbnail and
+          // complete RAW use the same layout dimensions, so scale and position
+          // describe the identical viewport regardless of auto-fit state.
+          clampPosition(true);
+        } else if (containerSize.value.width > 0 && isZoomFit.value) {
           updateZoomFit(true);
         }
 

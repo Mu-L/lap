@@ -39,7 +39,8 @@
   },
   "library": {
     "all_files": "Alle Dateien",
-    "on_this_day": "An diesem Tag"
+    "on_this_day": "An diesem Tag",
+    "review": "Überprüfen"
   },
   "album": {
     "album_list": "Alben",

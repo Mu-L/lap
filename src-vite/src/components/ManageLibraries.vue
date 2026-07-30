@@ -8,13 +8,13 @@
     <div class="flex flex-col flex-1 min-h-0 border border-base-content/5 bg-base-300/30 shadow-sm rounded-box overflow-hidden relative">
       <div class="flex items-center px-3 py-2 shrink-0">
         <span class="flex-1 sidebar-panel-header-title text-base-content/30">{{ $t('msgbox.manage_libraries.libraries') }}</span>
-        <TButton
+        <PanelActionButton
           :icon="IconAdd"
-          :buttonSize="'small'"
           :disabled="isMaxLibraryReached || showAddInput || isRenaming || isAddingLibrary"
-          :tooltip="$t('msgbox.manage_libraries.add_new')"
           @click="startAddLibrary"
-        />
+        >
+          {{ $t('msgbox.manage_libraries.add_new') }}
+        </PanelActionButton>
       </div>
 
       <div class="flex-1 min-h-0 overflow-x-hidden overflow-y-auto select-none">
@@ -85,7 +85,7 @@
           </div>
 
           <div
-            class="w-40 shrink-0 text-right text-xs text-base-content/30 truncate"
+            class="w-40 shrink-0 text-right text-xs text-base-content/30 truncate group-hover:hidden"
             :class="{ hidden: selectedLibraryId === lib.id }"
           >
             <span v-if="libraryStats[lib.id]">
@@ -101,7 +101,7 @@
 
           <!-- Actions -->
           <div
-            class="hidden w-40 shrink-0 justify-end text-base-content/70"
+            class="hidden w-40 shrink-0 justify-end text-base-content/70 group-hover:flex!"
             :class="{ 'flex!': selectedLibraryId === lib.id }"
           >
             <TButton
@@ -194,6 +194,7 @@ import {
 import { isValidFileName, formatFileSize } from '@/common/utils';
 import ModalDialog from '@/components/ModalDialog.vue';
 import TButton from '@/components/TButton.vue';
+import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import {
   IconDragHandle,

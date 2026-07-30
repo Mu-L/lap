@@ -70,13 +70,13 @@
           <!-- library title -->
           <div
             v-if="leftPanelMounted"
-            class="absolute top-0 left-[72px] right-0 z-10 h-10 flex items-center"
+            class="absolute top-0 left-[68px] right-0 z-10 h-10 flex items-center"
             data-tauri-drag-region
           >
             <ContextMenu :menuItems="libraryMenuItems">
               <template #trigger="{ toggle }">
                 <button
-                  class="px-2 py-1 flex items-center gap-1 rounded-box text-base-content/70 hover:bg-base-100/30 hover:text-base-content cursor-pointer transition-colors"
+                  class="p-2 flex items-center gap-1 border border-base-200 rounded-box text-base-content/70 hover:bg-base-100/30 hover:border-base-100/15 hover:text-base-content cursor-pointer transition-colors"
                   @click="toggle"
                 >
                   <span class="overflow-hidden whitespace-pre text-ellipsis max-w-32">{{ currentLibrary?.name || 'Library' }}</span>
