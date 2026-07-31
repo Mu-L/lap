@@ -17,8 +17,8 @@
       ref="containerRef"
       class="rounded-box relative flex items-center justify-center overflow-hidden bg-base-200/70"
       :style="layoutStyle"
-      @pointerenter="startVideoPreview"
-      @pointerleave="stopVideoPreview"
+      @pointerenter="startMediaPreview"
+      @pointerleave="stopMediaPreview"
     >
       <!-- image -->
       <img
@@ -62,8 +62,25 @@
         preload="metadata"
         @canplay="isVideoPreviewReady = true"
         @playing="isVideoPreviewReady = true"
-        @error="stopVideoPreview"
+        @error="stopMediaPreview"
       ></video>
+      <img
+        v-if="showAnimatedImagePreview"
+        :src="animatedImagePreviewSrc"
+        draggable="false"
+        class="pointer-events-none absolute inset-0 transition-opacity duration-100"
+        :class="{
+          'object-contain': !isGeometryGridStyle && config.settings.grid.scaling === 0,
+          'object-cover': isGeometryGridStyle || config.settings.grid.scaling === 1,
+          'object-fill': !isGeometryGridStyle && config.settings.grid.scaling === 2,
+          'scale-115': shouldScaleThumbnail,
+          'opacity-100': isAnimatedImagePreviewReady,
+          'opacity-0': !isAnimatedImagePreviewReady,
+        }"
+        :style="previewMediaStyle"
+        @load="isAnimatedImagePreviewReady = true"
+        @error="stopMediaPreview"
+      />
 
       <!-- status badges -->
       <div
@@ -209,6 +226,7 @@ import { config } from '@/common/config';
 import { THUMBNAIL_BADGE } from '@/common/constants';
 import { isMac, shortenFilename, formatFileSize, formatDimensionText, formatDuration, formatTimestamp, formatCaptureSettings, formatCaptureSettingValue, formatCameraInfo, getAssetSrc, getThumbUrl, getFileExtension } from '@/common/utils';
 import { isWebViewVideoPlaybackDisabled } from '@/common/video';
+import { claimHoverPreview, releaseHoverPreview } from '@/common/hoverPreview';
 import ContextMenu from '@/components/ContextMenu.vue';
 import { useFileMenuItems } from '@/common/fileMenu';
 
@@ -270,8 +288,11 @@ const containerWidth = ref(0);
 const containerHeight = ref(0);
 let resizeObserver: ResizeObserver | null = null;
 let previewTimer: ReturnType<typeof setTimeout> | null = null;
+let animatedImagePreviewTimer: ReturnType<typeof setTimeout> | null = null;
 const showVideoPreview = ref(false);
 const isVideoPreviewReady = ref(false);
+const showAnimatedImagePreview = ref(false);
+const isAnimatedImagePreviewReady = ref(false);
 const isVideoFile = computed(() => props.file?.file_type === 2);
 const isLivePhoto = computed(() => props.file?.media_subtype === 'live_photo' && !!props.file?.live_photo_video_path);
 const previewVideoPath = computed(() => isLivePhoto.value ? props.file.live_photo_video_path : props.file?.file_path);
@@ -280,6 +301,12 @@ const canPreviewVideo = computed(() => (
   && !!previewVideoPath.value
   && !isWebViewVideoPlaybackDisabled(previewVideoPath.value)
 ));
+const ANIMATABLE_IMAGE_EXTENSIONS = new Set(['gif', 'png', 'apng', 'webp', 'avif']);
+const isAnimatableImageFile = computed(() => ANIMATABLE_IMAGE_EXTENSIONS.has(
+  getFileExtension(props.file?.name || props.file?.file_path || '').toLowerCase(),
+));
+const animatedImagePreviewSrc = computed(() => getAssetSrc(props.file?.file_path || '', Number(props.file?.modified_at || 0)));
+const canPreviewAnimatedImage = computed(() => isAnimatableImageFile.value && !!animatedImagePreviewSrc.value);
 const isGeometryGridStyle = computed(() => config.settings.grid.style === 2 || config.settings.grid.style === 3);
 const shouldScaleThumbnail = computed(() => config.settings.grid.style === 1 || isGeometryGridStyle.value);
 const thumbnailSrc = ref(props.file.thumbnail || '');
@@ -333,7 +360,7 @@ onBeforeUnmount(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
   }
-  stopVideoPreview();
+  stopMediaPreview();
 });
 
 watch(() => config.settings.grid.style, () => {
@@ -357,8 +384,21 @@ watch(() => props.file.rotate, () => {
 });
 
 watch(() => [props.file.file_path, props.file.live_photo_video_path], () => {
-  stopVideoPreview();
+  stopMediaPreview();
 });
+
+function startMediaPreview() {
+  if (!canPreviewVideo.value && !canPreviewAnimatedImage.value) return;
+  claimHoverPreview(stopMediaPreview);
+  startVideoPreview();
+  startAnimatedImagePreview();
+}
+
+function stopMediaPreview() {
+  stopVideoPreview();
+  stopAnimatedImagePreview();
+  releaseHoverPreview(stopMediaPreview);
+}
 
 function startVideoPreview() {
   if (!canPreviewVideo.value || previewTimer || showVideoPreview.value) return;
@@ -380,7 +420,7 @@ function startVideoPreview() {
     try {
       await video.play();
     } catch {
-      stopVideoPreview();
+      stopMediaPreview();
     }
   }, 400);
 }
@@ -400,6 +440,26 @@ function stopVideoPreview() {
 
   isVideoPreviewReady.value = false;
   showVideoPreview.value = false;
+}
+
+function startAnimatedImagePreview() {
+  if (!canPreviewAnimatedImage.value || animatedImagePreviewTimer || showAnimatedImagePreview.value) return;
+
+  animatedImagePreviewTimer = setTimeout(() => {
+    animatedImagePreviewTimer = null;
+    if (!canPreviewAnimatedImage.value) return;
+    isAnimatedImagePreviewReady.value = false;
+    showAnimatedImagePreview.value = true;
+  }, 400);
+}
+
+function stopAnimatedImagePreview() {
+  if (animatedImagePreviewTimer) {
+    clearTimeout(animatedImagePreviewTimer);
+    animatedImagePreviewTimer = null;
+  }
+  isAnimatedImagePreviewReady.value = false;
+  showAnimatedImagePreview.value = false;
 }
 
 function handleContextMenu(event: MouseEvent) {
@@ -467,6 +527,11 @@ const imgStyle = computed((): CSSProperties => {
     transform: `rotate(${props.file.rotate || 0}deg)`,
     opacity: 1,
   } as CSSProperties;
+});
+
+const previewMediaStyle = computed((): CSSProperties => {
+  const { opacity: _opacity, ...style } = imgStyle.value;
+  return style;
 });
 
 const uiStore = useUIStore();
