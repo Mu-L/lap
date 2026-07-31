@@ -3335,7 +3335,7 @@ function handleItemAction(payload: { action: string, index: number }) {
         forceSplitCount: files.length === 2 ? 2 : 4,
       });
     },
-    'copy': () => void clickCopyImages(fileList.value[selectedItemIndex.value].file_path),
+    'copy': () => void clickCopyImages(fileList.value[selectedItemIndex.value]),
     'rename': clickRename,
     'move-within-library': () => showMoveTo.value = true,
     'move-to-folder': () => void onMoveToFolder(),
@@ -3919,7 +3919,7 @@ const handleKeyDown = (e: any) => {
   if (matchesShortcut('file.openNewWindow', event, shortcutPlatform)) {
     openImageViewer(selectedItemIndex.value, true);
   } else if (matchesShortcut('file.copy', event, shortcutPlatform)) {
-    void clickCopyImages(fileList.value[selectedItemIndex.value].file_path);
+    void clickCopyImages(fileList.value[selectedItemIndex.value]);
   // macOS handles Cmd+Arrow in App's capture listener before the content DOM handler.
   } else if (isMac && matchesShortcut('view.first', event, shortcutPlatform)) {
     keyActions.Home();
@@ -6866,7 +6866,32 @@ const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => 
   }
 }
 
-const clickCopyImages = async (fallbackPath?: string) => {
+const getClipboardFilePaths = (files: any[], limit = 10) => {
+  const paths: string[] = [];
+  const seenPaths = new Set<string>();
+
+  for (const file of files) {
+    const primaryPath = String(file?.file_path || '');
+    if (!primaryPath) continue;
+
+    const groupPaths = [primaryPath];
+    if (file?.media_subtype === 'raw_jpeg_pair') {
+      const companionPath = String(file.live_photo_video_path || '');
+      if (companionPath) groupPaths.push(companionPath);
+    }
+
+    const uniqueGroupPaths = groupPaths.filter(path => !seenPaths.has(path));
+    if (paths.length + uniqueGroupPaths.length > limit) continue;
+    for (const path of uniqueGroupPaths) {
+      seenPaths.add(path);
+      paths.push(path);
+    }
+  }
+
+  return paths;
+};
+
+const clickCopyImages = async (fallbackFile?: any) => {
   if (isProcessing.value) return;
 
   let copiedCount = 0;
@@ -6881,12 +6906,10 @@ const clickCopyImages = async (fallbackPath?: string) => {
         cancelled = true;
         return;
       }
-      filePaths = selectedItems
-        .map((file: any) => String(file.file_path || ''))
-        .filter(Boolean);
-    } else if (fallbackPath) {
-      filePaths = [fallbackPath];
-      requestedCount = 1;
+      filePaths = getClipboardFilePaths(selectedItems, 20);
+    } else if (fallbackFile) {
+      filePaths = getClipboardFilePaths([fallbackFile]);
+      requestedCount = filePaths.length;
     }
     if (filePaths.length === 0) {
       cancelled = true;

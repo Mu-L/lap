@@ -153,6 +153,9 @@ listen('settings-autoPlayVideo-changed', (event) => {
 listen('settings-loopVideo-changed', (event) => {
   config.settings.loopVideo = event.payload
 })
+listen('settings-groupRawJpegPairs-changed', (event) => {
+  config.settings.groupRawJpegPairs = event.payload
+})
 listen('settings-navigatorViewMode-changed', (event) => {
   config.setNavigatorViewMode(event.payload)
 })

@@ -19,29 +19,11 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, Manager, State};
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use walkdir::WalkDir; // https://docs.rs/walkdir/2.5.0/walkdir/
-
-static RAW_JPEG_PAIRING_ENABLED: AtomicBool = AtomicBool::new(false);
-static RAW_JPEG_PAIRING_GENERATION: AtomicU64 = AtomicU64::new(0);
-
-pub fn set_raw_jpeg_pairing_enabled(enabled: bool) -> u64 {
-    RAW_JPEG_PAIRING_ENABLED.store(enabled, Ordering::Relaxed);
-    RAW_JPEG_PAIRING_GENERATION.fetch_add(1, Ordering::Relaxed) + 1
-}
-
-pub fn raw_jpeg_pairing_enabled() -> bool {
-    RAW_JPEG_PAIRING_ENABLED.load(Ordering::Relaxed)
-}
-
-pub fn raw_jpeg_pairing_generation_valid(generation: u64) -> bool {
-    raw_jpeg_pairing_enabled()
-        && RAW_JPEG_PAIRING_GENERATION.load(Ordering::Relaxed) == generation
-}
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -2088,14 +2070,6 @@ fn sync_folder_direct_files(
         );
     }
 
-    // RAW+JPEG pairing is filename-only and inexpensive; run it after every
-    // folder sync so additions, removals, and external renames stay current.
-    if raw_jpeg_pairing_enabled() {
-        if let Err(error) = AFile::pair_raw_jpeg_in_folder(folder_id) {
-            eprintln!("Failed to pair RAW+JPEG files in folder {}: {}", folder_path, error);
-        }
-    }
-
     Ok(FolderSyncOutcome {
         new_file_count: new_count,
         updated_file_count: updated_count,
@@ -2147,6 +2121,30 @@ fn pair_live_photos_after_album_index(album_id: i64) -> Result<(), String> {
     Ok(())
 }
 
+/// RAW+JPEG pairing is derived from the complete folder index, just like Live
+/// Photo pairing.  Doing this after an album scan covers files which already
+/// existed before grouping was enabled and folders not touched by an
+/// incremental mtime sync.
+fn reconcile_raw_jpeg_pairs_after_album_index(
+    album_id: i64,
+    group_raw_jpeg_pairs: bool,
+) -> Result<(), String> {
+    if !group_raw_jpeg_pairs {
+        AFile::clear_raw_jpeg_pairs_in_album(album_id)?;
+        return Ok(());
+    }
+    for folder in AFolder::get_all()?
+        .into_iter()
+        .filter(|folder| folder.album_id == album_id)
+    {
+        let folder_id = folder
+            .id
+            .ok_or_else(|| format!("Folder has no id: {}", folder.path))?;
+        AFile::pair_raw_jpeg_in_folder(folder_id)?;
+    }
+    Ok(())
+}
+
 /// Sync a single folder if its directory mtime has changed since the last scan.
 /// Returns counts and schedules thumbnail/embedding generation.
 pub fn sync_single_folder(
@@ -2154,6 +2152,7 @@ pub fn sync_single_folder(
     album_id: i64,
     folder_id: i64,
     folder_path: &str,
+    group_raw_jpeg_pairs: bool,
 ) -> Result<FolderMtimeSyncResult, String> {
     let album = Album::get_album_by_id(album_id).map_err(|e| e.to_string())?;
     if !directory_accessible(&album.path) {
@@ -2210,8 +2209,19 @@ pub fn sync_single_folder(
         FolderScanState::LIVE_PHOTO_PAIRING_VERSION,
     )?;
     if info.modified == folder.modified_at && !needs_live_photo_reindex {
+        // A manual folder refresh also reconciles the existing pair state.
+        // This is intentionally the only incremental path that receives the
+        // setting; changing Settings alone does not mutate the database.
+        let raw_pairing_changed = if group_raw_jpeg_pairs {
+            AFile::pair_raw_jpeg_in_folder(resolved_folder_id)? > 0
+        } else {
+            AFile::clear_raw_jpeg_pairs_in_folder(resolved_folder_id)? > 0
+        };
         return Ok(FolderMtimeSyncResult {
-            dirty_folder_count: 0,
+            // The frontend uses this to decide whether it needs to reload the
+            // current list.  A newly created or cleared association changes
+            // which companion rows are visible.
+            dirty_folder_count: u32::from(raw_pairing_changed),
             new_folder_count: 0,
             new_file_count: 0,
             updated_file_count: 0,
@@ -2231,6 +2241,11 @@ pub fn sync_single_folder(
         0,
         needs_live_photo_reindex,
     )?; // 0 = foreground, never cancel
+    if group_raw_jpeg_pairs {
+        AFile::pair_raw_jpeg_in_folder(resolved_folder_id)?;
+    } else {
+        AFile::clear_raw_jpeg_pairs_in_folder(resolved_folder_id)?;
+    }
     for task in outcome.tasks {
         schedule_synced_file_processing(app_handle.clone(), task);
     }
@@ -3098,6 +3113,7 @@ pub async fn index_album_worker(
     album_id: i64,
     thumbnail_size: u32,
     skip_file_path: Option<String>,
+    group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
     let _album_scan_guard = AlbumScanGuard::acquire(album_id)?;
     let scan_start = std::time::Instant::now();
@@ -3322,6 +3338,15 @@ pub async fn index_album_worker(
         if let Err(error) = pair_live_photos_after_album_index(album_id) {
             eprintln!(
                 "Failed to pair Live Photos after indexing album {}: {}",
+                album_id, error
+            );
+        }
+        if let Err(error) = reconcile_raw_jpeg_pairs_after_album_index(
+            album_id,
+            group_raw_jpeg_pairs,
+        ) {
+            eprintln!(
+                "Failed to pair RAW+JPEG files after indexing album {}: {}",
                 album_id, error
             );
         }

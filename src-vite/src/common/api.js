@@ -959,10 +959,6 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
   return [null, 0, 0];
 };
 
-export async function setRawJpegPairingEnabled(enabled) {
-  return await invoke('set_raw_jpeg_pairing_enabled', { enabled });
-}
-
 // sync a single folder's mtime and DB records with the filesystem
 export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
   try {
@@ -970,6 +966,7 @@ export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
       albumId,
       folderId,
       folderPath,
+      groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
     });
     if (result) {
       return {
@@ -1020,7 +1017,7 @@ export async function copyEditedImage(params) {
   }
 }
 
-// copy up to 10 files to clipboard
+// copy up to 10 content items to clipboard (pairs contain two files)
 export async function copyImages(filePaths) {
   try {
     return await invoke('copy_images', { filePaths });
@@ -1741,6 +1738,7 @@ export async function indexAlbum(albumId, skipFilePath = null) {
       albumId,
       thumbnailSize: config.settings.thumbnailSize || 512,
       skipFilePath,
+      groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
     });
   } catch (error) {
     console.error('indexAlbum error:', error);

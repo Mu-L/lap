@@ -1371,6 +1371,9 @@ watch(() => config.settings.categorySort, (newValue) => {
 watch(() => config.settings.showSubfolderFiles, (newValue) => {
   emit('settings-showSubfolderFiles-changed', newValue);
 });
+watch(() => config.settings.groupRawJpegPairs, (newValue) => {
+  emit('settings-groupRawJpegPairs-changed', newValue);
+});
 
 // grid view settings
 watch(() => config.settings.grid.size, (newValue: number) => {

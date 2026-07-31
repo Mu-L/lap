@@ -1406,7 +1406,9 @@ pub async fn copy_files_to_clipboard(
     let file_paths = file_paths
         .into_iter()
         .filter(|path| Path::new(path).is_file())
-        .take(10)
+        // The UI limits copying to 10 content items. RAW+JPEG pairs expand
+        // one item into two physical files, so retain both components.
+        .take(20)
         .collect::<Vec<_>>();
     if file_paths.is_empty() {
         return Err("No valid files to copy".to_string());

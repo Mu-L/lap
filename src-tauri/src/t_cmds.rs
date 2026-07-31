@@ -30,7 +30,7 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
@@ -421,6 +421,7 @@ pub fn index_album(
     album_id: i64,
     thumbnail_size: u32,
     skip_file_path: Option<String>,
+    group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
     // Reset cancellation flag
     state.0.lock().unwrap().insert(album_id, false);
@@ -433,6 +434,7 @@ pub fn index_album(
             album_id,
             thumbnail_size,
             skip_file_path,
+            group_raw_jpeg_pairs,
         )
         .await
         {
@@ -957,42 +959,6 @@ pub fn get_folder_files(
     )
 }
 
-#[tauri::command]
-pub async fn set_raw_jpeg_pairing_enabled(
-    app_handle: AppHandle,
-    enabled: bool,
-) -> Result<(), String> {
-    let generation = t_utils::set_raw_jpeg_pairing_enabled(enabled);
-    if !enabled {
-        AFile::clear_raw_jpeg_pairs()?;
-        let _ = app_handle.emit("refresh-content", ());
-        return Ok(());
-    }
-
-    let background_app_handle = app_handle.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        for folder in AFolder::get_all()? {
-            if !t_utils::raw_jpeg_pairing_generation_valid(generation) {
-                break;
-            }
-            if let Some(folder_id) = folder.id {
-                if let Err(error) = AFile::pair_raw_jpeg_in_folder(folder_id) {
-                    eprintln!("Failed to pair RAW+JPEG files in folder {}: {}", folder_id, error);
-                }
-                if !t_utils::raw_jpeg_pairing_generation_valid(generation) {
-                    if !t_utils::raw_jpeg_pairing_enabled() {
-                        let _ = AFile::clear_raw_jpeg_pairs();
-                    }
-                    break;
-                }
-            }
-        }
-        let _ = background_app_handle.emit("refresh-content", ());
-        Ok::<(), String>(())
-    });
-    Ok(())
-}
-
 /// sync a single folder's mtime and DB records with the filesystem
 #[tauri::command]
 pub async fn sync_album_folder_mtimes(
@@ -1000,9 +966,16 @@ pub async fn sync_album_folder_mtimes(
     album_id: i64,
     folder_id: i64,
     folder_path: String,
+    group_raw_jpeg_pairs: bool,
 ) -> Result<crate::t_utils::FolderMtimeSyncResult, String> {
     tauri::async_runtime::spawn_blocking(move || {
-        crate::t_utils::sync_single_folder(&app_handle, album_id, folder_id, &folder_path)
+        crate::t_utils::sync_single_folder(
+            &app_handle,
+            album_id,
+            folder_id,
+            &folder_path,
+            group_raw_jpeg_pairs,
+        )
     })
     .await
     .map_err(|e| format!("folder sync task failed: {}", e))?
@@ -1031,7 +1004,7 @@ pub async fn copy_edited_image(params: t_image::EditParams) -> Result<bool, Stri
     Ok(t_image::copy_edited_image_to_clipboard(params).await)
 }
 
-/// copy up to 10 files to the clipboard
+/// Copy up to 10 content items to the clipboard (a paired item has two files).
 #[tauri::command]
 pub async fn copy_images(
     app_handle: tauri::AppHandle,

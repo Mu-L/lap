@@ -3444,9 +3444,15 @@ impl AFile {
         fn ext(name: &str) -> String { Path::new(name).extension().and_then(|value| value.to_str()).unwrap_or("").to_ascii_lowercase() }
         let files = Self::get_files_by_folder_id(folder_id)?;
         let mut companions = HashMap::<String, Vec<i64>>::new();
+        let mut raws = HashMap::<String, usize>::new();
         for file in &files {
             if matches!(ext(&file.name).as_str(), "jpg" | "jpeg" | "heic" | "heif" | "hif") {
                 if let (Some(id), Some(file_stem)) = (file.id, stem(&file.name)) { companions.entry(file_stem).or_default().push(id); }
+            }
+            if t_common::RAW_IMGS.iter().any(|raw| raw.eq_ignore_ascii_case(&ext(&file.name))) {
+                if let Some(file_stem) = stem(&file.name) {
+                    *raws.entry(file_stem).or_default() += 1;
+                }
             }
         }
         let mut updates = Vec::new();
@@ -3454,7 +3460,9 @@ impl AFile {
             if !t_common::RAW_IMGS.iter().any(|raw| raw.eq_ignore_ascii_case(&ext(&file.name))) { continue; }
             let (Some(id), Some(file_stem)) = (file.id, stem(&file.name)) else { continue; };
             let candidates = companions.get(&file_stem).cloned().unwrap_or_default();
-            let desired = (candidates.len() == 1).then_some(candidates[0]);
+            let desired = (raws.get(&file_stem) == Some(&1) && candidates.len() == 1)
+                .then(|| candidates.first().copied())
+                .flatten();
             let current = (file.media_subtype.as_deref() == Some("raw_jpeg_pair")).then_some(file.live_photo_video_id).flatten();
             if desired != current { updates.push((id, desired)); }
         }
@@ -3469,6 +3477,25 @@ impl AFile {
 
     pub fn clear_raw_jpeg_pairs() -> Result<usize, String> {
         open_conn()?.execute("UPDATE afiles SET media_subtype = NULL, live_photo_video_id = NULL WHERE media_subtype = 'raw_jpeg_pair'", []).map_err(|error| error.to_string())
+    }
+
+    pub fn clear_raw_jpeg_pairs_in_folder(folder_id: i64) -> Result<usize, String> {
+        open_conn()?.execute(
+            "UPDATE afiles
+             SET media_subtype = NULL, live_photo_video_id = NULL
+             WHERE folder_id = ?1 AND media_subtype = 'raw_jpeg_pair'",
+            params![folder_id],
+        ).map_err(|error| error.to_string())
+    }
+
+    pub fn clear_raw_jpeg_pairs_in_album(album_id: i64) -> Result<usize, String> {
+        open_conn()?.execute(
+            "UPDATE afiles
+             SET media_subtype = NULL, live_photo_video_id = NULL
+             WHERE media_subtype = 'raw_jpeg_pair'
+               AND folder_id IN (SELECT id FROM afolders WHERE album_id = ?1)",
+            params![album_id],
+        ).map_err(|error| error.to_string())
     }
 
     /// delete unseen files in an album (database only)

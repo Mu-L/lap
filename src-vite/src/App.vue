@@ -14,7 +14,7 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useConfigStore } from '@/stores/configStore';
 import { useLibraryStore } from '@/stores/libraryStore';
-import { clearIndexRecoveryInfo, setRawJpegPairingEnabled } from '@/common/api';
+import { clearIndexRecoveryInfo } from '@/common/api';
 import { isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { matchesShortcut } from '@/common/shortcuts';
 import ToastContainer from '@/components/ToastContainer.vue';
@@ -40,17 +40,6 @@ watch(
       applyMainWindowScale(newScale);
     }
   }
-);
-
-watch(
-  () => Boolean(config.settings.groupRawJpegPairs),
-  (enabled) => {
-    if (getCurrentWebviewWindow().label !== 'main') return;
-    void setRawJpegPairingEnabled(enabled).catch((error) => {
-      console.error('Failed to update RAW+JPEG pairing:', error);
-    });
-  },
-  { immediate: true },
 );
 
 onMounted(async () => {
