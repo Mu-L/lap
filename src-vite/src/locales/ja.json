@@ -16,6 +16,8 @@
   "collection": {
     "title": "コレクション",
     "add": "コレクションを追加",
+    "search": "コレクションを検索",
+    "not_found": "コレクションが見つかりません",
     "default_name": "コレクション {index}",
     "expand": "展開",
     "collapse": "折りたたむ",

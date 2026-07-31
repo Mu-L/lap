@@ -24,7 +24,7 @@
         :icon="IconAdd"
         :buttonSize="'small'"
         :tooltip="$t('collection.add')"
-        :disabled="collections.length >= MAX_COLLECTIONS"
+        :disabled="collections.length >= maxCollectionCount"
         @click.stop="addCollection"
       />
     </div>
@@ -38,8 +38,34 @@
       leave-to-class="opacity-0 -translate-y-1"
     >
       <div v-if="expanded" class="min-h-0 flex-1 overflow-y-auto pb-1">
+        <div v-if="collections.length > 10" class="mx-1 mb-2 px-1 shrink-0">
+          <div
+            :class="[
+              'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
+              isSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+            ]"
+          >
+            <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="$t('collection.search')"
+              class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
+              @focus="isSearchFocused = true"
+              @blur="isSearchFocused = false"
+            />
+            <button
+              v-if="searchQuery"
+              type="button"
+              class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+              @click="searchQuery = ''"
+            >
+              <IconClose class="w-4 h-4" />
+            </button>
+          </div>
+        </div>
         <div
-          v-for="collection in collections"
+          v-for="collection in filteredCollections"
           :key="collection.id"
           :data-collection-drop-id="renamingId === collection.id ? undefined : collection.id"
           :class="[
@@ -63,7 +89,7 @@
           />
           <span v-else class="sidebar-item-label">{{ collection.name }}</span>
           <span
-            v-if="renamingId !== collection.id"
+            v-if="renamingId !== collection.id && collection.count > 0"
             :class="[
               'sidebar-item-count ml-auto',
               selectedId === collection.id ? 'hidden' : 'group-hover:hidden',
@@ -83,6 +109,9 @@
               :smallIcon="true"
             />
           </div>
+        </div>
+        <div v-if="collections.length > 0 && filteredCollections.length === 0" class="sidebar-empty text-sm">
+          <span class="text-center">{{ $t('collection.not_found') }}</span>
         </div>
         <div
           v-if="collections.length === 0 && !renamingId"
@@ -116,12 +145,12 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
-import { libConfig } from '@/common/config';
+import { config, libConfig } from '@/common/config';
 import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, listCollections, renameCollection } from '@/common/api';
-import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash } from '@/common/icons';
+import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch } from '@/common/icons';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
@@ -136,8 +165,6 @@ defineProps({
 const emit = defineEmits(['toggle-expanded']);
 
 const { t } = useI18n();
-const MAX_COLLECTIONS = 10;
-
 type Collection = {
   id: number;
   name: string;
@@ -146,6 +173,18 @@ type Collection = {
 };
 
 const collections = ref<Collection[]>([]);
+const maxCollectionCount = computed(() => Math.max(1, Number(config.main.maxCollectionCount) || 100));
+const searchQuery = ref('');
+const isSearchFocused = ref(false);
+const filteredCollections = computed(() => {
+  const query = searchQuery.value.trim().toLocaleLowerCase();
+  return query
+    ? collections.value.filter(collection => collection.name.toLocaleLowerCase().includes(query))
+    : collections.value;
+});
+watch(() => collections.value.length, (count) => {
+  if (count <= 10) searchQuery.value = '';
+});
 const selectedId = ref<number | null>(Number(libConfig.collection.selectedId || 0) || null);
 const renamingId = ref<number | null>(null);
 const renameValue = ref('');
@@ -212,7 +251,7 @@ function selectCollection(collection: Collection) {
 }
 
 async function addCollection() {
-  if (collections.value.length >= MAX_COLLECTIONS) return;
+  if (collections.value.length >= maxCollectionCount.value) return;
   const collection = await createCollection(t('collection.default_name', { index: collections.value.length + 1 }));
   if (!collection?.id) return;
   await loadCollections(Number(collection.id));
@@ -259,17 +298,13 @@ async function confirmDelete() {
   const target = deleteTarget.value;
   if (!target) return;
   const wasSelected = Number(libConfig.collection.selectedId || 0) === target.id;
+  const targetIndex = collections.value.findIndex(item => item.id === target.id);
+  const replacementId = wasSelected && targetIndex >= 0
+    ? collections.value[targetIndex + 1]?.id || collections.value[targetIndex - 1]?.id
+    : undefined;
   deleteTarget.value = null;
   await deleteCollectionApi(target.id);
-  await loadCollections();
-  if (wasSelected) {
-    const first = collections.value[0] || null;
-    if (first) selectCollection(first);
-    else {
-      selectedId.value = null;
-      libConfig.collection.selectedId = null;
-    }
-  }
+  await loadCollections(replacementId);
   await tauriEmit('refresh-content');
 }
 

@@ -16,6 +16,8 @@
   "collection": {
     "title": "合集",
     "add": "添加合集",
+    "search": "搜索合集",
+    "not_found": "未找到合集",
     "default_name": "合集 {index}",
     "expand": "展开",
     "collapse": "折叠",

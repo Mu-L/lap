@@ -16,6 +16,8 @@
   "collection": {
     "title": "Collection",
     "add": "Ajouter une collection",
+    "search": "Rechercher des collections",
+    "not_found": "Aucune collection trouvée",
     "default_name": "Collection {index}",
     "expand": "Développer",
     "collapse": "Réduire",

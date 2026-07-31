@@ -934,8 +934,6 @@ pub struct AFileCollection {
 }
 
 impl ACollection {
-    const MAX_COLLECTIONS: i64 = 10;
-
     fn now_ts() -> i64 {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -1004,13 +1002,6 @@ impl ACollection {
         }
 
         let conn = open_conn()?;
-        let count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM acollections", [], |row| row.get(0))
-            .map_err(|e| e.to_string())?;
-        if count >= Self::MAX_COLLECTIONS {
-            return Err("Maximum collection count reached".to_string());
-        }
-
         let sort_order: i64 = conn
             .query_row(
                 "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM acollections",
