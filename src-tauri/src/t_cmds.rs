@@ -30,7 +30,7 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
@@ -955,6 +955,42 @@ pub fn get_folder_files(
         folder_path,
         from_db_only.unwrap_or(false),
     )
+}
+
+#[tauri::command]
+pub async fn set_raw_jpeg_pairing_enabled(
+    app_handle: AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    let generation = t_utils::set_raw_jpeg_pairing_enabled(enabled);
+    if !enabled {
+        AFile::clear_raw_jpeg_pairs()?;
+        let _ = app_handle.emit("refresh-content", ());
+        return Ok(());
+    }
+
+    let background_app_handle = app_handle.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        for folder in AFolder::get_all()? {
+            if !t_utils::raw_jpeg_pairing_generation_valid(generation) {
+                break;
+            }
+            if let Some(folder_id) = folder.id {
+                if let Err(error) = AFile::pair_raw_jpeg_in_folder(folder_id) {
+                    eprintln!("Failed to pair RAW+JPEG files in folder {}: {}", folder_id, error);
+                }
+                if !t_utils::raw_jpeg_pairing_generation_valid(generation) {
+                    if !t_utils::raw_jpeg_pairing_enabled() {
+                        let _ = AFile::clear_raw_jpeg_pairs();
+                    }
+                    break;
+                }
+            }
+        }
+        let _ = background_app_handle.emit("refresh-content", ());
+        Ok::<(), String>(())
+    });
+    Ok(())
 }
 
 /// sync a single folder's mtime and DB records with the filesystem

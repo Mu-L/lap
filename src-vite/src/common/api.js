@@ -959,6 +959,10 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
   return [null, 0, 0];
 };
 
+export async function setRawJpegPairingEnabled(enabled) {
+  return await invoke('set_raw_jpeg_pairing_enabled', { enabled });
+}
+
 // sync a single folder's mtime and DB records with the filesystem
 export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
   try {

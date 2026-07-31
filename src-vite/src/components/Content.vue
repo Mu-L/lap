@@ -1900,6 +1900,15 @@ const closeTrashMsgbox = () => {
 };
 
 const isDedupTrash = computed(() => dedupDeleteFileIds.value.length > 0);
+const rawJpegCompanionDeleteCount = computed(() => {
+  if (!config.settings.groupRawJpegPairs) return 0;
+  const items = isDedupTrash.value
+    ? dedupDeleteFileIds.value.map(id => fileList.value.find(file => Number(file.id) === Number(id))).filter(Boolean)
+    : selectMode.value
+      ? getActionableSelectedItems()
+      : [fileList.value[selectedItemIndex.value]].filter(Boolean);
+  return items.filter((file: any) => file.media_subtype === 'raw_jpeg_pair').length;
+});
 
 const trashMsgboxTitle = computed(() => {
   if (deletePermanently.value) {
@@ -1924,8 +1933,11 @@ const trashMsgboxMessage = computed(() => {
     : ((isDedupTrash.value || selectMode.value)
         ? localeMsg.value.msgbox.move_to_trash.files_content.replace('{count}', deleteCount.toLocaleString())
         : localeMsg.value.msgbox.move_to_trash.file_content.replace('{file}', fileList.value[selectedItemIndex.value]?.name || ''));
-  if (dedupReclaimBytes.value <= 0 || !(isDedupTrash.value || selectMode.value)) return base;
-  return `${base}\n${localeMsg.value.info_panel.dedup.reclaimable_size}: ${formatFileSize(dedupReclaimBytes.value)}`;
+  const companionNotice = rawJpegCompanionDeleteCount.value > 0
+    ? `\n${localeMsg.value.msgbox.move_to_trash.raw_jpeg_companions_content.replace('{count}', rawJpegCompanionDeleteCount.value.toLocaleString())}`
+    : '';
+  if (dedupReclaimBytes.value <= 0 || !(isDedupTrash.value || selectMode.value)) return `${base}${companionNotice}`;
+  return `${base}${companionNotice}\n${localeMsg.value.info_panel.dedup.reclaimable_size}: ${formatFileSize(dedupReclaimBytes.value)}`;
 });
 
 const trashFailedMsgboxMessage = computed(() => {

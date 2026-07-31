@@ -19,11 +19,29 @@ use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, Manager, State};
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use walkdir::WalkDir; // https://docs.rs/walkdir/2.5.0/walkdir/
+
+static RAW_JPEG_PAIRING_ENABLED: AtomicBool = AtomicBool::new(false);
+static RAW_JPEG_PAIRING_GENERATION: AtomicU64 = AtomicU64::new(0);
+
+pub fn set_raw_jpeg_pairing_enabled(enabled: bool) -> u64 {
+    RAW_JPEG_PAIRING_ENABLED.store(enabled, Ordering::Relaxed);
+    RAW_JPEG_PAIRING_GENERATION.fetch_add(1, Ordering::Relaxed) + 1
+}
+
+pub fn raw_jpeg_pairing_enabled() -> bool {
+    RAW_JPEG_PAIRING_ENABLED.load(Ordering::Relaxed)
+}
+
+pub fn raw_jpeg_pairing_generation_valid(generation: u64) -> bool {
+    raw_jpeg_pairing_enabled()
+        && RAW_JPEG_PAIRING_GENERATION.load(Ordering::Relaxed) == generation
+}
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -2068,6 +2086,14 @@ fn sync_folder_direct_files(
             "Failed to pair Live Photos in folder {}: {}",
             folder_path, error
         );
+    }
+
+    // RAW+JPEG pairing is filename-only and inexpensive; run it after every
+    // folder sync so additions, removals, and external renames stay current.
+    if raw_jpeg_pairing_enabled() {
+        if let Err(error) = AFile::pair_raw_jpeg_in_folder(folder_id) {
+            eprintln!("Failed to pair RAW+JPEG files in folder {}: {}", folder_path, error);
+        }
     }
 
     Ok(FolderSyncOutcome {

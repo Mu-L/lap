@@ -125,6 +125,20 @@
             </div>
           </div>
 
+          <!-- file grouping -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_file_grouping') }}</span>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.group_raw_jpeg_pairs') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.group_raw_jpeg_pairs_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
+            </div>
+          </div>
+
           <!-- collections -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">

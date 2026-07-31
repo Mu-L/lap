@@ -118,6 +118,7 @@ export const useConfigStore = defineStore('configStore', {
       calendarSort: 0,            // 0=taken asc, 1=taken desc, 2=created asc, 3=created desc, 4=modified asc, 5=modified desc
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
       showSubfolderFiles: false,  // show subfolder files (in album folder view)
+      groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
       
       // grid view settings
       thumbnailSize: 512,         // thumbnail image size (small: 128, medium: 256, large: 512, extra large: 1024)

@@ -296,6 +296,7 @@ async fn main() {
             t_cmds::get_collection_query_file_ids,
             // folder file query
             t_cmds::get_folder_files,
+            t_cmds::set_raw_jpeg_pairing_enabled,
             t_cmds::sync_album_folder_mtimes,
             t_cmds::is_directory_accessible,
             t_cmds::get_folder_thumb_count,

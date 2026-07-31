@@ -149,6 +149,12 @@
           <span class="leading-none">LIVE</span>
         </div>
         <div
+          v-if="isRawJpegPair"
+          class="thumb-badge thumb-badge-muted"
+        >
+          <span class="leading-none">{{ rawJpegPairBadge }}</span>
+        </div>
+        <div
           v-if="videoDurationBadge"
           class="thumb-badge thumb-badge-muted"
         >
@@ -295,6 +301,11 @@ const showAnimatedImagePreview = ref(false);
 const isAnimatedImagePreviewReady = ref(false);
 const isVideoFile = computed(() => props.file?.file_type === 2);
 const isLivePhoto = computed(() => props.file?.media_subtype === 'live_photo' && !!props.file?.live_photo_video_path);
+const isRawJpegPair = computed(() => props.file?.media_subtype === 'raw_jpeg_pair');
+const rawJpegPairBadge = computed(() => {
+  const extension = getFileExtension(props.file?.live_photo_video_path || '').toLowerCase();
+  return ['heic', 'heif', 'hif'].includes(extension) ? 'RAW+HEIC' : 'RAW+JPEG';
+});
 const previewVideoPath = computed(() => isLivePhoto.value ? props.file.live_photo_video_path : props.file?.file_path);
 const canPreviewVideo = computed(() => (
   (isVideoFile.value || isLivePhoto.value)
@@ -631,7 +642,7 @@ const thumbnailBadge = computed(() => {
 });
 
 const hasBottomMediaBadges = computed(() => (
-  isLivePhoto.value || Boolean(videoDurationBadge.value) || Boolean(props.dedupStatus)
+  isLivePhoto.value || isRawJpegPair.value || Boolean(videoDurationBadge.value) || Boolean(props.dedupStatus)
 ));
 
 const statusBadges = computed<ThumbnailBadge[]>(() => {

@@ -7,6 +7,7 @@
 use crate::t_ai;
 use crate::t_ai_png;
 use crate::t_config;
+use crate::t_common;
 use crate::t_image;
 use crate::t_lens;
 use crate::t_libraw;
@@ -3436,6 +3437,38 @@ impl AFile {
             return Ok(Vec::new());
         };
         Self::get_files_by_ids(&[video_id])
+    }
+
+    pub fn pair_raw_jpeg_in_folder(folder_id: i64) -> Result<usize, String> {
+        fn stem(name: &str) -> Option<String> { Path::new(name).file_stem()?.to_str().map(|value| value.to_ascii_lowercase()) }
+        fn ext(name: &str) -> String { Path::new(name).extension().and_then(|value| value.to_str()).unwrap_or("").to_ascii_lowercase() }
+        let files = Self::get_files_by_folder_id(folder_id)?;
+        let mut companions = HashMap::<String, Vec<i64>>::new();
+        for file in &files {
+            if matches!(ext(&file.name).as_str(), "jpg" | "jpeg" | "heic" | "heif" | "hif") {
+                if let (Some(id), Some(file_stem)) = (file.id, stem(&file.name)) { companions.entry(file_stem).or_default().push(id); }
+            }
+        }
+        let mut updates = Vec::new();
+        for file in &files {
+            if !t_common::RAW_IMGS.iter().any(|raw| raw.eq_ignore_ascii_case(&ext(&file.name))) { continue; }
+            let (Some(id), Some(file_stem)) = (file.id, stem(&file.name)) else { continue; };
+            let candidates = companions.get(&file_stem).cloned().unwrap_or_default();
+            let desired = (candidates.len() == 1).then_some(candidates[0]);
+            let current = (file.media_subtype.as_deref() == Some("raw_jpeg_pair")).then_some(file.live_photo_video_id).flatten();
+            if desired != current { updates.push((id, desired)); }
+        }
+        if updates.is_empty() { return Ok(0); }
+        let mut conn = open_conn()?; let tx = conn.transaction().map_err(|error| error.to_string())?;
+        for (id, companion) in &updates {
+            if let Some(companion) = companion { tx.execute("UPDATE afiles SET media_subtype = 'raw_jpeg_pair', live_photo_video_id = ?1 WHERE id = ?2", params![companion, id]).map_err(|error| error.to_string())?; }
+            else { tx.execute("UPDATE afiles SET media_subtype = NULL, live_photo_video_id = NULL WHERE id = ?1 AND media_subtype = 'raw_jpeg_pair'", params![id]).map_err(|error| error.to_string())?; }
+        }
+        tx.commit().map_err(|error| error.to_string())?; Ok(updates.len())
+    }
+
+    pub fn clear_raw_jpeg_pairs() -> Result<usize, String> {
+        open_conn()?.execute("UPDATE afiles SET media_subtype = NULL, live_photo_video_id = NULL WHERE media_subtype = 'raw_jpeg_pair'", []).map_err(|error| error.to_string())
     }
 
     /// delete unseen files in an album (database only)
