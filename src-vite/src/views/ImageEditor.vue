@@ -329,6 +329,26 @@
               />
             </div>
           </div>
+
+          <div class="form-control w-28">
+            <label class="label py-1">
+              <span class="label-text text-xs font-medium opacity-70">{{ $t('msgbox.image_editor.percentage') }}</span>
+            </label>
+            <div class="relative">
+              <input
+                v-model="resizePercentageInput"
+                type="number"
+                min="1"
+                max="100"
+                step="0.1"
+                inputmode="decimal"
+                class="input input-bordered input-sm w-full pr-3"
+                :disabled="cropStatus === 1"
+                @input="handleResizePercentageInput"
+              />
+              <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center opacity-50">%</span>
+            </div>
+          </div>
         </section>
         </template>
 
@@ -772,6 +792,7 @@ const baseOutputHeight = computed(() => {
 });
 const resizeWidthInput = ref('');
 const resizeHeightInput = ref('');
+const resizePercentageInput = ref('100');
 const keepAspectRatio = ref(true);
 const resizeAspectRatio = computed(() => {
   if (!baseOutputWidth.value || !baseOutputHeight.value) return 1;
@@ -784,6 +805,10 @@ const parsedResizeWidth = computed(() => {
 const parsedResizeHeight = computed(() => {
   const height = Number.parseInt(resizeHeightInput.value, 10);
   return Number.isFinite(height) && height > 0 ? height : null;
+});
+const parsedResizePercentage = computed(() => {
+  const percentage = Number.parseFloat(resizePercentageInput.value);
+  return Number.isFinite(percentage) && percentage > 0 ? percentage : null;
 });
 const maxResizeWidth = computed(() => Math.max(1, baseOutputWidth.value));
 const maxResizeHeight = computed(() => Math.max(1, baseOutputHeight.value));
@@ -1094,6 +1119,7 @@ const handleResizeWidthInput = () => {
     resizeWidthInput.value = String(clampedWidth);
   }
 
+  syncResizePercentage();
   if (!keepAspectRatio.value) return;
   resizeHeightInput.value = String(Math.min(maxResizeHeight.value, Math.max(1, Math.round(clampedWidth / resizeAspectRatio.value))));
 };
@@ -1109,11 +1135,31 @@ const handleResizeHeightInput = () => {
 
   if (!keepAspectRatio.value) return;
   resizeWidthInput.value = String(Math.min(maxResizeWidth.value, Math.max(1, Math.round(clampedHeight * resizeAspectRatio.value))));
+  syncResizePercentage();
+};
+
+const syncResizePercentage = () => {
+  if (!baseOutputWidth.value || !parsedResizeWidth.value) return;
+  const percentage = Math.round((parsedResizeWidth.value / baseOutputWidth.value) * 1000) / 10;
+  resizePercentageInput.value = String(percentage);
+};
+
+const handleResizePercentageInput = () => {
+  const percentage = parsedResizePercentage.value;
+  if (!percentage) return;
+
+  const clampedPercentage = Math.min(100, Math.max(1, percentage));
+  if (clampedPercentage !== percentage) {
+    resizePercentageInput.value = String(clampedPercentage);
+  }
+  resizeWidthInput.value = String(Math.max(1, Math.round(baseOutputWidth.value * clampedPercentage / 100)));
+  resizeHeightInput.value = String(Math.max(1, Math.round(baseOutputHeight.value * clampedPercentage / 100)));
 };
 
 const resetResize = () => {
   resizeWidthInput.value = String(baseOutputWidth.value);
   resizeHeightInput.value = String(baseOutputHeight.value);
+  resizePercentageInput.value = '100';
   keepAspectRatio.value = true;
 };
 
@@ -1122,6 +1168,7 @@ watch(
   ([width, height]) => {
     resizeWidthInput.value = width > 0 ? String(width) : '';
     resizeHeightInput.value = height > 0 ? String(height) : '';
+    resizePercentageInput.value = '100';
   },
   { immediate: true }
 );

@@ -7,9 +7,6 @@
 
     <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
       <template v-for="item in libraryItems" :key="item.id">
-      <div v-if="item.id === LIB_ITEM.FAV" class="sidebar-panel-header">
-        <span class="sidebar-panel-header-title flex-1">{{ localeMsg.library.review }}</span>
-      </div>
       <div
         :class="[
           'sidebar-item',
