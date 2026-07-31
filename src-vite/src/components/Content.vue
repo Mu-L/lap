@@ -8509,7 +8509,7 @@ const sortOptions = computed(() => {
 });
 
 const fixedAiSortOptions = computed(() => [{
-  label: localeMsg.value.settings?.image_search?.similarity || 'Similarity',
+  label: localeMsg.value.toolbar.filter?.similarity || 'Similarity',
   value: 0,
 }]);
 

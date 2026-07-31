@@ -359,6 +359,7 @@
         "Dimensão",
         "Duração"
       ],
+      "similarity": "Similaridade",
       "sort_order_options": [
         "Crescente",
         "Decrescente"
@@ -1262,7 +1263,7 @@
       "multilingual_model_download_success": "O modelo de pesquisa multilíngue está pronto. Reinicie o Lap para usá-lo.",
       "multilingual_model_download_failed": "Falha ao baixar o modelo de pesquisa multilíngue",
       "find_similar": "Encontrar fotos semelhantes",
-      "similarity": "Similaridade visual",
+      "similarity": "Similaridade de fotos",
       "similarity_hint": "Mais alto = mais similar, menos resultados. Mais baixo = menos similar, mais resultados",
       "similarity_options": [
         "Muito alta",

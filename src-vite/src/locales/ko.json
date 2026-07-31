@@ -359,6 +359,7 @@
         "픽셀 크기",
         "재생시간"
       ],
+      "similarity": "유사도",
       "sort_order_options": [
         "오름차순",
         "내림차순"
@@ -1262,7 +1263,7 @@
       "multilingual_model_download_success": "다국어 검색 모델이 준비되었습니다. 사용하려면 Lap을 다시 시작하세요.",
       "multilingual_model_download_failed": "다국어 검색 모델 다운로드 실패",
       "find_similar": "유사 사진 찾기",
-      "similarity": "시각적 유사도",
+      "similarity": "사진 유사도",
       "similarity_hint": "높을수록 더 비슷하고 결과가 적습니다. 낮을수록 덜 비슷하고 결과가 많습니다",
       "similarity_options": [
         "매우 높음",

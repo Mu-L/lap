@@ -359,6 +359,7 @@
         "尺寸",
         "时长"
       ],
+      "similarity": "相似度",
       "sort_order_options": [
         "升序",
         "降序"
@@ -1262,7 +1263,7 @@
       "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
       "multilingual_model_download_failed": "多语言搜索模型下载失败",
       "find_similar": "查找相似照片",
-      "similarity": "视觉相似度",
+      "similarity": "照片相似度",
       "similarity_hint": "越高越相似，结果越少。越低越不相似，结果越多",
       "similarity_options": [
         "极高",

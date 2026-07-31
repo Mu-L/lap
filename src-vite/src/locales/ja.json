@@ -359,6 +359,7 @@
         "寸法",
         "長さ"
       ],
+      "similarity": "類似度",
       "sort_order_options": [
         "昇順",
         "降順"
@@ -1262,7 +1263,7 @@
       "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには Lap を再起動してください。",
       "multilingual_model_download_failed": "多言語検索モデルのダウンロードに失敗しました",
       "find_similar": "類似写真を検索",
-      "similarity": "視覚的な類似度",
+      "similarity": "写真の類似度",
       "similarity_hint": "高いほど類似度が高く、結果は少なくなります。低いほど類似度が低く、結果は多くなります",
       "similarity_options": [
         "非常に高い",
