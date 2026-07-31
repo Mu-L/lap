@@ -2,7 +2,9 @@
 
   <div class="sidebar-panel">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ cameraTitle }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ cameraTitle }}<template v-if="activeItems.length > 0"> ({{ activeItems.length.toLocaleString() }})</template>
+      </span>
       <label
         class="swap swap-flip inline-grid w-6 h-6 place-items-center text-base-content/70 hover:text-base-content"
         :title="config.settings.showToolTip ? cameraToggleTooltip : undefined"

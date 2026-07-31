@@ -3,7 +3,9 @@
   <div class="sidebar-panel">
     <!-- title bar -->
     <div class="sidebar-panel-header" data-tauri-drag-region>
-      <span class="sidebar-panel-header-title flex-1">{{ titlebar }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ titlebar }}<template v-if="searchHistoryList.length > 0"> ({{ searchHistoryList.length.toLocaleString() }})</template>
+      </span>
       <ContextMenu :menuItems="searchPanelMenuItems" :iconMenu="IconMore" :smallIcon="true" />
     </div>
 

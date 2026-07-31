@@ -2,7 +2,9 @@
 
   <div class="sidebar-panel">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ titlebar }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ titlebar }}<template v-if="locations.length > 0"> ({{ locations.length.toLocaleString() }})</template>
+      </span>
     </div>
 
     <!-- list view -->

@@ -40,7 +40,7 @@
 
     <div class="sidebar-panel-header">
       <span class="sidebar-panel-header-title flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-        {{ titlebar }}
+        {{ titlebar }}<template v-if="totalPersons > 0"> ({{ totalPersons.toLocaleString() }})</template>
       </span>
       <span class="px-1.5 h-5 inline-flex items-center rounded-box text-[10px] font-semibold tracking-[0.08em] text-warning border border-warning/30 bg-warning/10 cursor-default">
         BETA

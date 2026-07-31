@@ -2,7 +2,9 @@
   <div class="sidebar-panel min-h-0">
     <!-- albums -->
     <div v-if="isMainPane" class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ $t('album.album_list') }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ $t('album.album_list') }}<template v-if="albums.length > 0"> ({{ albums.length.toLocaleString() }})</template>
+      </span>
       <TButton
         :icon="IconAdd"
         :buttonSize="'small'"

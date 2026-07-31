@@ -2,7 +2,9 @@
 
   <div class="sidebar-panel">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ localeMsg.tag.title }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ localeMsg.tag.title }}<template v-if="allTags.length > 0"> ({{ allTags.length.toLocaleString() }})</template>
+      </span>
       <div class="flex items-center gap-1">
         <TButton
           :icon="IconAdd"

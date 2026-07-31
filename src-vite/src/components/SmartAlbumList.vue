@@ -1,7 +1,9 @@
 <template>
   <div class="sidebar-panel">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ $t('album.smart_album_list') }}</span>
+      <span class="sidebar-panel-header-title flex-1">
+        {{ $t('album.smart_album_list') }}<template v-if="customSmartAlbums.length > 0"> ({{ customSmartAlbums.length.toLocaleString() }})</template>
+      </span>
       <TButton
         :icon="IconAdd"
         :buttonSize="'small'"

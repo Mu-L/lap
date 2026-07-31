@@ -14,7 +14,7 @@
         @click.stop="$emit('toggle-expanded')"
       />
       <span class="sidebar-panel-header-title flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-        {{ $t('collection.title') }}
+        {{ $t('collection.title') }}<template v-if="collections.length > 0"> ({{ collections.length.toLocaleString() }})</template>
       </span>
       <span v-if="isItemDragging" class="badge badge-sm badge-primary badge-outline shrink-0">
         {{ $t('collection.drop_title_hint') }}
