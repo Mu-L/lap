@@ -4,7 +4,7 @@
       <div class="flex items-center gap-2">
         <div 
           :class="[
-            'grow h-8 flex items-center rounded-box transition-colors bg-base-100',
+            'grow h-8 flex items-center rounded-box overflow-hidden transition-colors bg-base-100',
             isSearchFocused ? 'border-2 border-primary' : 'border border-neutral-content/30 hover:border-neutral-content/70'
           ]"
         >
@@ -18,10 +18,18 @@
             @focus="onSearchFocus"
             @blur="onSearchBlur"
           />
+          <button
+            v-if="tagSearch"
+            type="button"
+            class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+            @click="tagSearch = ''; tagSearchInputRef?.focus()"
+          >
+            <IconClose class="w-4 h-4" />
+          </button>
         </div>
         <div
           :class="[
-            'w-1/2 h-8 flex items-center rounded-box transition-colors bg-base-100',
+            'w-1/2 h-8 flex items-center rounded-box overflow-hidden transition-colors bg-base-100',
             isNewTagFocused ? 'border-2 border-primary' : 'border border-neutral-content/30 hover:border-neutral-content/70'
           ]"
         >
@@ -35,6 +43,14 @@
             @blur="isNewTagFocused = false"
             @keydown.enter="addNewTag"
           />
+          <button
+            v-if="newTagName"
+            type="button"
+            class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+            @click="newTagName = ''; newTagNameInputRef?.focus()"
+          >
+            <IconClose class="w-4 h-4" />
+          </button>
         </div>
         <TButton 
           :icon="IconAdd"
@@ -94,7 +110,7 @@ import {
   getTagSelectionCounts,
   applyTagsToFiles,
 } from '@/common/api';
-import { IconAdd, IconSearch } from '@/common/icons';
+import { IconAdd, IconClose, IconSearch } from '@/common/icons';
 import TButton from './TButton.vue';
 import { useUIStore } from '@/stores/uiStore';
 import ModalDialog from '@/components/ModalDialog.vue';
