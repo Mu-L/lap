@@ -57,11 +57,45 @@ brew install --cask lap
 - **Collection tray** keep ad-hoc collections of files without moving them from their original folders.
 - **Local AI search** for text prompts, visual similarity, subjects, face clustering, and optional multilingual search in 50+ languages.
 - **Apple Live Photos** recognize paired HEIC/MOV Live Photos, play them in the viewer, and keep linked MOV and AAE sidecars together during rename, move, copy, and delete operations.
+- **RAW + JPEG/HEIC pairs** optionally group a RAW file and its same-named JPEG or HEIC companion in the same folder as one item. The originals remain separate files, while rename, move, copy, paste, and delete operations keep the pair together.
 - **Folder-first workflow** with multiple libraries, drag-and-drop import, copy-paste import, filesystem sync, and safe move/copy/delete operations.
 - **Review and comparison tools** including a four-pane image comparison viewer.
 - **Cleanup tools** to find duplicates and batch move unwanted files to trash.
 - **Built-in editing** for crop, rotate, flip, resize, and basic image adjustments.
 - **Broad format support** for 60+ photo, RAW, and video formats.
+
+## Metadata, Collections, and Moving Files
+
+Lap is folder-first, but not every piece of information shown in Lap is embedded in the original file. This distinction matters when you also manage the same folders in Finder, Explorer, or another photo app.
+
+### What stays with the file
+
+- Your original photos and videos always remain ordinary files in their existing folders.
+- File metadata already embedded in a file, such as EXIF capture date, camera, lens, GPS, and orientation, is read from that file when Lap indexes it.
+- Saving a built-in image edit writes the resulting image to the selected destination. This is separate from Lap's library-only display rotation.
+- When you rename, move, copy, or delete files **in Lap**, Lap updates its local catalog at the same time. It also keeps supported grouped assets, such as Apple Live Photo components, AAE sidecars, and enabled RAW + JPEG/HEIC pairs, together.
+
+### What is stored locally by Lap
+
+The following are Lap library data. They are stored in Lap's local database or library configuration, not written into EXIF, IPTC, or XMP sidecars:
+
+- Collections and their membership
+- Tags
+- Comments
+- Favorites, ratings, and review states (including Picks and Rejects)
+- Lap's display rotation and other library-only state
+- Smart Albums and their rules, grouping, sorting, and ordering
+- AI search data, face data, thumbnails, and other index/cache data
+
+This data does not travel with a file when it is copied, exported, or moved outside Lap, and it is not available automatically to other applications.
+
+### Working with files outside Lap
+
+Lap can rescan folders and detect many filesystem changes. However, when files are renamed, moved, replaced, or copied outside Lap, Lap cannot guarantee that local associations—especially Collection membership and other library-only data—will follow the file.
+
+For a workflow that depends on Collections, Tags, Comments, Favorites, Ratings, review states, or Lap rotation, use Lap for file moves and renames whenever possible. If you work extensively outside Lap, treat those features as local-to-Lap organization and keep a backup of Lap's database and configuration alongside your photo backup. You can view or change the database location, and create a database backup, in **Settings → Storage**.
+
+Deleting Lap's database or configuration removes this local organization and index data, but does not delete your original media files.
 
 ## Uninstall Lap
 
@@ -147,7 +181,7 @@ Lap supports 60+ photo, RAW, and video formats.
 
 | Type | Formats |
 | :--- | :--- |
-| Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL, PSD, EXR, HDR/RGBE, TGA, JPEG 2000 (JP2/J2K/J2C/JPC/JPF/JPX), DDS, DPX, QOI |
+| Images | JPG/JPEG/JFIF, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL, PSD, EXR, HDR/RGBE, TGA, JPEG 2000 (JP2/J2K/J2C/JPC/JPF/JPX), DDS, DPX, QOI |
 | RAW photos | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
 | Videos | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX and more. H.264 playback is supported on all platforms, with automatic compatibility processing when native playback is unavailable. HEVC/H.265 and VP9 are natively supported on macOS. |
 

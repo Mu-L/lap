@@ -56,11 +56,45 @@ brew install --cask lap
 - **Plateau de collections** pour conserver des collections ponctuelles de fichiers sans les déplacer de leurs dossiers d'origine.
 - **Recherche IA locale** pour les requêtes texte, la similarité visuelle, les sujets, le regroupement de visages et la recherche multilingue optionnelle dans plus de 50 langues.
 - **Live Photos Apple** reconnaît les paires HEIC/MOV, les lit dans la visionneuse et conserve les fichiers associés MOV et AAE lors du renommage, du déplacement, de la copie et de la suppression.
+- **Paires RAW + JPEG/HEIC** regroupent facultativement un fichier RAW et son fichier JPEG ou HEIC compagnon portant le même nom dans le même dossier en un seul élément. Les originaux restent des fichiers distincts ; le renommage, le déplacement, la copie, le collage et la suppression traitent les deux fichiers ensemble.
 - **Flux de travail centré sur les dossiers** avec plusieurs bibliothèques, import par glisser-déposer, import par copier-coller, synchronisation du système de fichiers et opérations sûres de déplacement/copie/suppression.
 - **Outils de révision et de comparaison**, dont une visionneuse de comparaison d'images à quatre volets.
 - **Outils de nettoyage** pour trouver les doublons et déplacer par lots les fichiers indésirables vers la corbeille.
 - **Édition intégrée** pour recadrer, faire pivoter, retourner, redimensionner et appliquer des ajustements d'image de base.
 - **Large prise en charge des formats** pour plus de 60 formats photo, RAW et vidéo.
+
+## Métadonnées, collections et déplacement de fichiers
+
+Lap est centré sur les dossiers, mais toutes les informations affichées dans Lap ne sont pas intégrées au fichier d’origine. Cette distinction est importante si vous gérez aussi les mêmes dossiers dans Finder, l’Explorateur ou une autre application photo.
+
+### Ce qui reste avec le fichier
+
+- Vos photos et vidéos originales restent toujours des fichiers ordinaires dans leurs dossiers existants.
+- Les métadonnées déjà intégrées à un fichier, telles que la date EXIF, l’appareil, l’objectif, le GPS et l’orientation, sont lues depuis ce fichier lorsque Lap l’indexe.
+- L’enregistrement d’une modification d’image intégrée écrit l’image obtenue à l’emplacement choisi. Cela est distinct de l’orientation d’affichage, stockée uniquement par Lap.
+- Lorsque vous renommez, déplacez, copiez ou supprimez des fichiers **dans Lap**, Lap met simultanément à jour son catalogue local. Il conserve également ensemble les éléments groupés pris en charge, tels que les composants Apple Live Photo, les fichiers annexes AAE et les paires RAW + JPEG/HEIC activées.
+
+### Ce que Lap stocke localement
+
+Les informations suivantes sont des données de bibliothèque Lap. Elles sont stockées dans la base de données locale ou la configuration de bibliothèque de Lap, et ne sont pas écrites dans les données EXIF, IPTC ou les fichiers annexes XMP :
+
+- Les collections et leurs membres
+- Les tags
+- Les commentaires
+- Les favoris, notes et états de révision (dont Picks et Rejects)
+- L’orientation d’affichage de Lap et les autres états propres à la bibliothèque
+- Les albums intelligents, ainsi que leurs règles, regroupements, tris et ordres
+- Les données de recherche IA, données de visage, miniatures et autres données d’index ou de cache
+
+Ces données ne voyagent pas avec le fichier lorsqu’il est copié, exporté ou déplacé hors de Lap, et elles ne sont pas automatiquement disponibles dans d’autres applications.
+
+### Travailler avec des fichiers hors de Lap
+
+Lap peut analyser à nouveau les dossiers et détecter de nombreux changements du système de fichiers. Cependant, lorsqu’un fichier est renommé, déplacé, remplacé ou copié hors de Lap, Lap ne peut pas garantir que les associations locales — en particulier l’appartenance à une collection et les autres données propres à la bibliothèque — suivront le fichier.
+
+Si votre flux de travail dépend des collections, tags, commentaires, favoris, notes, états de révision ou de l’orientation Lap, utilisez autant que possible Lap pour déplacer et renommer les fichiers. Si vous travaillez souvent hors de Lap, considérez ces fonctions comme une organisation locale à Lap et sauvegardez la base de données et la configuration de Lap avec vos photos. Vous pouvez consulter ou changer l’emplacement de la base de données, et créer une sauvegarde de la base de données, dans **Paramètres → Stockage**.
+
+Supprimer la base de données ou la configuration de Lap supprime cette organisation locale et les données d’index, mais ne supprime pas vos fichiers média originaux.
 
 ## Désinstaller Lap
 
@@ -146,7 +180,7 @@ Lap prend en charge plus de 60 formats photo, RAW et vidéo.
 
 | Type | Formats |
 | :--- | :--- |
-| Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL, PSD, EXR, HDR/RGBE, TGA, JPEG 2000 (JP2/J2K/J2C/JPC/JPF/JPX), DDS, DPX, QOI |
+| Images | JPG/JPEG/JFIF, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL, PSD, EXR, HDR/RGBE, TGA, JPEG 2000 (JP2/J2K/J2C/JPC/JPF/JPX), DDS, DPX, QOI |
 | Photos RAW | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
 | Vidéos | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX et plus. La lecture H.264 est supportée sur toutes les plateformes, avec un traitement automatique de compatibilité lorsque la lecture native n'est pas disponible. HEVC/H.265 et VP9 sont supportés nativement sur macOS. |
 
