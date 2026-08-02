@@ -123,7 +123,8 @@
         "location": "Location"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo"
+        "live_photo": "Live Photo",
+        "raw_jpeg_pair": "RAW Pair"
       },
       "operators": {
         "is": "=",
@@ -1123,7 +1124,7 @@
       "show_subfolder_files": "Show files from subfolders",
       "show_subfolder_files_hint": "Folder view includes files in child folders",
       "section_file_grouping": "File grouping",
-      "group_raw_jpeg_pairs": "Group RAW + JPEG pairs",
+      "group_raw_jpeg_pairs": "Group RAW Pairs",
       "group_raw_jpeg_pairs_hint": "Show matching RAW and JPEG/HEIC files as a single item",
       "section_collections": "Collections",
       "show_collections": "Show Collections",

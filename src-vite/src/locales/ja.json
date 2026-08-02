@@ -123,7 +123,8 @@
         "location": "場所"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo"
+        "live_photo": "Live Photo",
+        "raw_jpeg_pair": "RAWペア"
       },
       "operators": {
         "is": "=",
@@ -1123,7 +1124,7 @@
       "show_subfolder_files": "サブフォルダー内のファイルを表示",
       "show_subfolder_files_hint": "フォルダービューに子フォルダー内のファイルを含めます",
       "section_file_grouping": "ファイルのグループ化",
-      "group_raw_jpeg_pairs": "RAW + JPEG ペアをグループ化",
+      "group_raw_jpeg_pairs": "RAWペアをまとめて表示",
       "group_raw_jpeg_pairs_hint": "一致する RAW と JPEG/HEIC ファイルを 1 つの項目として表示します",
       "section_collections": "コレクション",
       "show_collections": "コレクションを表示",

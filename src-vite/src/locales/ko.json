@@ -123,7 +123,8 @@
         "location": "위치"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo"
+        "live_photo": "Live Photo",
+        "raw_jpeg_pair": "RAW 쌍"
       },
       "operators": {
         "is": "=",
@@ -1123,7 +1124,7 @@
       "show_subfolder_files": "하위 폴더의 파일 표시",
       "show_subfolder_files_hint": "폴더 보기에서 하위 폴더의 파일을 포함합니다",
       "section_file_grouping": "파일 그룹화",
-      "group_raw_jpeg_pairs": "RAW + JPEG 쌍 그룹화",
+      "group_raw_jpeg_pairs": "RAW 쌍을 하나로 표시",
       "group_raw_jpeg_pairs_hint": "일치하는 RAW 및 JPEG/HEIC 파일을 하나의 항목으로 표시합니다",
       "section_collections": "컬렉션",
       "show_collections": "컬렉션 표시",

@@ -199,6 +199,7 @@ const cullingOptions = computed(() => [
 
 const mediaSubtypeOptions = computed(() => [
   { value: 'live_photo', label: t('album.smart_edit.media_subtypes.live_photo') },
+  { value: 'raw_jpeg_pair', label: t('album.smart_edit.media_subtypes.raw_jpeg_pair') },
 ]);
 
 function indexedOptions(labels: unknown, fallbacks: string[]) {

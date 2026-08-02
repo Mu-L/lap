@@ -123,7 +123,8 @@
         "location": "Ort"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo"
+        "live_photo": "Live Photo",
+        "raw_jpeg_pair": "RAW-Paar"
       },
       "operators": {
         "is": "=",
@@ -1123,7 +1124,7 @@
       "show_subfolder_files": "Dateien aus Unterordnern anzeigen",
       "show_subfolder_files_hint": "Die Ordneransicht enthält Dateien in Unterordnern",
       "section_file_grouping": "Dateigruppierung",
-      "group_raw_jpeg_pairs": "RAW- und JPEG-Paare gruppieren",
+      "group_raw_jpeg_pairs": "RAW-Paare gruppieren",
       "group_raw_jpeg_pairs_hint": "Passende RAW- und JPEG/HEIC-Dateien als ein Element anzeigen",
       "section_collections": "Sammlungen",
       "show_collections": "Sammlungen anzeigen",

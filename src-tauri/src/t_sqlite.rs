@@ -4420,16 +4420,19 @@ impl AFile {
             "media_subtype" => {
                 let subtype = Self::smart_rule_string(value)
                     .ok_or_else(|| "Media subtype value required".to_string())?;
-                if subtype != "live_photo" {
+                if !matches!(subtype.as_str(), "live_photo" | "raw_jpeg_pair") {
                     return Err(format!("Unsupported media subtype: {}", subtype));
                 }
                 if matches!(operator, "is_not" | "neq" | "not_in") {
-                    Ok("(a.media_subtype IS NULL OR a.media_subtype != 'live_photo' OR a.live_photo_video_id IS NULL)".to_string())
+                    Ok(format!(
+                        "(a.media_subtype IS NULL OR a.media_subtype != '{}' OR a.live_photo_video_id IS NULL)",
+                        subtype
+                    ))
                 } else if matches!(operator, "is" | "eq" | "in") {
-                    Ok(
-                        "(a.media_subtype = 'live_photo' AND a.live_photo_video_id IS NOT NULL)"
-                            .to_string(),
-                    )
+                    Ok(format!(
+                        "(a.media_subtype = '{}' AND a.live_photo_video_id IS NOT NULL)",
+                        subtype
+                    ))
                 } else {
                     Err(format!("Unsupported media subtype operator: {}", operator))
                 }
