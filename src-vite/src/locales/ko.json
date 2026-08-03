@@ -248,7 +248,7 @@
     "one_star": "1점"
   },
   "culling": {
-    "title": "컬링",
+    "title": "선별",
     "picks": "선택됨",
     "rejected": "제외됨",
     "unreviewed": "미선별"
@@ -353,7 +353,9 @@
         "위치",
         "카메라",
         "렌즈",
-        "년"
+        "년",
+        "파일 유형",
+        "선별"
       ],
       "sort_type_options": [
         "촬영일",
@@ -374,7 +376,8 @@
         "사진",
         "RAW 파일",
         "동영상"
-      ]
+      ],
+      "file_type_other": "기타"
     },
     "tooltip": {
       "restore": "복원",

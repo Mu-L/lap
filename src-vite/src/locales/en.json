@@ -353,7 +353,9 @@
         "Location",
         "Camera",
         "Lens",
-        "Year"
+        "Year",
+        "File type",
+        "Culling"
       ],
       "sort_type_options": [
         "Taken Date",
@@ -374,7 +376,8 @@
         "Photos",
         "RAW Files",
         "Videos"
-      ]
+      ],
+      "file_type_other": "Other"
     },
     "tooltip": {
       "restore": "Restore",

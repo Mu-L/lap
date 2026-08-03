@@ -353,7 +353,9 @@
         "Ubicación",
         "Cámara",
         "Objetivo",
-        "Año"
+        "Año",
+        "Tipo de archivo",
+        "Selección"
       ],
       "sort_type_options": [
         "Fecha de toma",
@@ -374,7 +376,8 @@
         "Fotos",
         "Archivos RAW",
         "Vídeos"
-      ]
+      ],
+      "file_type_other": "Otros"
     },
     "tooltip": {
       "restore": "Restaurar",

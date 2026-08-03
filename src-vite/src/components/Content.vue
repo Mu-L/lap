@@ -1291,6 +1291,17 @@ function formatRatingGroupLabel(label: string) {
   return key ? localeMsg.value.rating[key] : label || '';
 }
 
+function formatCullingGroupLabel(label: string) {
+  switch (Number(label || 0)) {
+    case 1:
+      return localeMsg.value.culling.picks;
+    case 2:
+      return localeMsg.value.culling.rejected;
+    default:
+      return localeMsg.value.culling.unreviewed;
+  }
+}
+
 function formatGroupLabel(label: string) {
   const unknownGroupLabels: Record<string, string> = {
     'unknown-location': localeMsg.value.search?.unknown_location || 'Unknown location',
@@ -1303,6 +1314,17 @@ function formatGroupLabel(label: string) {
   if (groupBy === GROUP.DAY || groupBy === GROUP.MONTH || groupBy === GROUP.YEAR) return formatDateGroupLabel(groupBy, label);
   if (groupBy === GROUP.FOLDER) return formatFolderGroupLabel(label);
   if (groupBy === GROUP.RATING) return formatRatingGroupLabel(label);
+  if (groupBy === GROUP.CULLING) return formatCullingGroupLabel(label);
+  if (groupBy === GROUP.FILE_TYPE) {
+    const labels = localeMsg.value.toolbar.filter?.file_type_options || [];
+    const fileTypeLabels: Record<string, string> = {
+      image: labels[1] || 'Photos',
+      raw: labels[2] || 'RAW Files',
+      video: labels[3] || 'Videos',
+      other: localeMsg.value.toolbar.filter?.file_type_other || 'Other',
+    };
+    return fileTypeLabels[label] || label || '';
+  }
   return label || '';
 }
 
@@ -8573,7 +8595,7 @@ const groupOptions = computed(() => {
 
   return [
     ...options,
-    ...[GROUP.FOLDER, GROUP.DAY, GROUP.MONTH, GROUP.YEAR, GROUP.RATING, GROUP.LOCATION, GROUP.CAMERA, GROUP.LENS]
+    ...[GROUP.FOLDER, GROUP.FILE_TYPE, GROUP.DAY, GROUP.MONTH, GROUP.YEAR, GROUP.RATING, GROUP.CULLING, GROUP.LOCATION, GROUP.CAMERA, GROUP.LENS]
       .map(value => ({ label: groupTypeLabels.value[value], value }))
       .filter(option => option.label),
   ];

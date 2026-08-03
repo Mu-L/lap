@@ -46,8 +46,8 @@
   },
   "album": {
     "album_list": "Alben",
-    "smart_album_list": "Intelligente Alben",
-    "add_smart_album": "Intelligentes Album hinzufügen",
+    "smart_album_list": "Smart-Alben",
+    "add_smart_album": "Smart-Album hinzufügen",
     "folder_unavailable": {
       "title": "Ordner nicht verfügbar",
       "description": "Verbinden Sie das Speichergerät erneut oder prüfen Sie den Ordnerpfad."
@@ -75,7 +75,7 @@
       "description": "Fügen Sie ein Album mit Fotos oder Videos hinzu, um zu beginnen"
     },
     "no_smart_albums": {
-      "description": "Erstellen Sie intelligente Alben aus benutzerdefinierten Abfrageregeln."
+      "description": "Erstellen Sie Smart-Alben aus benutzerdefinierten Abfrageregeln."
     },
     "smart_edit": {
       "title_add": "Smart-Album hinzufügen",
@@ -353,7 +353,9 @@
         "Standort",
         "Kamera",
         "Objektiv",
-        "Jahr"
+        "Jahr",
+        "Dateityp",
+        "Auswahl"
       ],
       "sort_type_options": [
         "Aufnahmedatum",
@@ -374,7 +376,8 @@
         "Fotos",
         "RAW-Dateien",
         "Videos"
-      ]
+      ],
+      "file_type_other": "Andere"
     },
     "tooltip": {
       "restore": "Wiederherstellen",

@@ -353,7 +353,9 @@
         "Localização",
         "Câmera",
         "Lente",
-        "Ano"
+        "Ano",
+        "Tipo de arquivo",
+        "Seleção"
       ],
       "sort_type_options": [
         "Data de captura",
@@ -374,7 +376,8 @@
         "Fotos",
         "Arquivos RAW",
         "Vídeos"
-      ]
+      ],
+      "file_type_other": "Outros"
     },
     "tooltip": {
       "restore": "Restaurar",

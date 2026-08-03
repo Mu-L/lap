@@ -1776,6 +1776,8 @@ const GROUP_BY_LOCATION: i64 = 5;
 const GROUP_BY_CAMERA: i64 = 6;
 const GROUP_BY_LENS: i64 = 7;
 const GROUP_BY_DATE_YEAR: i64 = 8;
+const GROUP_BY_FILE_TYPE: i64 = 9;
+const GROUP_BY_CULLING: i64 = 10;
 
 /// Define the AI image search parameters struct
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -4200,6 +4202,14 @@ impl AFile {
                 "CASE WHEN COALESCE(a.e_lens_model, '') = '' THEN 'unknown-lens' ELSE a.e_lens_model END".to_string(),
                 "COALESCE(a.e_lens_model, '')".to_string(),
             )),
+            GROUP_BY_FILE_TYPE => Some((
+                "CASE a.file_type WHEN 1 THEN 'image' WHEN 3 THEN 'raw' WHEN 2 THEN 'video' ELSE 'other' END".to_string(),
+                "0".to_string(),
+            )),
+            GROUP_BY_CULLING => Some((
+                "CAST(COALESCE(a.culling_flag, 0) AS TEXT)".to_string(),
+                "0".to_string(),
+            )),
             _ => None,
         }
     }
@@ -4229,11 +4239,13 @@ impl AFile {
                 _ => "label COLLATE NOCASE ASC".to_string(),
             },
             GROUP_BY_RATING => "CAST(group_id AS INTEGER) DESC".to_string(),
+            GROUP_BY_FILE_TYPE => "CASE group_id WHEN 'image' THEN 0 WHEN 'raw' THEN 1 WHEN 'video' THEN 2 ELSE 3 END".to_string(),
+            GROUP_BY_CULLING => "CASE group_id WHEN '1' THEN 0 WHEN '2' THEN 1 ELSE 2 END".to_string(),
             GROUP_BY_LOCATION | GROUP_BY_CAMERA | GROUP_BY_LENS => match category_sort {
-                1 => "MAX(group_sort) COLLATE NOCASE DESC, label COLLATE NOCASE DESC".to_string(),
-                2 => "COUNT(*) ASC, label COLLATE NOCASE ASC".to_string(),
-                3 => "COUNT(*) DESC, label COLLATE NOCASE ASC".to_string(),
-                _ => "MAX(group_sort) COLLATE NOCASE ASC, label COLLATE NOCASE ASC".to_string(),
+                1 => "CASE WHEN group_id LIKE 'unknown-%' THEN 1 ELSE 0 END, MAX(group_sort) COLLATE NOCASE DESC, label COLLATE NOCASE DESC".to_string(),
+                2 => "CASE WHEN group_id LIKE 'unknown-%' THEN 1 ELSE 0 END, COUNT(*) ASC, label COLLATE NOCASE ASC".to_string(),
+                3 => "CASE WHEN group_id LIKE 'unknown-%' THEN 1 ELSE 0 END, COUNT(*) DESC, label COLLATE NOCASE ASC".to_string(),
+                _ => "CASE WHEN group_id LIKE 'unknown-%' THEN 1 ELSE 0 END, MAX(group_sort) COLLATE NOCASE ASC, label COLLATE NOCASE ASC".to_string(),
             },
             _ => "group_id ASC, label COLLATE NOCASE ASC".to_string(),
         }

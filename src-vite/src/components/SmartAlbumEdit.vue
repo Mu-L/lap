@@ -151,6 +151,7 @@ import { getAllTags, getCameraInfo, getLensInfo, getLocationInfo, getPersons, ge
 import { IconAdd, IconEdit, IconRemove } from '@/common/icons';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
+import { GROUP } from '@/common/constants';
 import ModalDialog from '@/components/ModalDialog.vue';
 import TButton from '@/components/TButton.vue';
 
@@ -224,10 +225,12 @@ const sortOrderOptions = computed(() => indexedOptions(
   ['Ascending', 'Descending'],
 ));
 
-const groupOptions = computed(() => indexedOptions(
-  localeMsg.value.toolbar.filter?.group_type_options,
-  ['None', 'Folder', 'Day', 'Month', 'Rating', 'Location', 'Camera', 'Lens', 'Year'],
-));
+const groupOptions = computed(() => {
+  const labels = localeMsg.value.toolbar.filter?.group_type_options || [];
+  return [GROUP.NONE, GROUP.FOLDER, GROUP.DAY, GROUP.MONTH, GROUP.YEAR, GROUP.FILE_TYPE, GROUP.CULLING, GROUP.RATING, GROUP.CAMERA, GROUP.LENS, GROUP.LOCATION]
+    .map(value => ({ value, label: String(labels[value] || '') }))
+    .filter(option => option.label);
+});
 
 const fieldOptions = computed(() => [
   // Source

@@ -68,6 +68,8 @@ export const GROUP = {
   CAMERA: 6,
   LENS: 7,
   YEAR: 8,
+  FILE_TYPE: 9,
+  CULLING: 10,
 } as const;
 
 export type Group = (typeof GROUP)[keyof typeof GROUP];

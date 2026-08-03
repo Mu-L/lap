@@ -63,7 +63,7 @@
           />
           <span v-else class="min-w-0 truncate text-sm text-base-content/30">{{ item.label }}</span>
         </div>
-        <span class="ml-auto badge badge-xs shrink-0 text-xs bg-base-200 text-base-content/30">
+        <span class="ml-auto badge badge-xs shrink-0 text-xs text-base-content/30">
           {{ item.countLabel || Number(item.count || 0).toLocaleString() }}
         </span>
       </div>
@@ -131,9 +131,14 @@ import {
   IconCameraAperture,
   IconFile,
   IconFiles,
+  IconFlag,
+  IconFlagFilled,
+  IconFlagOff,
   IconFolder,
   IconLocation,
+  IconPhoto,
   IconStarFilled,
+  IconVideo,
 } from '@/common/icons';
 
 const props = withDefaults(defineProps<{
@@ -877,6 +882,25 @@ function getGroupIcon(item: any) {
       return IconCalendarMonth;
     case GROUP.RATING:
       return IconStarFilled;
+    case GROUP.CULLING:
+      switch (Number(item?.group_id ?? 0)) {
+        case 1:
+          return IconFlagFilled;
+        case 2:
+          return IconFlagOff;
+        default:
+          return IconFlag;
+      }
+    case GROUP.FILE_TYPE:
+      switch (item?.group_id) {
+        case 'image':
+        case 'raw':
+          return IconPhoto;
+        case 'video':
+          return IconVideo;
+        default:
+          return IconFiles;
+      }
     case GROUP.LOCATION:
       return IconLocation;
     case GROUP.CAMERA:

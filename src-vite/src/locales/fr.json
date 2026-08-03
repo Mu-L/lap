@@ -14,7 +14,7 @@
     "settings": "Paramètres"
   },
   "collection": {
-    "title": "Collection",
+    "title": "Collections",
     "add": "Ajouter une collection",
     "search": "Rechercher des collections",
     "not_found": "Aucune collection trouvée",
@@ -353,7 +353,9 @@
         "Lieu",
         "Appareil",
         "Objectif",
-        "Année"
+        "Année",
+        "Type de fichier",
+        "Sélection"
       ],
       "sort_type_options": [
         "Date de prise",
@@ -374,7 +376,8 @@
         "Photos",
         "Fichiers RAW",
         "Vidéos"
-      ]
+      ],
+      "file_type_other": "Autres"
     },
     "tooltip": {
       "restore": "Restaurer",
