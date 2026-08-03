@@ -1841,10 +1841,11 @@ fn sync_dirty_folders_by_mtime(
                 .ok()
                 .and_then(|info| info.modified)
         });
-        let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+        let _ = FolderSubfolderState::update_after_scan(folder.album_id, &[FolderSubfolderState {
             path: folder.path,
             created_at: None,
             modified_at,
+            inode: None,
             has_subfolders: child_scan.has_subfolders,
         }]);
     }
@@ -1875,7 +1876,6 @@ fn scan_new_child_folders(
     reconcile_removed_children: bool,
 ) -> Result<ChildFolderScan, String> {
     let entries = fs::read_dir(folder_path).map_err(|e| e.to_string())?;
-    let mut new_folders = Vec::new();
     let mut has_subfolders = false;
     let mut seen_paths = HashSet::new();
 
@@ -1894,10 +1894,33 @@ fn scan_new_child_folders(
 
         let child_path = entry.path().to_string_lossy().to_string();
         seen_paths.insert(child_path.clone());
+    }
+
+    // A manual parent refresh must preserve a renamed child's folder id and
+    // its files' metadata before treating unseen paths as deleted.
+    if reconcile_removed_children {
+        let child_states = seen_paths
+            .iter()
+            .map(|path| FolderSubfolderState {
+                path: path.clone(),
+                created_at: None,
+                modified_at: None,
+                inode: FileInfo::new(path)
+                    .ok()
+                    .map(|info| info.inode as i64)
+                    .filter(|inode| *inode != 0),
+                has_subfolders: false,
+            })
+            .collect::<Vec<_>>();
+        AFolder::migrate_paths_by_inode(album_id, &child_states)?;
+    }
+
+    let mut new_folders = Vec::new();
+    for child_path in &seen_paths {
         if AFolder::fetch(&child_path)?.is_some() {
             continue;
         }
-        new_folders.push(AFolder::add_to_db(album_id, &child_path)?);
+        new_folders.push(AFolder::add_to_db(album_id, child_path)?);
     }
 
     // The background mtime sync already visits every known folder and removes
@@ -2243,6 +2266,13 @@ pub fn sync_single_folder(
     folder_path: &str,
     group_raw_jpeg_pairs: bool,
 ) -> Result<FolderMtimeSyncResult, String> {
+    // A complete album scan owns folder and file reconciliation for this
+    // album. Skip foreground refreshes until it finishes to avoid concurrent
+    // writes based on different filesystem snapshots.
+    if album_scan_active(album_id) {
+        return Ok(FolderMtimeSyncResult::default());
+    }
+
     let album = Album::get_album_by_id(album_id).map_err(|e| e.to_string())?;
     if !directory_accessible(&album.path) {
         return Err(format!("Album folder is not accessible: {}", album.path));
@@ -2313,10 +2343,11 @@ pub fn sync_single_folder(
             AFile::clear_raw_jpeg_pairs_in_folder(resolved_folder_id)? > 0
         };
         let folder_layout_changed = new_folder_count > 0 || child_scan.deleted_folder_count > 0;
-        let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+        let _ = FolderSubfolderState::update_after_scan(album_id, &[FolderSubfolderState {
             path: folder_path.to_string(),
             created_at: None,
             modified_at: info.modified,
+            inode: None,
             has_subfolders: child_scan.has_subfolders,
         }]);
         return Ok(FolderMtimeSyncResult {
@@ -2350,10 +2381,11 @@ pub fn sync_single_folder(
     }
 
     let mtime = info.modified;
-    let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+    let _ = FolderSubfolderState::update_after_scan(album_id, &[FolderSubfolderState {
         path: folder_path.to_string(),
         created_at: None,
         modified_at: mtime,
+        inode: None,
         has_subfolders: child_scan.has_subfolders,
     }]);
 
@@ -3318,6 +3350,20 @@ pub async fn index_album_worker(
             let created_at = metadata
                 .as_ref()
                 .and_then(|metadata| systemtime_to_timestamp(metadata.created().ok()));
+            #[cfg(unix)]
+            let inode = {
+                use std::os::unix::fs::MetadataExt;
+                metadata
+                    .as_ref()
+                    .map(|metadata| metadata.ino() as i64)
+                    .filter(|inode| *inode != 0)
+            };
+            #[cfg(windows)]
+            let inode = FileInfo::new(&directory_path)
+                .ok()
+                .map(|info| info.inode as i64)
+                .filter(|inode| *inode != 0);
+            AFolder::migrate_path_by_inode(album_id, &directory_path, inode)?;
             let depth = entry.depth();
             directory_state_stack.truncate(depth);
             if let Some(&parent_index) = directory_state_stack.last() {
@@ -3328,6 +3374,7 @@ pub async fn index_album_worker(
                 path: directory_path,
                 created_at,
                 modified_at,
+                inode,
                 has_subfolders: false,
             });
         }

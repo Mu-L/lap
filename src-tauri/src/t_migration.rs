@@ -127,6 +127,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Cache direct subfolder state on folders",
             sql: "",
         },
+        Migration {
+            version: 13,
+            description: "Persist folder filesystem identity",
+            sql: "",
+        },
     ]
 }
 
@@ -396,6 +401,16 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                     conn.execute("ALTER TABLE afolders ADD COLUMN has_subfolders INTEGER", [])
                         .map_err(|e| format!("Migration 12 failed adding has_subfolders: {}", e))?;
                 }
+            } else if migration.version == 13 {
+                if !table_has_column(conn, "afolders", "inode")? {
+                    conn.execute("ALTER TABLE afolders ADD COLUMN inode INTEGER", [])
+                        .map_err(|e| format!("Migration 13 failed adding inode: {}", e))?;
+                }
+                conn.execute(
+                    "CREATE INDEX IF NOT EXISTS idx_afolders_album_inode ON afolders(album_id, inode)",
+                    [],
+                )
+                .map_err(|e| format!("Migration 13 failed creating inode index: {}", e))?;
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;

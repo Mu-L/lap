@@ -413,6 +413,7 @@ pub struct FolderSubfolderState {
     pub path: String,
     pub created_at: Option<i64>,
     pub modified_at: Option<i64>,
+    pub inode: Option<i64>,
     pub has_subfolders: bool,
 }
 
@@ -441,6 +442,7 @@ impl FolderSubfolderState {
                         path: row.get(0)?,
                         created_at: None,
                         modified_at: row.get(1)?,
+                        inode: None,
                         has_subfolders: row.get::<_, i64>(2)? != 0,
                     })
                 })
@@ -457,7 +459,7 @@ impl FolderSubfolderState {
     /// Persist state after the directory has been fully scanned.  Do not use
     /// this for sidebar probes: advancing `modified_at` before file sync would
     /// make the incremental scanner miss external file changes.
-    pub fn update_after_scan(states: &[Self]) -> Result<(), String> {
+    pub fn update_after_scan(album_id: i64, states: &[Self]) -> Result<(), String> {
         if states.is_empty() {
             return Ok(());
         }
@@ -468,13 +470,14 @@ impl FolderSubfolderState {
                 .prepare(
                     "UPDATE afolders
                     SET modified_at = ?1, has_subfolders = ?2
-                    WHERE path = ?3",
+                    WHERE album_id = ?3 AND path = ?4",
                 )
                 .map_err(|e| e.to_string())?;
             for state in states {
                 stmt.execute(params![
                     state.modified_at,
                     i64::from(state.has_subfolders),
+                    album_id,
                     state.path,
                 ])
                 .map_err(|e| e.to_string())?;
@@ -486,6 +489,136 @@ impl FolderSubfolderState {
 }
 
 impl AFolder {
+    /// Preserve folder metadata when an external rename or move changes a
+    /// path but leaves the directory's filesystem identity intact.
+    pub fn migrate_paths_by_inode(
+        album_id: i64,
+        states: &[FolderSubfolderState],
+    ) -> Result<(), String> {
+        let paths_by_inode = states
+            .iter()
+            .filter_map(|state| state.inode.filter(|inode| *inode != 0).map(|inode| (inode, &state.path)))
+            .collect::<HashMap<_, _>>();
+        if paths_by_inode.is_empty() {
+            return Ok(());
+        }
+
+        let mut conn = open_conn()?;
+        let known_paths = {
+            let mut stmt = conn
+                .prepare("SELECT inode, path FROM afolders WHERE album_id = ?1 AND inode IS NOT NULL")
+                .map_err(|e| e.to_string())?;
+            stmt.query_map(params![album_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
+                .map_err(|e| e.to_string())?
+                .filter_map(|row| row.ok())
+                .collect::<Vec<_>>()
+        };
+        let mut moves = known_paths
+            .into_iter()
+            .filter_map(|(inode, old_path)| {
+                let new_path = paths_by_inode.get(&inode)?;
+                (old_path != **new_path).then(|| (old_path, (*new_path).clone()))
+            })
+            .collect::<Vec<_>>();
+        moves.sort_by_key(|(path, _)| path.len());
+        let moves = moves
+            .iter()
+            .filter(|(old_path, _)| {
+                !moves.iter().any(|(parent_path, _)| {
+                    parent_path.len() < old_path.len()
+                        && Path::new(old_path).strip_prefix(parent_path).is_ok_and(|relative| !relative.as_os_str().is_empty())
+                })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+
+        Self::apply_path_migrations(&mut conn, album_id, moves)
+    }
+
+    pub fn migrate_path_by_inode(album_id: i64, path: &str, inode: Option<i64>) -> Result<(), String> {
+        let Some(inode) = inode.filter(|inode| *inode != 0) else {
+            return Ok(());
+        };
+        let mut conn = open_conn()?;
+        let old_path = conn
+            .query_row(
+                "SELECT path FROM afolders WHERE album_id = ?1 AND inode = ?2",
+                params![album_id, inode],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+        match old_path {
+            Some(old_path) if old_path != path => {
+                Self::apply_path_migrations(&mut conn, album_id, vec![(old_path, path.to_string())])
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn apply_path_migrations(
+        conn: &mut Connection,
+        album_id: i64,
+        moves: Vec<(String, String)>,
+    ) -> Result<(), String> {
+        if moves.is_empty() {
+            return Ok(());
+        }
+
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let mut temporary_moves = moves
+            .iter()
+            .enumerate()
+            .map(|(index, (old_path, new_path))| {
+                (old_path, new_path, format!("{}.__lap_move_{}_{}", old_path, album_id, index))
+            })
+            .collect::<Vec<_>>();
+        // Apply outer destination paths first so a folder moved into another
+        // concurrently moved folder is not removed as stale destination data.
+        temporary_moves.sort_by_key(|(_, new_path, _)| new_path.len());
+        for (old_path, _, temporary_path) in &temporary_moves {
+            tx.execute(
+                "UPDATE afolders
+                 SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1))
+                 WHERE album_id = ?3
+                   AND (path = ?1 OR SUBSTR(path, 1, LENGTH(?1) + 1) = ?1 || ?4)",
+                params![
+                    old_path,
+                    temporary_path,
+                    album_id,
+                    std::path::MAIN_SEPARATOR.to_string(),
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        for (_, new_path, temporary_path) in &temporary_moves {
+            tx.execute(
+                "DELETE FROM afolders
+                 WHERE album_id = ?1
+                   AND (path = ?2 OR SUBSTR(path, 1, LENGTH(?2) + 1) = ?2 || ?3)",
+                params![album_id, new_path, std::path::MAIN_SEPARATOR.to_string()],
+            )
+            .map_err(|e| e.to_string())?;
+            tx.execute(
+                "UPDATE afolders
+                 SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1)),
+                     name = CASE WHEN path = ?1 THEN ?3 ELSE name END
+                 WHERE album_id = ?4
+                   AND (path = ?1 OR SUBSTR(path, 1, LENGTH(?1) + 1) = ?1 || ?5)",
+                params![
+                    temporary_path,
+                    new_path,
+                    t_utils::get_file_name(new_path),
+                    album_id,
+                    std::path::MAIN_SEPARATOR.to_string(),
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     /// Persist every directory observed during a complete album traversal.
     /// This makes the folder tree and mtime sync cover empty directories too,
     /// without adding another filesystem traversal.
@@ -503,16 +636,16 @@ impl AFolder {
                 .prepare(
                     "INSERT INTO afolders (
                         album_id, name, path, created_at, modified_at,
-                        is_favorite, is_excluded_from_search, has_subfolders
+                        is_favorite, is_excluded_from_search, has_subfolders, inode
                     )
-                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, 0, ?6)",
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, 0, ?6, ?7)",
                 )
                 .map_err(|e| e.to_string())?;
             let mut update = tx
                 .prepare(
                     "UPDATE afolders
-                    SET modified_at = ?1, has_subfolders = ?2
-                    WHERE path = ?3",
+                    SET modified_at = ?1, has_subfolders = ?2, inode = ?3
+                    WHERE album_id = ?4 AND path = ?5",
                 )
                 .map_err(|e| e.to_string())?;
             for state in states {
@@ -520,6 +653,8 @@ impl AFolder {
                     .execute(params![
                         state.modified_at,
                         i64::from(state.has_subfolders),
+                        state.inode,
+                        album_id,
                         state.path,
                     ])
                     .map_err(|e| e.to_string())?;
@@ -532,6 +667,7 @@ impl AFolder {
                             state.created_at,
                             state.modified_at,
                             i64::from(state.has_subfolders),
+                            state.inode,
                         ])
                         .map_err(|e| e.to_string())?;
                 }
@@ -653,11 +789,32 @@ impl AFolder {
         folder_path: &str,
     ) -> Result<Self, String> {
         if let Ok(Some(folder)) = Self::fetch_with_conn(conn, folder_path) {
+            Self::update_inode_with_conn(conn, album_id, folder_path)?;
             return Ok(folder);
         }
         Self::new(album_id, folder_path)?.insert_with_conn(conn)?;
+        Self::update_inode_with_conn(conn, album_id, folder_path)?;
         let new_folder = Self::fetch_with_conn(conn, folder_path)?;
         Ok(new_folder.unwrap())
+    }
+
+    fn update_inode_with_conn(
+        conn: &Connection,
+        album_id: i64,
+        folder_path: &str,
+    ) -> Result<(), String> {
+        let inode = t_utils::FileInfo::new(folder_path)
+            .ok()
+            .map(|info| info.inode as i64)
+            .filter(|inode| *inode != 0);
+        if let Some(inode) = inode {
+            conn.execute(
+                "UPDATE afolders SET inode = ?1 WHERE album_id = ?2 AND path = ?3",
+                params![inode, album_id, folder_path],
+            )
+            .map_err(|e| e.to_string())?;
+        }
+        Ok(())
     }
 
     fn get_paths_by_album_id(album_id: i64) -> Result<Vec<String>, String> {
@@ -8103,6 +8260,7 @@ fn create_db_internal() -> Result<(), String> {
             is_favorite INTEGER,
             is_excluded_from_search INTEGER DEFAULT 0,
             has_subfolders INTEGER,
+            inode INTEGER,
             FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
         )",
         [],
