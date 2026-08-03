@@ -27,7 +27,7 @@
         <IconRight
           :class="[
             'p-1 w-6 h-6 shrink-0 transition-transform',
-            (!child.children || child.children.length > 0) && !child.is_excluded_from_search ? '' : 'opacity-0 pointer-events-none',
+            child.has_subfolders && !child.is_excluded_from_search ? '' : 'opacity-0 pointer-events-none',
             child.is_expanded ? 'rotate-90' : ''
           ]"
           @click.stop="expandFolder(child)"
@@ -150,7 +150,7 @@ import { isMac, shortenFilename, isValidFileName, getFolderPath, getFullPath, no
 import {
   createFolder, renameFolder, fetchFolder, getAllAlbums, moveFolder, moveFolderOutsideLibrary,
   copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum,
-  setFolderSearchExcluded, hasImportableClipboard,
+  setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes,
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
@@ -356,10 +356,17 @@ const getMenuItemsForFolder = async (folder: any) => {
     {
       label: localeMsg.value.menu.album.refresh,
       icon: IconRefresh,
-      action: () => {
-        tauriEmit('refresh-content');
-        // always refresh the folder tree as well
-        expandFolder(folder, true);
+      action: async () => {
+        // The context-menu target may differ from the folder currently shown
+        // in Content. Select and sync this exact folder before reloading its
+        // tree, so the filesystem and database cannot drift apart.
+        await selection.selectFolder(props.albumId, folder);
+        const folderId = Number(selection.folderId.value || 0);
+        if (folderId > 0) {
+          await syncAlbumFolderMtimes(props.albumId, folderId, folder.path);
+        }
+        await expandFolder(folder, true);
+        await tauriEmit('refresh-content');
       }
     },
     {
@@ -390,11 +397,13 @@ const clickFolder = async (albumIdVal: number, folder: Folder) => {
 /// click expand icon to toggle folder expansion
 const expandFolder = async (folder: any, forceRefresh = false) => {
   if (folder.is_excluded_from_search) return;
+  if (!forceRefresh && folder.has_subfolders === false) return;
   folder.is_expanded = forceRefresh ? true : !folder.is_expanded;
 
   if (folder.is_expanded && (!folder.children || forceRefresh)) {
     const subFolders = await fetchFolder(folder.path, false, config.settings.folderSort);
     if (subFolders) {
+      folder.has_subfolders = subFolders.has_subfolders;
       folder.children = subFolders.children;
     }
   }
@@ -489,9 +498,11 @@ const handleTreeKeyDown = async (event: { payload: { key: string } }) => {
       }
       break;
     case 'ArrowRight':
+      if (currentFolder.has_subfolders === false) break;
       if (!currentFolder.children || currentFolder.children.length === 0) {
         const subFolders = await fetchFolder(currentFolder.path, false, config.settings.folderSort);
         if (subFolders) {
+          currentFolder.has_subfolders = subFolders.has_subfolders;
           currentFolder.children = subFolders.children;
         }
       }

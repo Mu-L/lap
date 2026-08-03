@@ -405,9 +405,142 @@ pub struct AFolder {
     pub is_favorite: Option<bool>,             // is favorite
     pub is_excluded_from_search: Option<bool>, // exclude folder and children from search
     pub file_count: Option<i64>,               // file count (populated by get_favorite_folders)
+    pub has_subfolders: Option<bool>,          // cached direct-subfolder state
+}
+
+#[derive(Debug, Clone)]
+pub struct FolderSubfolderState {
+    pub path: String,
+    pub created_at: Option<i64>,
+    pub modified_at: Option<i64>,
+    pub has_subfolders: bool,
+}
+
+impl FolderSubfolderState {
+    pub fn get_many(paths: &[String]) -> Result<HashMap<String, Self>, String> {
+        if paths.is_empty() {
+            return Ok(HashMap::new());
+        }
+        let mut states = HashMap::new();
+        let conn = open_conn()?;
+
+        // Keep each query below SQLite's bound-parameter limit.
+        for path_chunk in paths.chunks(500) {
+            let placeholders = vec!["?"; path_chunk.len()].join(", ");
+            let query = format!(
+                "SELECT path, modified_at, has_subfolders
+                FROM afolders
+                WHERE path IN ({})
+                  AND has_subfolders IS NOT NULL",
+                placeholders
+            );
+            let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map(rusqlite::params_from_iter(path_chunk.iter()), |row| {
+                    Ok(Self {
+                        path: row.get(0)?,
+                        created_at: None,
+                        modified_at: row.get(1)?,
+                        has_subfolders: row.get::<_, i64>(2)? != 0,
+                    })
+                })
+                .map_err(|e| e.to_string())?;
+            for state in rows {
+                let state = state.map_err(|e| e.to_string())?;
+                states.insert(state.path.clone(), state);
+            }
+        }
+
+        Ok(states)
+    }
+
+    /// Persist state after the directory has been fully scanned.  Do not use
+    /// this for sidebar probes: advancing `modified_at` before file sync would
+    /// make the incremental scanner miss external file changes.
+    pub fn update_after_scan(states: &[Self]) -> Result<(), String> {
+        if states.is_empty() {
+            return Ok(());
+        }
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        {
+            let mut stmt = tx
+                .prepare(
+                    "UPDATE afolders
+                    SET modified_at = ?1, has_subfolders = ?2
+                    WHERE path = ?3",
+                )
+                .map_err(|e| e.to_string())?;
+            for state in states {
+                stmt.execute(params![
+                    state.modified_at,
+                    i64::from(state.has_subfolders),
+                    state.path,
+                ])
+                .map_err(|e| e.to_string())?;
+            }
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
 impl AFolder {
+    /// Persist every directory observed during a complete album traversal.
+    /// This makes the folder tree and mtime sync cover empty directories too,
+    /// without adding another filesystem traversal.
+    pub fn ensure_subfolder_states(
+        album_id: i64,
+        states: &[FolderSubfolderState],
+    ) -> Result<(), String> {
+        if states.is_empty() {
+            return Ok(());
+        }
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        {
+            let mut insert = tx
+                .prepare(
+                    "INSERT INTO afolders (
+                        album_id, name, path, created_at, modified_at,
+                        is_favorite, is_excluded_from_search, has_subfolders
+                    )
+                    VALUES (?1, ?2, ?3, ?4, ?5, NULL, 0, ?6)",
+                )
+                .map_err(|e| e.to_string())?;
+            let mut update = tx
+                .prepare(
+                    "UPDATE afolders
+                    SET modified_at = ?1, has_subfolders = ?2
+                    WHERE path = ?3",
+                )
+                .map_err(|e| e.to_string())?;
+            for state in states {
+                let updated = update
+                    .execute(params![
+                        state.modified_at,
+                        i64::from(state.has_subfolders),
+                        state.path,
+                    ])
+                    .map_err(|e| e.to_string())?;
+                if updated == 0 {
+                    insert
+                        .execute(params![
+                            album_id,
+                            t_utils::get_file_name(&state.path),
+                            state.path,
+                            state.created_at,
+                            state.modified_at,
+                            i64::from(state.has_subfolders),
+                        ])
+                        .map_err(|e| e.to_string())?;
+                }
+            }
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     /// create a new folder struct
     fn new(album_id: i64, folder_path: &str) -> Result<Self, String> {
         let file_info = t_utils::FileInfo::new(folder_path)?;
@@ -421,6 +554,7 @@ impl AFolder {
             is_favorite: None,
             is_excluded_from_search: Some(false),
             file_count: None,
+            has_subfolders: None,
         })
     }
 
@@ -436,6 +570,7 @@ impl AFolder {
             is_favorite: row.get(6)?,
             is_excluded_from_search: row.get(7)?,
             file_count: None,
+            has_subfolders: row.get(8)?,
         })
     }
 
@@ -447,7 +582,7 @@ impl AFolder {
 
     pub fn fetch_with_conn(conn: &Connection, folder_path: &str) -> Result<Option<Self>, String> {
         conn.query_row(
-            "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
+            "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0), has_subfolders
             FROM afolders
             WHERE path = ?1",
             params![folder_path],
@@ -462,7 +597,7 @@ impl AFolder {
         let conn = open_conn()?;
         let result = conn
             .query_row(
-                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
+                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0), has_subfolders
                 FROM afolders
                 WHERE id = ?1",
                 params![id],
@@ -478,7 +613,7 @@ impl AFolder {
         let conn = open_conn()?;
         let mut stmt = conn
             .prepare(
-                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0)
+                "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0), has_subfolders
                 FROM afolders",
             )
             .map_err(|e| e.to_string())?;
@@ -495,12 +630,12 @@ impl AFolder {
 
     fn insert_with_conn(&self, conn: &Connection) -> Result<usize, String> {
         conn.execute(
-            "INSERT INTO afolders (album_id, name, path, created_at, modified_at, is_favorite, is_excluded_from_search)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO afolders (album_id, name, path, created_at, modified_at, is_favorite, is_excluded_from_search, has_subfolders)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 self.album_id, self.name, self.path,
                 self.created_at, self.modified_at,
-                self.is_favorite, self.is_excluded_from_search
+                self.is_favorite, self.is_excluded_from_search, self.has_subfolders
             ],
         )
         .map_err(|e| e.to_string())
@@ -523,6 +658,64 @@ impl AFolder {
         Self::new(album_id, folder_path)?.insert_with_conn(conn)?;
         let new_folder = Self::fetch_with_conn(conn, folder_path)?;
         Ok(new_folder.unwrap())
+    }
+
+    fn get_paths_by_album_id(album_id: i64) -> Result<Vec<String>, String> {
+        let conn = open_conn()?;
+        let mut stmt = conn
+            .prepare("SELECT path FROM afolders WHERE album_id = ?1")
+            .map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params![album_id], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        rows.map(|row| row.map_err(|e| e.to_string())).collect()
+    }
+
+    /// Remove folders absent from a successful full traversal.  Delete only
+    /// missing roots; `delete_folder` removes each root's descendants too.
+    pub fn delete_unseen_in_album(
+        album_id: i64,
+        seen_folders: &[FolderSubfolderState],
+    ) -> Result<usize, String> {
+        let seen_paths = seen_folders
+            .iter()
+            .map(|folder| folder.path.as_str())
+            .collect::<HashSet<_>>();
+        let missing_paths = Self::get_paths_by_album_id(album_id)?
+            .into_iter()
+            .filter(|path| !seen_paths.contains(path.as_str()))
+            .collect::<Vec<_>>();
+        let missing_paths = missing_folder_roots(missing_paths);
+
+        let mut deleted_count = 0;
+        for path in missing_paths {
+            deleted_count += Self::delete_folder(&path)?;
+        }
+
+        Ok(deleted_count)
+    }
+
+    /// Remove known direct children of `parent_path` that were not found by a
+    /// successful directory read. Descendants are removed together with their
+    /// missing direct-child root.
+    pub fn delete_unseen_direct_children(
+        album_id: i64,
+        parent_path: &str,
+        seen_paths: &HashSet<String>,
+    ) -> Result<usize, String> {
+        let missing_children = Self::get_paths_by_album_id(album_id)?
+            .into_iter()
+            .filter(|path| {
+                Path::new(path).parent() == Some(Path::new(parent_path))
+                    && !seen_paths.contains(path)
+            })
+            .collect::<Vec<_>>();
+
+        let mut deleted_count = 0;
+        for path in missing_children {
+            deleted_count += Self::delete_folder(&path)?;
+        }
+        Ok(deleted_count)
     }
 
     /// move a folder (update path and album_id)
@@ -764,6 +957,7 @@ impl AFolder {
                     is_favorite: row.get(6)?,
                     is_excluded_from_search: row.get(7)?,
                     file_count: row.get(8)?,
+                    has_subfolders: None,
                 })
             })
             .map_err(|e| e.to_string())?;
@@ -775,6 +969,26 @@ impl AFolder {
 
         Ok(folders)
     }
+}
+
+fn missing_folder_roots(mut missing_paths: Vec<String>) -> Vec<String> {
+    missing_paths.sort_by_key(|path| path.len());
+    let mut roots = Vec::new();
+    for path in missing_paths {
+        if roots
+            .iter()
+            .any(|root: &String| {
+                Path::new(&path)
+                    .strip_prefix(root)
+                    .ok()
+                    .is_some_and(|relative| !relative.as_os_str().is_empty())
+            })
+        {
+            continue;
+        }
+        roots.push(path);
+    }
+    roots
 }
 
 pub struct FolderScanState;
@@ -3473,10 +3687,6 @@ impl AFile {
             else { tx.execute("UPDATE afiles SET media_subtype = NULL, live_photo_video_id = NULL WHERE id = ?1 AND media_subtype = 'raw_jpeg_pair'", params![id]).map_err(|error| error.to_string())?; }
         }
         tx.commit().map_err(|error| error.to_string())?; Ok(updates.len())
-    }
-
-    pub fn clear_raw_jpeg_pairs() -> Result<usize, String> {
-        open_conn()?.execute("UPDATE afiles SET media_subtype = NULL, live_photo_video_id = NULL WHERE media_subtype = 'raw_jpeg_pair'", []).map_err(|error| error.to_string())
     }
 
     pub fn clear_raw_jpeg_pairs_in_folder(folder_id: i64) -> Result<usize, String> {
@@ -7892,6 +8102,7 @@ fn create_db_internal() -> Result<(), String> {
             modified_at INTEGER,
             is_favorite INTEGER,
             is_excluded_from_search INTEGER DEFAULT 0,
+            has_subfolders INTEGER,
             FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
         )",
         [],

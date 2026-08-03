@@ -122,6 +122,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add file culling status",
             sql: "",
         },
+        Migration {
+            version: 12,
+            description: "Cache direct subfolder state on folders",
+            sql: "",
+        },
     ]
 }
 
@@ -386,6 +391,11 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                     [],
                 )
                 .map_err(|e| format!("Migration 11 failed adding culling_flag index: {}", e))?;
+            } else if migration.version == 12 {
+                if !table_has_column(conn, "afolders", "has_subfolders")? {
+                    conn.execute("ALTER TABLE afolders ADD COLUMN has_subfolders INTEGER", [])
+                        .map_err(|e| format!("Migration 12 failed adding has_subfolders: {}", e))?;
+                }
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;

@@ -55,8 +55,10 @@
             @contextmenu.prevent.stop="(e: MouseEvent) => handleAlbumContextMenu(album, e)"
           >
             <IconRight
-              class="p-1 w-6 h-6 shrink-0 transition-transform hover:text-base-content"
-              :class="{ 'rotate-90': album.is_expanded }"
+              :class="[
+                'p-1 w-6 h-6 shrink-0 transition-transform hover:text-base-content',
+                album.is_expanded ? 'rotate-90' : '',
+              ]"
               @click.stop="expandAlbum(album)"
               @dblclick.stop
             />
@@ -763,10 +765,15 @@ const clickAlbum = async (album: Album) => {
   requestAnimationFrame(() => {
     setTimeout(async () => {
       const isAccessible = await refreshAlbumAccess(album);
-      if (isAccessible && album.is_expanded && !album.children) {
+      if (isAccessible && !album.children) {
         const subFolders = await fetchFolder(album.path, false, config.settings.folderSort);
         if (subFolders) {
           album.children = [subFolders];
+          // A leaf album still has a useful root-folder node for folder
+          // actions and context. Show it when the album is selected.
+          if (!subFolders.has_subfolders) {
+            album.is_expanded = true;
+          }
         }
       }
     }, 0);

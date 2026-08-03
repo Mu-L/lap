@@ -5,7 +5,7 @@
  * date:    2024-08-08
  */
 use crate::t_common;
-use crate::t_sqlite::{AFile, AFolder, AThumb, Album, FolderScanState};
+use crate::t_sqlite::{AFile, AFolder, AThumb, Album, FolderScanState, FolderSubfolderState};
 use chrono::{DateTime, Local, TimeZone, Utc};
 use once_cell::sync::Lazy;
 use pinyin::ToPinyin;
@@ -294,6 +294,7 @@ pub struct FileNode {
     modified_at: Option<i64>,
     is_dir: bool, // is directory
     is_expanded: bool,
+    has_subfolders: bool,
     children: Option<Vec<Self>>,
 }
 
@@ -314,6 +315,7 @@ impl FileNode {
             modified_at,
             is_dir,
             is_expanded,
+            has_subfolders: false,
             children: None,
         }
     }
@@ -347,6 +349,10 @@ impl FileNode {
 
         // Recursively read subfolders and files
         root_node.children = Some(Self::recurse_nodes(root_path, is_recursive, sort)?);
+        root_node.has_subfolders = root_node
+            .children
+            .as_ref()
+            .is_some_and(|children| !children.is_empty());
 
         Ok(root_node)
     }
@@ -381,10 +387,18 @@ impl FileNode {
 
                 if is_recursive {
                     node.children = Some(Self::recurse_nodes(entry_path, is_recursive, sort)?);
+                    node.has_subfolders = node
+                        .children
+                        .as_ref()
+                        .is_some_and(|children| !children.is_empty());
                 }
 
                 nodes.push(node);
             }
+        }
+
+        if !is_recursive {
+            Self::hydrate_subfolder_states(&mut nodes);
         }
 
         match sort {
@@ -410,6 +424,31 @@ impl FileNode {
             }),
         }
         Ok(nodes)
+    }
+
+    /// Resolve direct-child state from the cache in one database query.  A
+    /// shallow directory read is only needed when a folder has changed since
+    /// it was indexed (or has not yet been indexed).
+    fn hydrate_subfolder_states(nodes: &mut [Self]) {
+        let paths = nodes.iter().map(|node| node.path.clone()).collect::<Vec<_>>();
+        let cached = FolderSubfolderState::get_many(&paths).unwrap_or_else(|error| {
+            eprintln!("Failed to read folder subfolder-state cache: {}", error);
+            HashMap::new()
+        });
+        for node in nodes {
+            let cached_state = cached.get(&node.path);
+            if let (Some(current_mtime), Some(state)) = (node.modified_at, cached_state) {
+                if state.modified_at == Some(current_mtime) {
+                    node.has_subfolders = state.has_subfolders;
+                    continue;
+                }
+            }
+
+            // An unreadable directory is not known to be a leaf. Keep its
+            // expand control available so a transient permission or network
+            // error does not make the branch inaccessible from the sidebar.
+            node.has_subfolders = detect_visible_subfolder(Path::new(&node.path)).unwrap_or(true);
+        }
     }
 }
 
@@ -448,6 +487,23 @@ pub fn is_fs_entry_hidden(entry: &std::fs::DirEntry) -> bool {
             .metadata()
             .ok()
             .map_or(false, |m| has_hidden_attribute(&m))
+}
+
+/// Detect whether a directory contains a visible direct subdirectory.
+/// This is only used to fill a missing or stale cache entry.
+pub fn detect_visible_subfolder(path: &Path) -> std::io::Result<bool> {
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        if entry
+            .file_type()
+            .map(|file_type| file_type.is_dir())
+            .unwrap_or(false)
+            && !is_fs_entry_hidden(&entry)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 // file metadata struct
@@ -1760,9 +1816,10 @@ fn sync_dirty_folders_by_mtime(
         };
         dirty_folder_count += 1;
 
-        let child_folders = scan_new_child_folders(folder.album_id, &folder.path)?;
-        new_folder_count += child_folders.len() as u32;
-        for child in child_folders {
+        let child_scan = scan_new_child_folders(folder.album_id, &folder.path, false)?;
+        new_folder_count += child_scan.folders.len() as u32;
+        deleted_folder_count += child_scan.deleted_folder_count;
+        for child in child_scan.folders {
             queue.push((child, None, true));
         }
 
@@ -1779,13 +1836,17 @@ fn sync_dirty_folders_by_mtime(
         rename_count += outcome.rename_count;
         tasks.extend(outcome.tasks);
 
-        if let Some(mtime) = latest_mtime.or_else(|| {
+        let modified_at = latest_mtime.or_else(|| {
             FileInfo::new(&folder.path)
                 .ok()
                 .and_then(|info| info.modified)
-        }) {
-            let _ = AFolder::update_column(folder_id, "modified_at", &mtime);
-        }
+        });
+        let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+            path: folder.path,
+            created_at: None,
+            modified_at,
+            has_subfolders: child_scan.has_subfolders,
+        }]);
     }
 
     Ok((
@@ -1802,9 +1863,21 @@ fn sync_dirty_folders_by_mtime(
     ))
 }
 
-fn scan_new_child_folders(album_id: i64, folder_path: &str) -> Result<Vec<AFolder>, String> {
+struct ChildFolderScan {
+    folders: Vec<AFolder>,
+    has_subfolders: bool,
+    deleted_folder_count: u32,
+}
+
+fn scan_new_child_folders(
+    album_id: i64,
+    folder_path: &str,
+    reconcile_removed_children: bool,
+) -> Result<ChildFolderScan, String> {
     let entries = fs::read_dir(folder_path).map_err(|e| e.to_string())?;
     let mut new_folders = Vec::new();
+    let mut has_subfolders = false;
+    let mut seen_paths = HashSet::new();
 
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
@@ -1817,15 +1890,31 @@ fn scan_new_child_folders(album_id: i64, folder_path: &str) -> Result<Vec<AFolde
         if !file_type.is_dir() {
             continue;
         }
+        has_subfolders = true;
 
         let child_path = entry.path().to_string_lossy().to_string();
+        seen_paths.insert(child_path.clone());
         if AFolder::fetch(&child_path)?.is_some() {
             continue;
         }
         new_folders.push(AFolder::add_to_db(album_id, &child_path)?);
     }
 
-    Ok(new_folders)
+    // The background mtime sync already visits every known folder and removes
+    // missing paths itself. Avoid loading every album path once per dirty
+    // folder there; this reconciliation is needed only for an explicit
+    // foreground refresh of the selected folder.
+    let deleted_folder_count = if reconcile_removed_children {
+        AFolder::delete_unseen_direct_children(album_id, folder_path, &seen_paths)? as u32
+    } else {
+        0
+    };
+
+    Ok(ChildFolderScan {
+        folders: new_folders,
+        has_subfolders,
+        deleted_folder_count,
+    })
 }
 
 fn is_live_photo_candidate_name(name: &str) -> bool {
@@ -2203,6 +2292,12 @@ pub fn sync_single_folder(
         ));
     }
 
+    // Reconcile direct children even when the mtime is unchanged. A manual
+    // refresh must remove a deleted child from the database, and some
+    // filesystems expose directory mtimes at a coarser resolution.
+    let child_scan = scan_new_child_folders(album_id, folder_path, true)?;
+    let new_folder_count = child_scan.folders.len() as u32;
+
     let needs_live_photo_reindex = FolderScanState::needs_version(
         resolved_folder_id,
         FolderScanState::LIVE_PHOTO_PAIRING,
@@ -2217,22 +2312,26 @@ pub fn sync_single_folder(
         } else {
             AFile::clear_raw_jpeg_pairs_in_folder(resolved_folder_id)? > 0
         };
+        let folder_layout_changed = new_folder_count > 0 || child_scan.deleted_folder_count > 0;
+        let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+            path: folder_path.to_string(),
+            created_at: None,
+            modified_at: info.modified,
+            has_subfolders: child_scan.has_subfolders,
+        }]);
         return Ok(FolderMtimeSyncResult {
             // The frontend uses this to decide whether it needs to reload the
             // current list.  A newly created or cleared association changes
             // which companion rows are visible.
-            dirty_folder_count: u32::from(raw_pairing_changed),
-            new_folder_count: 0,
+            dirty_folder_count: u32::from(raw_pairing_changed || folder_layout_changed),
+            new_folder_count,
             new_file_count: 0,
             updated_file_count: 0,
             deleted_file_count: 0,
             rename_count: 0,
-            deleted_folder_count: 0,
+            deleted_folder_count: child_scan.deleted_folder_count,
         });
     }
-
-    let child_folders = scan_new_child_folders(album_id, folder_path)?;
-    let new_folder_count = child_folders.len() as u32;
 
     let outcome = sync_folder_direct_files(
         resolved_folder_id,
@@ -2251,7 +2350,12 @@ pub fn sync_single_folder(
     }
 
     let mtime = info.modified;
-    let _ = AFolder::update_column(resolved_folder_id, "modified_at", &mtime);
+    let _ = FolderSubfolderState::update_after_scan(&[FolderSubfolderState {
+        path: folder_path.to_string(),
+        created_at: None,
+        modified_at: mtime,
+        has_subfolders: child_scan.has_subfolders,
+    }]);
 
     Ok(FolderMtimeSyncResult {
         dirty_folder_count: 1,
@@ -2260,7 +2364,7 @@ pub fn sync_single_folder(
         updated_file_count: outcome.updated_file_count,
         deleted_file_count: outcome.deleted_file_count,
         rename_count: outcome.rename_count,
-        deleted_folder_count: 0,
+        deleted_folder_count: child_scan.deleted_folder_count,
     })
 }
 
@@ -3177,6 +3281,11 @@ pub async fn index_album_worker(
     let mut is_cancelled = false;
     let mut traversal_failed = false;
     let mut traversed_count = 0u64;
+    // WalkDir already visits every directory during indexing.  Record the
+    // direct-parent relationship here so the sidebar never needs to rescan an
+    // unchanged directory just to decide whether to show its expand arrow.
+    let mut folder_subfolder_states: Vec<FolderSubfolderState> = Vec::new();
+    let mut directory_state_stack: Vec<usize> = Vec::new();
     let mut thumbnail_join_set: JoinSet<Result<bool, String>> = JoinSet::new();
     for entry in WalkDir::new(&album.path)
         .into_iter()
@@ -3199,6 +3308,29 @@ pub async fn index_album_worker(
                 break;
             }
         };
+
+        if entry.file_type().is_dir() {
+            let directory_path = entry.path().to_string_lossy().to_string();
+            let metadata = entry.metadata().ok();
+            let modified_at = metadata
+                .as_ref()
+                .and_then(|metadata| systemtime_to_timestamp(metadata.modified().ok()));
+            let created_at = metadata
+                .as_ref()
+                .and_then(|metadata| systemtime_to_timestamp(metadata.created().ok()));
+            let depth = entry.depth();
+            directory_state_stack.truncate(depth);
+            if let Some(&parent_index) = directory_state_stack.last() {
+                folder_subfolder_states[parent_index].has_subfolders = true;
+            }
+            directory_state_stack.push(folder_subfolder_states.len());
+            folder_subfolder_states.push(FolderSubfolderState {
+                path: directory_path,
+                created_at,
+                modified_at,
+                has_subfolders: false,
+            });
+        }
 
         if entry.file_type().is_file() {
             let path_str = entry.path().to_string_lossy().to_string();
@@ -3329,6 +3461,19 @@ pub async fn index_album_worker(
 
     // Delete files that are in DB but not in file system (Mark-and-Sweep)
     if scan_complete {
+        if let Err(error) = AFolder::ensure_subfolder_states(album_id, &folder_subfolder_states) {
+            eprintln!(
+                "Failed to persist folder subfolder states for album {}: {}",
+                album_id, error
+            );
+        }
+        if let Err(error) = AFolder::delete_unseen_in_album(
+            album_id,
+            &folder_subfolder_states,
+        ) {
+            eprintln!("Failed to remove stale folders from album {}: {}", album_id, error);
+        }
+
         println!("Cleaning up removed files from DB for album {}", album_id);
         let deleted_count = AFile::delete_unseen_in_album(album_id, current_scan_time).unwrap_or(0);
         if deleted_count > 0 {
