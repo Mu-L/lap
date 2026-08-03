@@ -6116,7 +6116,7 @@ async function getImageSearchFileList(
 }
 
 async function getUnifiedSearchFileList(searchText: string, requestId: number) {
-  const filenameParams = {
+  const textParams = {
     searchFileType: config.search.fileType,
     sortType: 3,
     sortOrder: 0,
@@ -6140,7 +6140,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     personId: 0,
     groupBy: 0,
   };
-  currentQueryParams.value = filenameParams;
+  currentQueryParams.value = textParams;
   currentQuerySource.value = 'search';
   currentSmartQueryParams.value = null;
   currentCollectionId.value = null;
@@ -6156,13 +6156,13 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
   timelineData.value = [];
 
   try {
-    const [filenameResult, filenameIdResult, visualResult] = await Promise.all([
-      getQueryFiles(filenameParams, 0, 10).catch(error => {
-        console.error('Filename search failed:', error);
+    const [textResult, textIdResult, visualResult] = await Promise.all([
+      getQueryFiles(textParams, 0, 10).catch(error => {
+        console.error('Text search failed:', error);
         return [];
       }),
-      getQueryFileIds(filenameParams).catch(error => {
-        console.error('Filename ID search failed:', error);
+      getQueryFileIds(textParams).catch(error => {
+        console.error('Text search ID failed:', error);
         return [];
       }),
       searchSimilarImages(currentImageSearchParams.value).catch(error => {
@@ -6172,13 +6172,13 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     ]);
     if (requestId !== currentContentRequestId) return;
 
-    const filenameMatches = Array.isArray(filenameResult) ? filenameResult : [];
-    const allFilenameIds = Array.isArray(filenameIdResult) ? filenameIdResult : [];
-    const filenameHasMore = allFilenameIds.length > 10;
-    const filenameIds = new Set(allFilenameIds.map((id: any) => Number(id)));
+    const textMatches = Array.isArray(textResult) ? textResult : [];
+    const allTextIds = Array.isArray(textIdResult) ? textIdResult : [];
+    const textHasMore = allTextIds.length > 10;
+    const textIds = new Set(allTextIds.map((id: any) => Number(id)));
     const visualMatches = (Array.isArray(visualResult) ? visualResult : [])
-      .filter((file: any) => !filenameIds.has(Number(file.id)));
-    const files = preserveLoadedThumbnails([...filenameMatches, ...visualMatches]);
+      .filter((file: any) => !textIds.has(Number(file.id)));
+    const files = preserveLoadedThumbnails([...textMatches, ...visualMatches]);
 
     if (uiStore.searchCountRequestedFor === searchText) {
       updateSearchHistoryCount(searchText, files.length);
@@ -6195,13 +6195,13 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file.size || 0), 0);
 
     const groups = config.settings.grid.showFilmStrip ? [] : [
-      filenameMatches.length > 0
+      textMatches.length > 0
         ? {
-            id: 'search-filename',
-            label: localeMsg.value.search.filename_matches,
+            id: 'search-text',
+            label: localeMsg.value.search.text_matches,
             icon: IconFileSearch,
-            files: filenameMatches,
-            countLabel: filenameHasMore ? '10+' : String(filenameMatches.length),
+            files: textMatches,
+            countLabel: textHasMore ? '10+' : String(textMatches.length),
           }
         : null,
       visualMatches.length > 0

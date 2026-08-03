@@ -186,13 +186,13 @@
   "search": {
     "title": "Поиск",
     "similar_images": "Похожие фото",
-    "image_search_placeholder": "Поиск по содержимому или имени файла",
+    "image_search_placeholder": "Поиск изображений, имён файлов или комментариев",
     "matches": "Совпадения",
     "unknown_location": "Неизвестное место",
     "unknown_camera": "Неизвестная камера",
     "unknown_lens": "Неизвестный объектив",
     "semantic_matches": "Визуальные совпадения",
-    "filename_matches": "Совпадения по имени",
+    "text_matches": "Текстовые совпадения",
     "index": {
       "wait_index": "В очереди на сканирование",
       "indexing": "Сканирование... {count} / {total}",

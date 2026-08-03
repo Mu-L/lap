@@ -186,13 +186,13 @@
   "search": {
     "title": "Search",
     "similar_images": "Similar photos",
-    "image_search_placeholder": "Search by content or filename",
+    "image_search_placeholder": "Search images, filenames, or comments",
     "matches": "Matches",
     "unknown_location": "Unknown location",
     "unknown_camera": "Unknown camera",
     "unknown_lens": "Unknown lens",
     "semantic_matches": "Visual matches",
-    "filename_matches": "Filename matches",
+    "text_matches": "Text matches",
     "index": {
       "wait_index": "Queued for scan",
       "indexing": "Scanning... {count} / {total}",

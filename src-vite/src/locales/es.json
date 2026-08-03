@@ -186,13 +186,13 @@
   "search": {
     "title": "Búsqueda",
     "similar_images": "Fotos similares",
-    "image_search_placeholder": "Buscar por contenido o nombre de archivo",
+    "image_search_placeholder": "Buscar imágenes, nombres de archivo o comentarios",
     "matches": "Coincidencias",
     "unknown_location": "Ubicación desconocida",
     "unknown_camera": "Cámara desconocida",
     "unknown_lens": "Objetivo desconocido",
     "semantic_matches": "Coincidencias visuales",
-    "filename_matches": "Coincidencias de nombre",
+    "text_matches": "Coincidencias de texto",
     "index": {
       "wait_index": "En cola para escanear",
       "indexing": "Escaneando... {count} / {total}",

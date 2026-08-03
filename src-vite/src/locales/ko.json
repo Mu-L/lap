@@ -186,13 +186,13 @@
   "search": {
     "title": "검색",
     "similar_images": "유사 사진",
-    "image_search_placeholder": "이미지 내용 또는 파일 이름으로 검색",
+    "image_search_placeholder": "이미지, 파일 이름 또는 메모 검색",
     "matches": "일치 항목",
     "unknown_location": "알 수 없는 위치",
     "unknown_camera": "알 수 없는 카메라",
     "unknown_lens": "알 수 없는 렌즈",
-    "semantic_matches": "화면 일치",
-    "filename_matches": "파일 이름 일치",
+    "semantic_matches": "이미지 일치",
+    "text_matches": "텍스트 일치",
     "index": {
       "wait_index": "스캔 대기 중",
       "indexing": "스캔 중... {count} / {total}",

@@ -186,13 +186,13 @@
   "search": {
     "title": "Recherche",
     "similar_images": "Photos similaires",
-    "image_search_placeholder": "Rechercher par contenu ou nom de fichier",
+    "image_search_placeholder": "Rechercher des images, noms de fichiers ou commentaires",
     "matches": "Résultats",
     "unknown_location": "Lieu inconnu",
     "unknown_camera": "Appareil photo inconnu",
     "unknown_lens": "Objectif inconnu",
     "semantic_matches": "Correspondances visuelles",
-    "filename_matches": "Correspondances de nom",
+    "text_matches": "Correspondances textuelles",
     "index": {
       "wait_index": "En attente de scan",
       "indexing": "Scan en cours... {count} / {total}",
