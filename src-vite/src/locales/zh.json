@@ -99,7 +99,7 @@
       "validation_name": "请输入智能相册名称。",
       "validation_rule": "请至少添加一条完整规则。",
       "fields": {
-        "name": "名称",
+        "name": "文件名",
         "file_type": "文件类型",
         "media_subtype": "媒体子类型",
         "extension": "扩展名",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "标签",
         "person": "人物",
+        "album": "相册",
+        "collection": "收藏集",
         "camera": "相机",
         "lens": "镜头",
         "location": "地点"

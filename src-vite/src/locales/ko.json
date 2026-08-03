@@ -99,7 +99,7 @@
       "validation_name": "스마트 앨범 이름을 입력하세요.",
       "validation_rule": "완성된 규칙을 하나 이상 추가하세요.",
       "fields": {
-        "name": "이름",
+        "name": "파일 이름",
         "file_type": "파일 유형",
         "media_subtype": "미디어 하위 유형",
         "extension": "확장자",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "태그",
         "person": "인물",
+        "album": "앨범",
+        "collection": "컬렉션",
         "camera": "카메라",
         "lens": "렌즈",
         "location": "위치"

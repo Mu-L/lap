@@ -4967,6 +4967,31 @@ impl AFile {
                     Err(format!("Unsupported person operator: {}", operator))
                 }
             }
+            "album" => {
+                let id = Self::smart_rule_i64(value)
+                    .ok_or_else(|| "Album id required".to_string())?;
+                sql_params.push(Box::new(id));
+                if matches!(operator, "is" | "eq") {
+                    Ok("b.album_id = ?".to_string())
+                } else if matches!(operator, "is_not" | "neq") {
+                    Ok("b.album_id != ?".to_string())
+                } else {
+                    Err(format!("Unsupported album operator: {}", operator))
+                }
+            }
+            "collection" => {
+                let id = Self::smart_rule_i64(value)
+                    .ok_or_else(|| "Collection id required".to_string())?;
+                sql_params.push(Box::new(id));
+                let condition = "EXISTS (SELECT 1 FROM acollections_files cf WHERE cf.file_id = a.id AND cf.collection_id = ?)";
+                if matches!(operator, "is" | "eq") {
+                    Ok(condition.to_string())
+                } else if matches!(operator, "is_not" | "neq") {
+                    Ok(format!("NOT ({})", condition))
+                } else {
+                    Err(format!("Unsupported collection operator: {}", operator))
+                }
+            }
             "camera" | "lens" | "location" => {
                 let id = Self::smart_rule_string(value)
                     .ok_or_else(|| format!("{} id required", field))?;

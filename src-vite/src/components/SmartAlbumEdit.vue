@@ -95,6 +95,8 @@
                     :rule="rule"
                     :tag-options="tagOptions"
                     :person-options="personOptions"
+                    :album-options="albumOptions"
+                    :collection-options="collectionOptions"
                     :camera-options="cameraOptions"
                     :lens-options="lensOptions"
                     :location-options="locationOptions"
@@ -145,7 +147,7 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { getAllTags, getCameraInfo, getLensInfo, getLocationInfo, getPersons, getSupportedFormatExtensions } from '@/common/api';
+import { getAllTags, getCameraInfo, getLensInfo, getLocationInfo, getPersons, getSupportedFormatExtensions, listAlbums, listCollections } from '@/common/api';
 import { IconAdd, IconEdit, IconRemove } from '@/common/icons';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
@@ -179,6 +181,8 @@ const groupType = ref(Number(props.smartAlbum?.group?.type ?? config.search.grou
 
 const tagOptions = ref<any[]>([]);
 const personOptions = ref<any[]>([]);
+const albumOptions = ref<any[]>([]);
+const collectionOptions = ref<any[]>([]);
 const cameraOptions = ref<any[]>([]);
 const lensOptions = ref<any[]>([]);
 const locationOptions = ref<any[]>([]);
@@ -226,15 +230,26 @@ const groupOptions = computed(() => indexedOptions(
 ));
 
 const fieldOptions = computed(() => [
-  { value: 'name', label: t('album.smart_edit.fields.name') },
-  { value: 'date_taken', label: t('album.smart_edit.fields.date_taken') },
-  { value: 'date_created', label: t('album.smart_edit.fields.date_created') },
-  { value: 'date_modified', label: t('album.smart_edit.fields.date_modified') },
+  // Source
+  { value: 'album', label: t('album.smart_edit.fields.album') },
+  { value: 'collection', label: t('album.smart_edit.fields.collection') },
+
+  // Workflow
   { value: 'favorite', label: t('album.smart_edit.fields.favorite') },
   { value: 'rating', label: t('album.smart_edit.fields.rating') },
   { value: 'culling', label: t('album.smart_edit.fields.culling') },
+
+  // Organization
   { value: 'tag', label: t('album.smart_edit.fields.tag') },
   { value: 'person', label: t('album.smart_edit.fields.person') },
+
+  // Date
+  { value: 'date_taken', label: t('album.smart_edit.fields.date_taken') },
+  { value: 'date_created', label: t('album.smart_edit.fields.date_created') },
+  { value: 'date_modified', label: t('album.smart_edit.fields.date_modified') },
+
+  // File
+  { value: 'name', label: t('album.smart_edit.fields.name') },
   { value: 'file_type', label: t('album.smart_edit.fields.file_type') },
   { value: 'media_subtype', label: t('album.smart_edit.fields.media_subtype') },
   { value: 'extension', label: t('album.smart_edit.fields.extension') },
@@ -243,8 +258,12 @@ const fieldOptions = computed(() => [
   { value: 'height', label: t('album.smart_edit.fields.height') },
   { value: 'duration', label: t('album.smart_edit.fields.duration') },
   { value: 'size', label: t('album.smart_edit.fields.size') },
+
+  // Capture
   { value: 'camera', label: t('album.smart_edit.fields.camera') },
   { value: 'lens', label: t('album.smart_edit.fields.lens') },
+
+  // Location
   { value: 'location', label: t('album.smart_edit.fields.location') },
   { value: 'has_gps', label: t('album.smart_edit.fields.has_gps') },
 ]);
@@ -288,7 +307,7 @@ function normalizeRuleForEdit(rule: any) {
 function getOperatorOptions(field: string) {
   const op = (key: string) => ({ value: key, label: t(`album.smart_edit.operators.${key}`) });
   if (field === 'name') return [op('contains'), op('not_contains')];
-  if (['file_type', 'media_subtype', 'extension', 'camera', 'lens', 'location'].includes(field)) return [op('is'), op('is_not')];
+  if (['file_type', 'media_subtype', 'extension', 'camera', 'lens', 'location', 'album', 'collection'].includes(field)) return [op('is'), op('is_not')];
   if (field === 'favorite' || field === 'has_gps') return [op('is')];
   if (field === 'culling') return [op('is'), op('is_not')];
   if (field === 'orientation') return [op('is')];
@@ -328,6 +347,8 @@ function setDefaultRuleValue(rule: any) {
   else if (rule.field === 'width' || rule.field === 'height') rule.value = rule.operator === 'between' ? { min: 1000, max: 4000 } : 1000;
   else if (rule.field === 'tag') rule.value = tagOptions.value[0]?.value || null;
   else if (rule.field === 'person') rule.value = personOptions.value[0]?.value || null;
+  else if (rule.field === 'album') rule.value = albumOptions.value[0]?.value || null;
+  else if (rule.field === 'collection') rule.value = collectionOptions.value[0]?.value || null;
   else if (rule.field === 'camera') rule.value = cameraOptions.value[0]?.value || null;
   else if (rule.field === 'lens') rule.value = lensOptions.value[0]?.value || null;
   else if (rule.field === 'location') rule.value = locationOptions.value[0]?.value || null;
@@ -551,15 +572,19 @@ function dateInputToUnixExclusiveEnd(value: string) {
 }
 
 async function loadOptions() {
-  const [tags, persons, cameras, lenses, locations] = await Promise.all([
+  const [tags, persons, albums, collections, cameras, lenses, locations] = await Promise.all([
     getAllTags(),
     getPersons(),
+    listAlbums(),
+    listCollections(),
     getCameraInfo(),
     getLensInfo(),
     getLocationInfo(),
   ]);
   tagOptions.value = (tags || []).map((tag: any) => ({ value: tag.id, label: tag.name }));
   personOptions.value = (persons || []).map((person: any) => ({ value: person.id, label: person.name || `Person ${person.id}` }));
+  albumOptions.value = (albums || []).map((album: any) => ({ value: album.id, label: album.name }));
+  collectionOptions.value = (collections || []).map((collection: any) => ({ value: collection.id, label: collection.name }));
   cameraOptions.value = flattenMakeModelOptions(cameras || []);
   lensOptions.value = flattenMakeModelOptions(lenses || []);
   locationOptions.value = flattenLocationOptions(locations || []);
@@ -620,7 +645,7 @@ onUnmounted(() => {
   uiStore.removeInputHandler('SmartAlbumEdit');
 });
 
-watch([tagOptions, personOptions, cameraOptions, lensOptions, locationOptions], () => {
+watch([tagOptions, personOptions, albumOptions, collectionOptions, cameraOptions, lensOptions, locationOptions], () => {
   for (const rule of rules.value) {
     if (rule.value === null || rule.value === undefined || rule.value === '') setDefaultRuleValue(rule);
   }
@@ -631,6 +656,8 @@ const RuleValueControl = defineComponent({
     rule: { type: Object, required: true },
     tagOptions: { type: Array, default: () => [] },
     personOptions: { type: Array, default: () => [] },
+    albumOptions: { type: Array, default: () => [] },
+    collectionOptions: { type: Array, default: () => [] },
     cameraOptions: { type: Array, default: () => [] },
     lensOptions: { type: Array, default: () => [] },
     locationOptions: { type: Array, default: () => [] },
@@ -867,6 +894,8 @@ const RuleValueControl = defineComponent({
       if (['width', 'height', 'duration'].includes(props.rule.field)) return props.rule.operator === 'between' ? rangeInput(valueUnit()) : unitNumberInput(props.rule.value, valueUnit(), (event: any) => { props.rule.value = Number(event.target.value); });
       if (props.rule.field === 'tag') return selectInput(props.tagOptions);
       if (props.rule.field === 'person') return selectInput(props.personOptions);
+      if (props.rule.field === 'album') return selectInput(props.albumOptions);
+      if (props.rule.field === 'collection') return selectInput(props.collectionOptions);
       if (props.rule.field === 'camera') return selectInput(props.cameraOptions);
       if (props.rule.field === 'lens') return selectInput(props.lensOptions);
       if (props.rule.field === 'location') return selectInput(props.locationOptions);

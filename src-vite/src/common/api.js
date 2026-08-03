@@ -324,6 +324,15 @@ export async function getAllAlbums() {
   return null;
 };
 
+export async function listAlbums() {
+  try {
+    return await invoke('get_all_albums');
+  } catch (error) {
+    console.error('Failed to list albums:', error);
+  }
+  return [];
+};
+
 // get one album by id
 export async function getAlbum(albumId) {
   if(!albumId) {

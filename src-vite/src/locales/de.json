@@ -99,7 +99,7 @@
       "validation_name": "Gib einen Namen für das Smart-Album ein.",
       "validation_rule": "Füge mindestens eine vollständige Regel hinzu.",
       "fields": {
-        "name": "Name",
+        "name": "Dateiname",
         "file_type": "Dateityp",
         "media_subtype": "Medienuntertyp",
         "extension": "Erweiterung",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "Tag",
         "person": "Person",
+        "album": "Album",
+        "collection": "Sammlung",
         "camera": "Kamera",
         "lens": "Objektiv",
         "location": "Ort"

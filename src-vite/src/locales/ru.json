@@ -99,7 +99,7 @@
       "validation_name": "Введите название смарт-альбома.",
       "validation_rule": "Добавьте хотя бы одно полное правило.",
       "fields": {
-        "name": "Имя",
+        "name": "Имя файла",
         "file_type": "Тип файла",
         "media_subtype": "Подтип медиа",
         "extension": "Расширение",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "Тег",
         "person": "Персона",
+        "album": "Альбом",
+        "collection": "Коллекция",
         "camera": "Камера",
         "lens": "Объектив",
         "location": "Место"

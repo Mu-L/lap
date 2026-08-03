@@ -99,7 +99,7 @@
       "validation_name": "Enter a smart album name.",
       "validation_rule": "Add at least one complete rule.",
       "fields": {
-        "name": "Name",
+        "name": "File name",
         "file_type": "File type",
         "media_subtype": "Media subtype",
         "extension": "Extension",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "Tag",
         "person": "Person",
+        "album": "Album",
+        "collection": "Collection",
         "camera": "Camera",
         "lens": "Lens",
         "location": "Location"

@@ -99,7 +99,7 @@
       "validation_name": "Insira um nome para o álbum inteligente.",
       "validation_rule": "Adicione pelo menos uma regra completa.",
       "fields": {
-        "name": "Nome",
+        "name": "Nome do arquivo",
         "file_type": "Tipo de arquivo",
         "media_subtype": "Subtipo de mídia",
         "extension": "Extensão",
@@ -118,6 +118,8 @@
         "has_gps": "GPS",
         "tag": "Tag",
         "person": "Pessoa",
+        "album": "Álbum",
+        "collection": "Coleção",
         "camera": "Câmera",
         "lens": "Lente",
         "location": "Localização"
