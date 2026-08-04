@@ -52,11 +52,8 @@
             {{ child.name }}
           </div>
           <div class="ml-auto flex flex-row items-center text-base-content/30">
-            <TButton v-if="child.is_excluded_from_search" 
-              :icon="IconHide"
-              :disabled="true"
-              :buttonSize="'small'"
-            />
+            <IconHeartFilled v-if="child.is_favorite" class="mr-1 w-4 h-4 shrink-0 text-error/70" />
+            <IconHide v-if="child.is_excluded_from_search" class="mr-1 w-4 h-4 shrink-0" />
             <ContextMenu v-if="allowContextMenu && !isRenamingFolder"
               :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
               :class="[
@@ -149,8 +146,8 @@ import { config, libConfig } from '@/common/config';
 import { isMac, shortenFilename, isValidFileName, getFolderPath, getFullPath, normalizePathForCompare, isWithinRootPath } from '@/common/utils';
 import {
   createFolder, renameFolder, fetchFolder, getAllAlbums, moveFolder, moveFolderOutsideLibrary,
-  copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum,
-  setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes,
+  copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum, selectFolder as selectFolderInDb,
+  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes,
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
@@ -176,7 +173,9 @@ import {
   IconHide,
   IconUnhide,
   IconRefresh,
-  IconClipboard
+  IconClipboard,
+  IconHeart,
+  IconHeartFilled
 } from '@/common/icons';
 
 // used for cross-component communication (Content.vue listens for this event)
@@ -272,27 +271,22 @@ const getMenuItemsForFolder = async (folder: any) => {
   const canPaste = await hasImportableClipboard();
   return [
     {
-      label: localeMsg.value.menu.file.new_folder,
-      icon: IconNewFolder,
+      label: folder?.is_favorite ? localeMsg.value.menu.meta.unfavorite : localeMsg.value.menu.meta.favorite,
+      icon: folder?.is_favorite ? IconHeartFilled : IconHeart,
       action: () => {
-        showNewFolderMsgbox.value = true;
-      }
-    },
-    {
-      label: t('menu.file.paste'),
-      icon: IconClipboard,
-      shortcut: getShortcutLabel('file.paste', DEFAULT_PLATFORM),
-      disabled: !canPaste,
-      action: () => {
-        void tauriEmit('paste-clipboard-to-folder', {
-          albumId: props.albumId,
-          folderPath: folder.path,
-        });
+        void toggleFolderFavorite(folder);
       }
     },
     {
       label: "-",
       action: null
+    },
+    {
+      label: localeMsg.value.menu.file.new_folder,
+      icon: IconNewFolder,
+      action: () => {
+        showNewFolderMsgbox.value = true;
+      }
     },
     {
       label: localeMsg.value.menu.file.rename,
@@ -305,6 +299,18 @@ const getMenuItemsForFolder = async (folder: any) => {
           if (folderInputRef.value) {
             folderInputRef.value[0].focus();
           }
+        });
+      }
+    },
+    {
+      label: t('menu.file.paste'),
+      icon: IconClipboard,
+      shortcut: getShortcutLabel('file.paste', DEFAULT_PLATFORM),
+      disabled: !canPaste,
+      action: () => {
+        void tauriEmit('paste-clipboard-to-folder', {
+          albumId: props.albumId,
+          folderPath: folder.path,
         });
       }
     },
@@ -392,6 +398,18 @@ const clickFolder = async (albumIdVal: number, folder: Folder) => {
     uiStore.setActivePane('left-sidebar');
   }
   await selection.selectFolder(albumIdVal, folder);
+};
+
+const toggleFolderFavorite = async (folder: Folder) => {
+  const persistedFolder = await selectFolderInDb(props.albumId, folder.path);
+  const folderId = Number(persistedFolder?.id || 0);
+  if (folderId <= 0) return;
+
+  const nextValue = !folder.is_favorite;
+  const result = await setFolderFavorite(folderId, nextValue);
+  if (result !== null) {
+    folder.is_favorite = nextValue;
+  }
 };
 
 /// click expand icon to toggle folder expansion
