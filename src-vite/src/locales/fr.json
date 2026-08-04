@@ -16,6 +16,8 @@
   "collection": {
     "title": "Collections",
     "add": "Ajouter une collection",
+    "add_to_collection": "Ajouter à la collection",
+    "recent": "Collections récentes",
     "search": "Rechercher des collections",
     "not_found": "Aucune collection trouvée",
     "default_name": "Collection {index}",
@@ -32,6 +34,7 @@
     "drop_title_hint": "Déposer pour ajouter",
     "empty_drop_hint": "Faites glisser les éléments dans la collection pour les ajouter.",
     "added_toast": "{count} fichier(s) ajouté(s) à la collection",
+    "add_failed_toast": "Impossible d’ajouter les fichiers à {count} collection(s)",
     "already_exists_toast": "{count} fichier(s) déjà dans la collection",
     "clear": "Vider",
     "clear_confirm_title": "Vider la collection",
@@ -629,8 +632,9 @@
     "meta": {
       "favorite": "Favori",
       "unfavorite": "Retirer favori",
-      "tag": "Tagger...",
-      "comment": "Commenter...",
+      "tag": "Tags...",
+      "collection": "Collections...",
+      "comment": "Commentaires...",
       "rotate": "Pivoter l'aperçu"
     },
     "sort": {
@@ -1344,6 +1348,7 @@
         "rate_four": "Noter 4 étoiles",
         "rate_five": "Noter 5 étoiles",
         "edit_tags": "Modifier les étiquettes",
+        "add_to_collections": "Ajouter aux collections",
         "edit_comment": "Modifier le commentaire",
         "rotate": "Pivoter l'aperçu",
         "thumbnail_increase": "Agrandir les miniatures",

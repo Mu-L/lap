@@ -142,6 +142,14 @@
             @click="$emit('item-action', { action: 'tag', index: fileIndex })"
           />
           <TButton
+            :icon="IconBookmark"
+            :disabled="fileIndex < 0 || isSlideShow || !canInteract"
+            :selected="file?.has_collections && !isSlideShow"
+            :tooltip="$t('menu.meta.collection')"
+            :shortcut="shortcut('meta.collection')"
+            @click="$emit('item-action', { action: 'add-to-collection', index: fileIndex })"
+          />
+          <TButton
             :icon="IconComment"
             :disabled="fileIndex < 0 || isSlideShow || !canInteract"
             :selected="!!file?.comments && !isSlideShow"
@@ -445,6 +453,7 @@ import {
   IconFlagOff,
   IconStar,
   IconStarFilled,
+  IconBookmark,
   IconTag,
   IconComment,
   IconRotate,

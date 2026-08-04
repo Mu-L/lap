@@ -442,6 +442,7 @@
             @set-rating-all="selectModeSetRatings"
             @set-culling-all="selectModeSetCullingFlags"
             @tag-all="clickTag"
+            @add-to-collection="clickAddToCollection"
             @comment-all="openCommentEditor"
             @rotate-all="clickRotate"
             @unselect-file="unselectFileFromSelection"
@@ -571,6 +572,14 @@
     @cancel="showTaggingDialog = false"
   />
 
+  <!-- add to collection -->
+  <AddToCollectionDialog
+    v-if="showAddToCollectionDialog"
+    :fileIds="fileIdsToAddToCollection"
+    @applied="handleCollectionsAdded"
+    @cancel="showAddToCollectionDialog = false"
+  />
+
   <!-- comment -->
   <MessageBox
     v-if="showCommentMsgbox"
@@ -698,6 +707,7 @@ import IndexRecoveryDialog from '@/components/IndexRecoveryDialog.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import TButton from '@/components/TButton.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
+import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -2013,6 +2023,8 @@ const cancelTrashFailedMsgbox = () => {
 // tagging dialog
 const showTaggingDialog = ref(false);
 const fileIdsToTag = ref<number[]>([]);
+const showAddToCollectionDialog = ref(false);
+const fileIdsToAddToCollection = ref<number[]>([]);
 
 // grid view
 const gridScrollContainerRef = ref<HTMLElement | null>(null);
@@ -2228,7 +2240,8 @@ function hasExternalDragIntent(event: DragEvent) {
 
 function isInternalReorderActive() {
   return uiStore.isInputActive('ManageLibraries')
-    || uiStore.isInputActive('AlbumListDrag');
+    || uiStore.isInputActive('AlbumListDrag')
+    || uiStore.isInputActive('CollectionTrayDrag');
 }
 
 async function resolveAlbumImportDestination(albumId: number, folderPath?: string) {
@@ -3374,6 +3387,7 @@ function handleItemAction(payload: { action: string, index: number }) {
     'rotate': clickRotate,
     'info': toggleInfoPanel,
     'tag': clickTag,
+    'add-to-collection': clickAddToCollection,
     'comment': () => showCommentMsgbox.value = true,
     'search-similar': () => enterSimilarSearchMode(fileList.value[selectedItemIndex.value]),
     'find-person': () => {
@@ -3765,6 +3779,12 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   if (matchesShortcut('meta.tag', event, shortcutPlatform)) {
     event.preventDefault();
     void clickTag();
+    return;
+  }
+
+  if (matchesShortcut('meta.collection', event, shortcutPlatform)) {
+    event.preventDefault();
+    void clickAddToCollection();
     return;
   }
 
@@ -8125,6 +8145,20 @@ const clickTag = async () => {
   showTaggingDialog.value = true;
 }
 
+const clickAddToCollection = async () => {
+  if (selectMode.value) {
+    const items = await getActionableSelectedItemsForAction();
+    if (!items) return;
+    if (!await confirmLargeBatch(items.length)) return;
+    fileIdsToAddToCollection.value = items.map(file => Number(file.id)).filter(id => id > 0);
+  } else if (selectedItemIndex.value >= 0) {
+    fileIdsToAddToCollection.value = [Number(fileList.value[selectedItemIndex.value]?.id || 0)].filter(id => id > 0);
+  } else {
+    fileIdsToAddToCollection.value = [];
+  }
+  showAddToCollectionDialog.value = fileIdsToAddToCollection.value.length > 0;
+};
+
 const onEditComment = async (newComment: any) => {
   if (selectMode.value && selectedCount.value > 0) {
     const items = await getActionableSelectedItemsForAction();
@@ -8724,6 +8758,24 @@ async function updateFileHasTags(fileStates: Array<{ file_id: number; has_tags: 
       tags: activeFile.tags,
     });
   }
+}
+
+function handleCollectionsAdded({ results, failed = 0 }: { results: any[]; failed?: number }) {
+  showAddToCollectionDialog.value = false;
+  const addedFileIds = new Set(results.flatMap(result => result?.addedFileIds || []).map(Number));
+  const skippedFileIds = new Set(results.flatMap(result => result?.skippedFileIds || []).map(Number));
+  addedFileIds.forEach(fileId => skippedFileIds.delete(fileId));
+  if (addedFileIds.size > 0) toast.success(t('collection.added_toast', { count: addedFileIds.size }));
+  if (skippedFileIds.size > 0) toast.info(t('collection.already_exists_toast', { count: skippedFileIds.size }));
+  if (addedFileIds.size > 0) {
+    fileList.value.forEach(file => {
+      if (!addedFileIds.has(Number(file?.id))) return;
+      file.has_collections = true;
+      file.collectionVersion = Number(file.collectionVersion || 0) + 1;
+    });
+    void tauriEmit('collection-files-dropped', { fileIds: [...addedFileIds] });
+  }
+  if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
 }
 
 // Helper to yield to main thread

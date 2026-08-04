@@ -181,6 +181,13 @@
       @cancel="showTaggingDialog = false"
     />
 
+    <AddToCollectionDialog
+      v-if="showAddToCollectionDialog"
+      :fileIds="collectionFileIds"
+      @applied="handleCollectionsAdded"
+      @cancel="showAddToCollectionDialog = false"
+    />
+
     <MessageBox
       v-if="showCommentMsgbox"
       :title="$t('msgbox.edit_comment.title')"
@@ -204,6 +211,7 @@ import { ref, watch, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { isWin, isMac, isLinux, setTheme, getSlideShowInterval, SCALE_VALUES } from '@/common/utils';
@@ -223,6 +231,7 @@ import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
 import StatusBar from '@/components/StatusBar.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
+import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
 
 import { 
   IconSearch,
@@ -230,9 +239,10 @@ import {
  } from '@/common/icons';
 
 /// i18n
-const { locale, messages } = useI18n();
+const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const uiStore = useUIStore();
+const toast = useToast();
 
 const appWindow = getCurrentWebviewWindow()
 const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 'windows');
@@ -306,8 +316,10 @@ const visiblePanes = computed<Pane[]>(() =>
   splitCount.value === 4 ? allPanes : ['left', 'right']
 );
 const showTaggingDialog = ref(false);
+const showAddToCollectionDialog = ref(false);
 const showCommentMsgbox = ref(false);
 const taggingFileIds = ref<number[]>([]);
+const collectionFileIds = ref<number[]>([]);
 
 let unlistenImg: () => void;
 let unlistenGridView: () => void;
@@ -637,6 +649,12 @@ function handleKeyDown(event: KeyboardEvent) {
   if (matchesShortcut('meta.tag', event, shortcutPlatform)) {
     event.preventDefault();
     clickTag(getActiveFilePane());
+    return;
+  }
+
+  if (matchesShortcut('meta.collection', event, shortcutPlatform)) {
+    event.preventDefault();
+    clickAddToCollection(getActiveFilePane());
     return;
   }
 
@@ -1311,6 +1329,36 @@ const openCommentEditor = (pane: Pane = 'left') => {
   showCommentMsgbox.value = true;
 };
 
+const clickAddToCollection = (pane: Pane = 'left') => {
+  const currentFileId = getFileIdByPane(pane);
+  if (currentFileId <= 0) return;
+  setActivePane(pane);
+  collectionFileIds.value = [currentFileId];
+  showAddToCollectionDialog.value = true;
+};
+
+function handleCollectionsAdded({ fileIds, results, failed = 0 }: { fileIds: number[]; results: any[]; failed?: number }) {
+  const addedFileIds = new Set(results.flatMap(result => result?.addedFileIds || []).map(Number));
+  if (addedFileIds.size === 0) {
+    if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
+    showAddToCollectionDialog.value = false;
+    return;
+  }
+  const ids = new Set(fileIds.filter(fileId => addedFileIds.has(Number(fileId))).map(Number));
+  const updatedIds = new Set<number>();
+  for (const pane of allPanes) {
+    const currentFileId = getFileIdByPane(pane);
+    if (!ids.has(currentFileId) || updatedIds.has(currentFileId)) continue;
+    updatedIds.add(currentFileId);
+    const collectionVersion = Number(getFileInfoByPane(pane)?.collectionVersion || 0) + 1;
+    applyFileMetaToPanes(currentFileId, { has_collections: true, collectionVersion });
+    syncFileMetaToContent(currentFileId, { has_collections: true, collectionVersion });
+  }
+  void emit('collection-files-dropped', { fileIds: [...addedFileIds] });
+  if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
+  showAddToCollectionDialog.value = false;
+}
+
 const onEditComment = async (newComment: any) => {
   const target = activeFileInfo.value;
   const currentFileId = activeFileId.value;
@@ -1355,6 +1403,9 @@ const handleItemAction = async (payload: { action: string }) => {
       break;
     case 'tag':
       clickTag(pane);
+      break;
+    case 'add-to-collection':
+      clickAddToCollection(pane);
       break;
     case 'comment':
       openCommentEditor(pane);

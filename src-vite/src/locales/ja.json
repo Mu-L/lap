@@ -16,6 +16,8 @@
   "collection": {
     "title": "コレクション",
     "add": "コレクションを追加",
+    "add_to_collection": "コレクションに追加",
+    "recent": "最近使用したコレクション",
     "search": "コレクションを検索",
     "not_found": "コレクションが見つかりません",
     "default_name": "コレクション {index}",
@@ -32,6 +34,7 @@
     "drop_title_hint": "ドロップして追加",
     "empty_drop_hint": "アイテムをコレクションにドラッグして追加します。",
     "added_toast": "{count} 件のファイルをコレクションに追加しました",
+    "add_failed_toast": "{count} 件のコレクションにファイルを追加できませんでした",
     "already_exists_toast": "{count} 件のファイルはすでにコレクションにあります",
     "clear": "クリア",
     "clear_confirm_title": "コレクションをクリア",
@@ -629,7 +632,8 @@
     "meta": {
       "favorite": "お気に入り",
       "unfavorite": "お気に入り解除",
-      "tag": "タグ付け...",
+      "tag": "タグ...",
+      "collection": "コレクション...",
       "comment": "コメント...",
       "rotate": "プレビューを回転"
     },
@@ -1344,6 +1348,7 @@
         "rate_four": "4つ星評価",
         "rate_five": "5つ星評価",
         "edit_tags": "タグを編集",
+        "add_to_collections": "コレクションに追加",
         "edit_comment": "コメントを編集",
         "rotate": "プレビューを回転",
         "thumbnail_increase": "サムネイルを拡大",

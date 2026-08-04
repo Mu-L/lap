@@ -43,6 +43,7 @@ export type ShortcutActionId =
   | 'meta.culling.reject'
   | 'meta.culling.unreviewed'
   | 'meta.tag'
+  | 'meta.collection'
   | 'meta.comment'
   | 'meta.rotate'
   | 'meta.info'
@@ -309,6 +310,11 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
     id: 'meta.tag',
     contexts: ['content', 'media-viewer', 'image-viewer'],
     defaultBindings: [{ code: 'KeyT', allowShift: true, label: 'T' }],
+  },
+  {
+    id: 'meta.collection',
+    contexts: ['content', 'media-viewer', 'image-viewer'],
+    defaultBindings: [{ code: 'KeyB', label: 'B' }],
   },
   {
     id: 'meta.comment',

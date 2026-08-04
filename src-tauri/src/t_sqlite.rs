@@ -1459,7 +1459,7 @@ impl ACollection {
         Ok(changed)
     }
 
-    pub fn add_files(collection_id: i64, file_ids: Vec<i64>) -> Result<(usize, usize), String> {
+    pub fn add_files(collection_id: i64, file_ids: Vec<i64>) -> Result<(Vec<i64>, Vec<i64>), String> {
         let unique_file_ids: Vec<i64> = file_ids
             .into_iter()
             .filter(|id| *id > 0)
@@ -1467,7 +1467,7 @@ impl ACollection {
             .into_iter()
             .collect();
         if unique_file_ids.is_empty() {
-            return Ok((0, 0));
+            return Ok((Vec::new(), Vec::new()));
         }
 
         let mut conn = open_conn()?;
@@ -1507,23 +1507,30 @@ impl ACollection {
             .filter(|id| !existing.contains(id))
             .copied()
             .collect();
-        let skipped = unique_file_ids.len() - new_file_ids.len();
+        let skipped_file_ids: Vec<i64> = unique_file_ids
+            .iter()
+            .filter(|id| existing.contains(id))
+            .copied()
+            .collect();
 
         if new_file_ids.is_empty() {
-            return Ok((0, skipped));
+            return Ok((Vec::new(), skipped_file_ids));
         }
 
         let tx = conn.transaction().map_err(|e| e.to_string())?;
         let now = Self::now_ts();
-        let mut added = 0;
+        let mut added_file_ids = Vec::new();
         for file_id in new_file_ids {
-            added += tx
+            let added = tx
                 .execute(
                     "INSERT OR IGNORE INTO acollections_files (collection_id, file_id, added_at)
                     SELECT ?1, id, ?3 FROM afiles WHERE id = ?2",
                     params![collection_id, file_id, now],
                 )
                 .map_err(|e| e.to_string())?;
+            if added > 0 {
+                added_file_ids.push(file_id);
+            }
         }
         tx.execute(
             "UPDATE acollections SET updated_at = ?1 WHERE id = ?2",
@@ -1531,7 +1538,7 @@ impl ACollection {
         )
         .map_err(|e| e.to_string())?;
         tx.commit().map_err(|e| e.to_string())?;
-        Ok((added, skipped))
+        Ok((added_file_ids, skipped_file_ids))
     }
 
     pub fn remove_files(collection_id: i64, file_ids: Vec<i64>) -> Result<usize, String> {

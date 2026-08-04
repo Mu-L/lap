@@ -16,6 +16,8 @@
   "collection": {
     "title": "合集",
     "add": "添加合集",
+    "add_to_collection": "添加到合集",
+    "recent": "最近使用的合集",
     "search": "搜索合集",
     "not_found": "未找到合集",
     "default_name": "合集 {index}",
@@ -32,6 +34,7 @@
     "drop_title_hint": "拖放以添加",
     "empty_drop_hint": "将项目拖到合集中以添加。",
     "added_toast": "已添加 {count} 个文件到合集",
+    "add_failed_toast": "无法将文件添加到 {count} 个合集",
     "already_exists_toast": "{count} 个文件已在合集中",
     "clear": "清空",
     "clear_confirm_title": "清空合集",
@@ -630,6 +633,7 @@
       "favorite": "收藏",
       "unfavorite": "取消收藏",
       "tag": "标签...",
+      "collection": "合集...",
       "comment": "备注...",
       "rotate": "旋转预览"
     },
@@ -1344,6 +1348,7 @@
         "rate_four": "评分 4 星",
         "rate_five": "评分 5 星",
         "edit_tags": "编辑标签",
+        "add_to_collections": "添加到合集",
         "edit_comment": "编辑备注",
         "rotate": "旋转预览",
         "thumbnail_increase": "放大缩略图",

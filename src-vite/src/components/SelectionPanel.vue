@@ -117,6 +117,13 @@
             {{ $t('menu.meta.tag') }}
           </PanelActionButton>
           <PanelActionButton
+            :icon="IconBookmark"
+            :disabled="selectedCount === 0"
+            @click="$emit('addToCollection')"
+          >
+            {{ $t('menu.meta.collection') }}
+          </PanelActionButton>
+          <PanelActionButton
             :icon="IconComment"
             :disabled="selectedCount === 0"
             @click="$emit('commentAll')"
@@ -159,19 +166,19 @@
             {{ $t('menu.file.copy_to_folder') }}
           </PanelActionButton>
           <PanelActionButton
-            :icon="querySource === 'collection' ? IconBookmarkOff : IconTrash"
+            :icon="IconTrash"
             :disabled="selectedCount === 0"
-            :danger="querySource !== 'collection'"
-            @click="$emit(querySource === 'collection' ? 'removeFromCollection' : 'trash')"
+            danger
+            @click="$emit('trash')"
           >
-            {{ querySource === 'collection' ? $t('menu.file.remove_from_collection') : $t('menu.file.move_to_trash') }}
+            {{ $t('menu.file.move_to_trash') }}
           </PanelActionButton>
         </div>
 
       </div>
 
       <!-- more actions mirrored from the multi-select context menu -->
-      <div v-if="visibleMoreActions.length > 0" class="border-t border-base-content/5 px-1 py-4 space-y-3">
+      <div v-if="visibleMoreActions.length > 0 || querySource === 'collection'" class="border-t border-base-content/5 px-1 py-4 space-y-3">
         <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
           {{ $t('info_panel.more_actions') }}
         </div>
@@ -184,6 +191,14 @@
             @click="$emit('moreAction', item.action)"
           >
             {{ item.label }}
+          </PanelActionButton>
+          <PanelActionButton
+            v-if="querySource === 'collection'"
+            :icon="IconBookmarkOff"
+            :disabled="selectedCount === 0"
+            @click="$emit('removeFromCollection')"
+          >
+            {{ $t('menu.file.remove_from_collection') }}
           </PanelActionButton>
         </div>
       </div>
@@ -205,6 +220,7 @@ import {
   IconTag,
   IconTrash,
   IconBookmarkOff,
+  IconBookmark,
 } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import FavoriteRatingControl from '@/components/FavoriteRatingControl.vue';
@@ -251,6 +267,7 @@ defineEmits([
   'setRatingAll',
   'setCullingAll',
   'tagAll',
+  'addToCollection',
   'commentAll',
   'rotateAll',
   'removeFromCollection',

@@ -1064,6 +1064,7 @@ const shortcutDisplaySections: Array<{ key: string; items: ShortcutDisplayItem[]
       { actionId: 'meta.culling.reject', labelKey: 'mark_rejected' },
       { actionId: 'meta.culling.unreviewed', labelKey: 'mark_unreviewed' },
       { actionId: 'meta.tag', labelKey: 'edit_tags' },
+      { actionId: 'meta.collection', labelKey: 'add_to_collections' },
       { actionId: 'meta.comment', labelKey: 'edit_comment' },
       { actionId: 'meta.rotate', labelKey: 'rotate' },
       { actionId: 'meta.info', labelKey: 'show_info' },

@@ -64,17 +64,31 @@
             </button>
           </div>
         </div>
-        <div
-          v-for="collection in filteredCollections"
-          :key="collection.id"
-          :data-collection-drop-id="renamingId === collection.id ? undefined : collection.id"
-          :class="[
-            'sidebar-item group border-2 border-transparent',
-            selectedId === collection.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
-          ]"
-          @click="selectCollection(collection)"
+        <VueDraggable
+          v-model="collections"
+          class="px-1"
+          :animation="200"
+          handle=".collection-drag-handle"
+          :disabled="Boolean(searchQuery) || renamingId !== null || isItemDragging"
+          @start="onReorderStart"
+          @end="onReorderEnd"
         >
-          <IconBookmark class="mx-1 w-5 h-5 shrink-0" />
+          <div
+            v-for="collection in filteredCollections"
+            :key="collection.id"
+            :data-collection-drop-id="renamingId === collection.id ? undefined : collection.id"
+            :class="[
+              'sidebar-item group border-2 border-transparent',
+              selectedId === collection.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
+            ]"
+            @click="selectCollection(collection)"
+          >
+          <IconDragHandle
+            class="collection-drag-handle invisible w-4 h-4 shrink-0 cursor-move text-base-content/30 group-hover:visible"
+            :class="selectedId === collection.id ? 'visible' : ''"
+            :title="$t('msgbox.manage_libraries.reorder')"
+          />
+          <IconBookmark class="mx-1 w-4 h-4 shrink-0" />
           <input
             v-if="renamingId === collection.id"
             ref="renameInputRef"
@@ -109,7 +123,8 @@
               :smallIcon="true"
             />
           </div>
-        </div>
+          </div>
+        </VueDraggable>
         <div v-if="collections.length > 0 && filteredCollections.length === 0" class="sidebar-empty text-sm">
           <span class="text-center">{{ $t('collection.not_found') }}</span>
         </div>
@@ -148,9 +163,11 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
+import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, listCollections, renameCollection } from '@/common/api';
-import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch } from '@/common/icons';
+import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, listCollections, renameCollection, reorderCollections } from '@/common/api';
+import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch, IconDragHandle } from '@/common/icons';
+import { VueDraggable } from 'vue-draggable-plus';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
@@ -165,6 +182,7 @@ defineProps({
 const emit = defineEmits(['toggle-expanded']);
 
 const { t } = useI18n();
+const uiStore = useUIStore();
 type Collection = {
   id: number;
   name: string;
@@ -214,6 +232,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  uiStore.removeInputHandler('CollectionTrayDrag');
   unlistenCollectionFilesDropped?.();
   unlistenCollectionFilesDropped = null;
   unlistenContentItemsDragState?.();
@@ -336,5 +355,20 @@ function collectionMenuItems(collection: Collection) {
       action: () => deleteCollection(collection),
     },
   ];
+}
+
+function onReorderStart() {
+  uiStore.removeInputHandler('CollectionTrayDrag');
+  uiStore.pushInputHandler('CollectionTrayDrag');
+}
+
+async function onReorderEnd() {
+  setTimeout(() => uiStore.removeInputHandler('CollectionTrayDrag'), 0);
+  try {
+    await reorderCollections(collections.value.map((collection, sortOrder) => ({ id: collection.id, sortOrder })));
+  } catch (error) {
+    console.error('Failed to reorder collections:', error);
+    await loadCollections();
+  }
 }
 </script>

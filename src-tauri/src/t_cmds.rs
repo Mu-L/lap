@@ -789,6 +789,8 @@ pub fn reorder_collections(items: Vec<ACollectionOrder>) -> Result<usize, String
 pub struct CollectionAddResult {
     pub added: usize,
     pub skipped: usize,
+    pub added_file_ids: Vec<i64>,
+    pub skipped_file_ids: Vec<i64>,
 }
 
 #[tauri::command]
@@ -797,7 +799,12 @@ pub fn add_files_to_collection(
     file_ids: Vec<i64>,
 ) -> Result<CollectionAddResult, String> {
     ACollection::add_files(collection_id, file_ids)
-        .map(|(added, skipped)| CollectionAddResult { added, skipped })
+        .map(|(added_file_ids, skipped_file_ids)| CollectionAddResult {
+            added: added_file_ids.len(),
+            skipped: skipped_file_ids.len(),
+            added_file_ids,
+            skipped_file_ids,
+        })
         .map_err(|e| format!("Error while adding files to collection: {}", e))
 }
 

@@ -25,6 +25,7 @@ import {
   IconFlagFilled,
   IconFlagOff,
   IconBookmarkOff,
+  IconBookmark,
   IconSplitOn,
   IconSplitOn4,
 } from '@/common/icons';
@@ -228,6 +229,12 @@ export const useFileMenuItems = (
         icon: markRaw(IconTag),
         shortcut: shortcut('meta.tag'),
         action: createAction('tag')
+      },
+      {
+        label: localeMsg.value.menu.meta.collection,
+        icon: markRaw(IconBookmark),
+        shortcut: shortcut('meta.collection'),
+        action: createAction('add-to-collection'),
       },
       {
         label: localeMsg.value.menu.meta.comment,
