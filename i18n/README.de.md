@@ -52,7 +52,7 @@ brew install --cask lap
 ## Funktionen
 
 - **Flexibles Durchsuchen der Bibliothek** mit Timeline-, Ordner-, Standort-, Kamera-, Objektiv-, Schlagwort-, Favoriten-, Bewertungs-, Motiv- und Gesichtsfiltern.
-- **Intelligente Alben** speichern regelbasierte Ansichten mit eigener Gruppierung, Sortierung und Reihenfolge.
+- **Smart-Alben** speichern regelbasierte Ansichten mit eigener Gruppierung, Sortierung und Reihenfolge.
 - **Sammlungsleiste** für spontane Dateisammlungen, ohne Dateien aus ihren ursprünglichen Ordnern zu verschieben.
 - **Lokale KI-Suche** für Textanfragen, visuelle Ähnlichkeit, Motive, Gesichts-Clustering und optionale mehrsprachige Suche in über 50 Sprachen.
 - **Apple Live Photos** erkennt gekoppelte HEIC/MOV-Live-Photos, spielt sie im Viewer ab und hält verknüpfte MOV- und AAE-Seitendateien beim Umbenennen, Verschieben, Kopieren und Löschen zusammen.
@@ -83,7 +83,7 @@ Die folgenden Informationen sind Bibliotheksdaten von Lap. Sie werden in der lok
 - Kommentare
 - Favoriten, Bewertungen und Prüfstatus (einschließlich Picks und Rejects)
 - Die Anzeigeausrichtung von Lap und anderer nur für die Bibliothek geltender Zustand
-- Intelligente Alben sowie deren Regeln, Gruppierung, Sortierung und Reihenfolge
+- Smart-Alben sowie deren Regeln, Gruppierung, Sortierung und Reihenfolge
 - KI-Suchdaten, Gesichtsdaten, Thumbnails und weitere Index- bzw. Cache-Daten
 
 Diese Daten reisen nicht mit einer Datei mit, wenn sie außerhalb von Lap kopiert, exportiert oder verschoben wird, und stehen anderen Anwendungen nicht automatisch zur Verfügung.
