@@ -386,12 +386,6 @@ watch(() => config.settings.face.enabled, (enabled) => {
   }
 });
 
-watch(() => config.settings.showCollections, (showCollections) => {
-  if (!showCollections && libConfig.activePane === 'collection') {
-    libConfig.activePane = 'main';
-  }
-});
-
 watch(() => config.libraryChangedVersion, async () => {
   appConfig.value = await getAppConfig();
 });
@@ -654,8 +648,7 @@ const collectionTrayStyle = computed(() => {
 
 const showBottomCollectionTray = computed(() =>
   showPanel.value &&
-  !libraryEmpty.value &&
-  config.settings.showCollections
+  !libraryEmpty.value
 );
 
 function toggleCollectionTray() {

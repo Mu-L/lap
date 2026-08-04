@@ -110,7 +110,6 @@ export const useConfigStore = defineStore('configStore', {
       showToolTip: true,          // show button tooltip
       showStatusBar: true,        // show status bar
       autoCheckUpdates: true,      // automatically check for updates
-      showCollections: false,      // show collection tray in left panel
       debugMode: false,           // debug mode
 
       // navigation settings
@@ -211,9 +210,6 @@ export const useConfigStore = defineStore('configStore', {
     },
     setAutoCheckUpdates(autoCheckUpdates) {
       this.settings.autoCheckUpdates = autoCheckUpdates;
-    },
-    setShowCollections(showCollections) {
-      this.settings.showCollections = showCollections;
     },
     setDebugMode(debugMode) {
       this.settings.debugMode = debugMode;

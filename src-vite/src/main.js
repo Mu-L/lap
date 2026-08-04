@@ -96,9 +96,6 @@ listen('settings-showStatusBar-changed', (event) => {
 listen('settings-autoCheckUpdates-changed', (event) => {
   config.setAutoCheckUpdates(event.payload)
 })
-listen('settings-showCollections-changed', (event) => {
-  config.setShowCollections(event.payload)
-})
 listen('settings-debugMode-changed', (event) => {
   config.setDebugMode(event.payload)
 })
