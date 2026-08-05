@@ -100,6 +100,13 @@ pub struct Album {
     pub last_scan_time: Option<i64>,   // last scan time
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AlbumDisplayOrder {
+    pub id: i64,
+    pub display_order: i64,
+}
+
 impl Album {
     /// create a new album
     fn new(path: &str) -> Result<Self, String> {
@@ -207,6 +214,42 @@ impl Album {
             .execute("DELETE FROM albums WHERE id = ?1", params![id])
             .map_err(|e| e.to_string())?;
         Ok(result)
+    }
+
+    pub fn reorder_display_order(items: Vec<AlbumDisplayOrder>) -> Result<usize, String> {
+        let count = items.len();
+        let ids: HashSet<i64> = items.iter().map(|item| item.id).collect();
+        let orders: HashSet<i64> = items.iter().map(|item| item.display_order).collect();
+        if count == 0 || ids.len() != count || orders.len() != count || items.iter().any(|item| {
+            item.id <= 0 || item.display_order < 0 || item.display_order >= count as i64
+        }) {
+            return Err("Invalid album display order".to_string());
+        }
+
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let album_count: usize = tx
+            .query_row("SELECT COUNT(*) FROM albums", [], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        if album_count != count {
+            return Err("Album list changed while reordering".to_string());
+        }
+
+        let mut update = tx
+            .prepare("UPDATE albums SET display_order_id = ?1 WHERE id = ?2")
+            .map_err(|e| e.to_string())?;
+        for item in items {
+            if update
+                .execute(params![item.display_order, item.id])
+                .map_err(|e| e.to_string())?
+                != 1
+            {
+                return Err("Album not found while reordering".to_string());
+            }
+        }
+        drop(update);
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(count)
     }
 
     /// Get all albums(album_type = 1) from the db

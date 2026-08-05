@@ -353,13 +353,6 @@ const getMenuItemsForFolder = async (folder: any) => {
       action: null
     },
     {
-      label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
-      icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
-      action: () => {
-        toggleFolderSearchExcluded(folder);
-      }
-    },
-    {
       label: localeMsg.value.menu.album.refresh,
       icon: IconRefresh,
       action: async () => {
@@ -373,6 +366,13 @@ const getMenuItemsForFolder = async (folder: any) => {
         }
         await expandFolder(folder, true);
         await tauriEmit('refresh-content');
+      }
+    },
+    {
+      label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
+      icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
+      action: () => {
+        toggleFolderSearchExcluded(folder);
       }
     },
     {

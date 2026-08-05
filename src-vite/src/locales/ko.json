@@ -566,6 +566,7 @@
       "add": "앨범 추가...",
       "edit": "앨범 편집...",
       "scan": "앨범 스캔",
+      "reorder": "앨범 순서 변경",
       "pause_scan": "스캔 일시중지",
       "include_in_search": "검색에 포함",
       "exclude_from_search": "검색에서 제외",

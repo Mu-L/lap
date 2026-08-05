@@ -239,7 +239,7 @@ async fn main() {
             t_cmds::add_album,
             t_cmds::edit_album,
             t_cmds::remove_album,
-            t_cmds::set_album_display_order,
+            t_cmds::reorder_albums,
             t_cmds::set_album_cover,
             t_cmds::index_album,
             t_cmds::cancel_indexing,

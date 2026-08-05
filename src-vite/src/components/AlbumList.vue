@@ -26,7 +26,7 @@
       <VueDraggable
         v-if="albums.length > 0"
         v-model="albums"
-        :disabled="!isMainPane"
+        :disabled="!isMainPane || reorderingAlbumId === null"
         group="album-folder"
         :handle="'.album-drag-handle'"
         :animation="200"
@@ -45,7 +45,7 @@
             :data-file-drop-path="album.is_accessible === false ? undefined : album.path"
             :data-file-drop-album-id="album.is_accessible === false ? undefined : album.id"
             :class="[
-              'mx-1 p-1 h-12 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2 border-transparent transition-all duration-200 ease-in-out album-drag-handle',
+              'mx-1 p-1 h-12 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2 border-transparent transition-all duration-200 ease-in-out',
               selection.albumId.value === album.id
                 ? (selection.selected.value ? `${isMainSourceActive ? 'text-primary' : 'text-base-content/70 bg-base-100/30 hover:bg-base-100/70'} bg-base-100 hover:bg-base-100` : 'text-base-content hover:bg-base-100/30')
                 : 'hover:text-base-content hover:bg-base-100/30',
@@ -54,12 +54,20 @@
             @dblclick.stop="dlbClickAlbum(album)"
             @contextmenu.prevent.stop="(e: MouseEvent) => handleAlbumContextMenu(album, e)"
           >
+            <IconDragHandle
+              v-if="isReorderingAlbum(album)"
+              class="album-drag-handle p-1 w-6 h-6 shrink-0 cursor-move text-base-content/70 hover:text-base-content"
+              :title="$t('menu.album.reorder')"
+              @click.stop
+              @dblclick.stop
+            />
             <IconRight
+              v-else
               :class="[
                 'p-1 w-6 h-6 shrink-0 transition-transform hover:text-base-content',
                 album.is_expanded ? 'rotate-90' : '',
               ]"
-              @click.stop="expandAlbum(album)"
+              @click.stop="toggleAlbumExpansion(album)"
               @dblclick.stop
             />
             <div class="w-10 h-10 mr-2 rounded-box shrink-0 overflow-hidden border border-base-content/5 bg-base-content/5" @click.stop>
@@ -229,7 +237,7 @@ import {
   openFolderDialog,
 } from '@/common/utils';
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { getAllAlbums, setDisplayOrder, addAlbum, editAlbum, removeAlbum, 
+import { getAllAlbums, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
          getAlbum, hasImportableClipboard, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
@@ -251,6 +259,8 @@ import {
   IconUpdateOff,
   IconUpdateDot,
   IconRight,
+  IconDragHandle,
+  IconOrder,
   IconFolders,
   IconClipboard,
   IconFolderError,
@@ -300,6 +310,7 @@ const newAlbumFolderPath = ref('');
 const editingAlbumId = ref(0);
 const isLoading = ref(true);    // loading albums
 const isDragging = ref(false);  // dragging albums
+const reorderingAlbumId = ref<number | null>(null);
 const albumCoverErrors = ref<Record<number, boolean>>({});
 const albumContextMenus = ref<Record<number, any>>({});
 
@@ -312,6 +323,7 @@ function handleAlbumContextMenu(album: Album, event: MouseEvent) {
 
 const getAlbumById = (id: number) =>
   albums.value.find(album => Number(album.id) === Number(id));
+const isReorderingAlbum = (album: Album) => Number(album.id) === reorderingAlbumId.value;
 const selectedAlbum = computed(() => getAlbumById(selection.albumId.value)) || {};
 const editingAlbum = computed(() => getAlbumById(editingAlbumId.value));
 const isAlbumQueued = (albumId: number) =>
@@ -398,12 +410,23 @@ const getMoreMenuItems = async (album: any) => {
       }
     },
     {
+      label: "-",   // separator
+      action: () => {}
+    },
+    {
       label: isAlbumQueued(album.id)
         ? localeMsg.value.menu.album.pause_scan
         : localeMsg.value.menu.album.scan,
       icon: isAlbumQueued(album.id) ? IconUpdateOff : IconUpdate,
       disabled: !isAccessible && !isAlbumQueued(album.id),
       action: () => toggleIndexAlbum(album.id)
+    },
+    {
+      label: localeMsg.value.menu.album.reorder,
+      icon: IconOrder,
+      action: () => {
+        reorderingAlbumId.value = isReorderingAlbum(album) ? null : album.id;
+      }
     },
     {
       label: "-",   // separator
@@ -740,6 +763,9 @@ const clickRemoveAlbum = async () => {
 
     // remove the album from the list
     albums.value = albums.value.filter(album => album.id !== albumId);
+    if (reorderingAlbumId.value === albumId) {
+      reorderingAlbumId.value = null;
+    }
     showAlbumEdit.value = false; // Close the edit dialog if it's open
 
     tauriEmit('albums-refreshed');
@@ -751,6 +777,9 @@ const clickRemoveAlbum = async () => {
 
 /// click a album to select it
 const clickAlbum = async (album: Album) => {
+  if (reorderingAlbumId.value !== null && !isReorderingAlbum(album)) {
+    reorderingAlbumId.value = null;
+  }
   if (isMainPane.value) {
     uiStore.setActivePane('left-sidebar');
   }
@@ -801,6 +830,13 @@ const expandAlbum = async (album: any, forceRefresh = false) => {
       album.children = [subFolders];
     }
   }
+};
+
+const toggleAlbumExpansion = async (album: Album) => {
+  if (reorderingAlbumId.value !== null && !isReorderingAlbum(album)) {
+    reorderingAlbumId.value = null;
+  }
+  await expandAlbum(album);
 };
 
 /// click folder to select
@@ -946,10 +982,15 @@ const onDragStart = () => {
 const onDragEnd = async () => {
   isDragging.value = false;
   setTimeout(() => uiStore.removeInputHandler('AlbumListDrag'), 0);
-  
-  // update the display order of albums
-  for (let i = 0; i < albums.value.length; i++) {
-    await setDisplayOrder(albums.value[i].id, i);
+  try {
+    await reorderAlbums(albums.value.map((album, displayOrder) => ({ id: album.id, displayOrder })));
+  } catch (error) {
+    console.error('Failed to reorder albums:', error);
+    const restoredAlbums = await getAllAlbums();
+    if (Array.isArray(restoredAlbums)) {
+      albums.value = restoredAlbums;
+      await loadAlbumCovers();
+    }
   }
 }
 

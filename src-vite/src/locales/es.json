@@ -566,6 +566,7 @@
       "add": "Añadir álbum...",
       "edit": "Editar álbum...",
       "scan": "Escanear álbum",
+      "reorder": "Reordenar álbumes",
       "pause_scan": "Pausar escaneo",
       "include_in_search": "Incluir en búsqueda",
       "exclude_from_search": "Excluir de búsqueda",

@@ -566,6 +566,7 @@
       "add": "アルバムを追加...",
       "edit": "アルバムを編集...",
       "scan": "アルバムをスキャン",
+      "reorder": "アルバムを並べ替え",
       "pause_scan": "スキャンを一時停止",
       "include_in_search": "検索に含める",
       "exclude_from_search": "検索から除外",

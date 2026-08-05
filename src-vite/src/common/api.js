@@ -455,18 +455,13 @@ export async function getExternalAppDisplayName(appPath) {
   }
 }
 
-// set display order 
-export async function setDisplayOrder(albumId, order) {
+export async function reorderAlbums(items) {
   try {
-    const updatedAlbum = await invoke('set_album_display_order', { id: albumId, displayOrder: order });
-    console.log('set_album_display_order', updatedAlbum);
-    if (updatedAlbum) {
-      return updatedAlbum;
-    }
+    return await invoke('reorder_albums', { items });
   } catch (error) {
-    console.log('Failed to set display order:', error);
+    console.error('Failed to reorder albums:', error);
+    throw error;
   }
-  return null;
 }
 
 // set album cover

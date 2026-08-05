@@ -566,6 +566,7 @@
       "add": "Album hinzufügen...",
       "edit": "Album bearbeiten...",
       "scan": "Album scannen",
+      "reorder": "Alben neu anordnen",
       "pause_scan": "Scannen pausieren",
       "include_in_search": "In Suche einbeziehen",
       "exclude_from_search": "Vom Suchen ausschließen",

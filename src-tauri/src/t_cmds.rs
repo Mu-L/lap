@@ -16,7 +16,7 @@ use crate::t_apple_sidecar::{
 use crate::t_similar;
 use crate::t_sqlite::{
     ACamera, ACollection, ACollectionOrder, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
-    ATagSelectionCount, AThumb, ATimeLine, Album, GroupedQueryResult, ImageSearchParams, Person,
+    ATagSelectionCount, AThumb, ATimeLine, Album, AlbumDisplayOrder, GroupedQueryResult, ImageSearchParams, Person,
     PersonPage, QueryParams, SmartQueryParams,
 };
 use crate::t_storage;
@@ -399,11 +399,9 @@ pub fn remove_album(id: i64) -> Result<usize, String> {
     Ok(result)
 }
 
-/// set album display order
 #[tauri::command]
-pub fn set_album_display_order(id: i64, display_order: i32) -> Result<usize, String> {
-    Album::update_column(id, "display_order_id", &display_order)
-        .map_err(|e| format!("Error while setting album display order: {}", e))
+pub fn reorder_albums(items: Vec<AlbumDisplayOrder>) -> Result<usize, String> {
+    Album::reorder_display_order(items).map_err(|e| format!("Error while reordering albums: {}", e))
 }
 
 /// set album cover
