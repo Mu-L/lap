@@ -531,7 +531,7 @@ const activeGroup = computed(() => {
   if (selectedGroupId.value === null) return null;
   return duplicateGroups.value.find(group => group.id === selectedGroupId.value) || null;
 });
-const activeSimilarGroup = computed(() => similarGroups.value.find(group => Number(group.id) === selectedSimilarGroupId.value) || null);
+const activeSimilarGroup = computed(() => similarGroups.value.find(group => Number(group.id) === selectedSimilarGroupId.value && Array.isArray(group.items)) || null);
 const similarProgressLabel = computed(() => ({
   preparing: t('info_panel.dedup.similar.preparing'),
   finding_matches: t('info_panel.dedup.similar.finding_matches'),
@@ -607,13 +607,6 @@ function getSimilarCullingIconClass(file: any, cullingFlag: number) {
   return cullingFlag === 2
     ? 'text-base-content/30 hover:text-error/70'
     : 'text-base-content/30 hover:text-primary/70';
-}
-
-async function refreshActiveSimilarGroup() {
-  const group = activeSimilarGroup.value;
-  if (!group) return;
-  try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
-  catch (error) { console.error('refreshActiveSimilarGroup error:', error); }
 }
 
 async function setSimilarCullingFlag(item: any, cullingFlag: number) {
@@ -1430,8 +1423,15 @@ onMounted(async () => {
       similarLoading.value = false;
     }
   });
-  unlistenCullingStatus.value = await listen('culling-status-updated', () => {
-    void refreshActiveSimilarGroup();
+  unlistenCullingStatus.value = await listen('culling-status-updated', (event) => {
+    const payload = event.payload as { fileIds?: number[]; cullingFlag?: number } | null;
+    if (!payload?.fileIds || payload.cullingFlag === undefined) return;
+    const fileIds = new Set(payload.fileIds.map(Number));
+    for (const item of activeSimilarGroup.value?.items || []) {
+      if (!fileIds.has(Number(item.file_id)) || !item.file) continue;
+      item.file.culling_flag = payload.cullingFlag;
+      item.file.cullingFlag = payload.cullingFlag;
+    }
   });
 
   if (!props.dedupScanKey) {

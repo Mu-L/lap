@@ -405,7 +405,6 @@
           <DedupPane
             v-if="!selectMode && config.rightPanel.mode === 'dedup'"
             ref="dedupPaneRef"
-            :file-list="fileList"
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
             :dedup-query-params="dedupQueryParams"
@@ -4612,7 +4611,7 @@ onMounted( async() => {
             Object.assign(fileList.value[index], changes);
           }
           if (changes.culling_flag !== undefined || changes.cullingFlag !== undefined) {
-            void tauriEmit('culling-status-updated');
+            void tauriEmit('culling-status-updated', { fileIds: [targetFileId], cullingFlag: changes.culling_flag ?? changes.cullingFlag });
           }
         }
         break;
@@ -7834,7 +7833,7 @@ function handleDedupCullingStatusUpdated(fileId: number, cullingFlag: number) {
   const file = fileList.value.find(item => Number(item.id) === Number(fileId));
   if (file) file.culling_flag = cullingFlag;
   void syncFileMetaToImageViewer(fileId, { culling_flag: cullingFlag });
-  void tauriEmit('culling-status-updated');
+  void tauriEmit('culling-status-updated', { fileIds: [fileId], cullingFlag });
 }
 
 type SavedFilePayload = {
@@ -7989,7 +7988,7 @@ const setSelectedFileCullingFlag = async (cullingFlag: number) => {
     return;
   }
   syncFileMetaToImageViewer(item.id, { culling_flag: normalized });
-  void tauriEmit('culling-status-updated');
+  void tauriEmit('culling-status-updated', { fileIds: [item.id], cullingFlag: normalized });
 };
 
 const selectModeSetCullingFlags = async (cullingFlag: number) => {
@@ -8010,7 +8009,7 @@ const selectModeSetCullingFlags = async (cullingFlag: number) => {
   if (activeItem?.isSelected) {
     syncFileMetaToImageViewer(activeItem.id, { culling_flag: normalized });
   }
-  void tauriEmit('culling-status-updated');
+  void tauriEmit('culling-status-updated', { fileIds: items.map(item => item.id), cullingFlag: normalized });
 };
 
 // slide show
