@@ -12,8 +12,16 @@
       />
     </div>
 
-    <ul
+    <VueDraggable
       v-if="customSmartAlbums.length > 0"
+      v-model="customSmartAlbums"
+      tag="ul"
+      :disabled="reorderingSmartAlbumId === null"
+      :handle="'.smart-album-drag-handle'"
+      :animation="200"
+      @start="onDragStart"
+      @end="onDragEnd"
+      @drop.stop
       class="flex-1 overflow-x-hidden overflow-y-auto rounded-box select-none"
     >
       <li v-for="smartAlbum in customSmartAlbums" :key="smartAlbum.id">
@@ -25,6 +33,13 @@
           @click="clickCustomSmartAlbum(smartAlbum)"
           @contextmenu.prevent.stop="(event: MouseEvent) => handleSmartAlbumContextMenu(smartAlbum, event)"
         >
+          <IconDragHandle
+            v-if="isReorderingSmartAlbum(smartAlbum)"
+            class="smart-album-drag-handle p-1 w-6 h-6 shrink-0 cursor-move text-base-content/70 hover:text-base-content"
+            :title="$t('album.smart_edit.reorder')"
+            @click.stop
+          />
+          <span v-else-if="reorderingSmartAlbumId !== null" class="p-1 w-6 h-6 shrink-0"></span>
           <div class="w-10 h-10 mr-2 rounded-box shrink-0 overflow-hidden border border-base-content/5 bg-base-content/5">
             <img
               v-if="getSmartAlbumCoverSrc(smartAlbum) && Number(smartAlbumCoverErrors[smartAlbum.id]) !== Number(smartAlbum.coverFileId)"
@@ -54,7 +69,7 @@
           </div>
         </div>
       </li>
-    </ul>
+    </VueDraggable>
     <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
       <span class="text-sm text-center">{{ $t('album.no_smart_albums.description') }}</span>
     </div>
@@ -79,19 +94,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { VueDraggable } from 'vue-draggable-plus';
 import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import { getThumbUrl, getThumbnailDataUrl, getThumbnailDataUrlInflight, isWin, setThumbnailDataUrlInflight } from '@/common/utils';
 import { getFileThumbById } from '@/common/api';
-import { IconAdd, IconEdit, IconMore, IconFolderCog, IconTrash } from '@/common/icons';
+import { IconAdd, IconDragHandle, IconEdit, IconMore, IconFolderCog, IconOrder, IconTrash } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import SmartAlbumEdit from '@/components/SmartAlbumEdit.vue';
 import MessageBox from '@/components/MessageBox.vue';
 
-const customSmartAlbums = computed(() => libConfig.smartAlbums || []);
+const customSmartAlbums = ref<any[]>([]);
 const uiStore = useUIStore();
 const { t } = useI18n();
 const showEditDialog = ref(false);
@@ -101,7 +117,12 @@ const deletingSmartAlbum = ref<any | null>(null);
 const smartAlbumContextMenus = ref<Record<string, any>>({});
 const smartAlbumCoverErrors = ref<Record<string, number>>({});
 const smartAlbumCoverUrls = ref<Record<string, string>>({});
+const reorderingSmartAlbumId = ref<string | null>(null);
 let smartAlbumCoverLoadToken = 0;
+
+watch(() => libConfig.smartAlbums, (albums) => {
+  customSmartAlbums.value = Array.isArray(albums) ? [...albums] : [];
+}, { immediate: true });
 
 const getSmartAlbumCoverSrc = (smartAlbum: any) => {
   const coverFileId = Number(smartAlbum?.coverFileId || 0);
@@ -138,6 +159,9 @@ watch(
 );
 
 function clickCustomSmartAlbum(smartAlbum: any) {
+  if (reorderingSmartAlbumId.value !== null && reorderingSmartAlbumId.value !== smartAlbum.id) {
+    reorderingSmartAlbumId.value = null;
+  }
   uiStore.smartAlbumCountRequestedFor = String(smartAlbum.id);
   uiStore.smartAlbumCountRequestTick++;
   libConfig.smartAlbum.type = 'custom';
@@ -165,11 +189,34 @@ const getMoreMenuItems = (smartAlbum: any) => [
     action: () => clickEditSmartAlbum(smartAlbum),
   },
   {
+    label: t('album.smart_edit.reorder'),
+    icon: IconOrder,
+    action: () => {
+      reorderingSmartAlbumId.value = reorderingSmartAlbumId.value === smartAlbum.id ? null : smartAlbum.id;
+    },
+  },
+  {
+    label: "-",
+    action: null
+  },
+  {
     label: t('album.smart_edit.delete'),
     icon: IconTrash,
     action: () => clickDeleteSmartAlbum(smartAlbum),
   },
 ];
+
+const isReorderingSmartAlbum = (smartAlbum: any) => reorderingSmartAlbumId.value === smartAlbum.id;
+
+function onDragStart() {
+  uiStore.removeInputHandler('SmartAlbumListDrag');
+  uiStore.pushInputHandler('SmartAlbumListDrag');
+}
+
+function onDragEnd() {
+  setTimeout(() => uiStore.removeInputHandler('SmartAlbumListDrag'), 0);
+  libConfig.smartAlbums = [...customSmartAlbums.value];
+}
 
 function clickEditSmartAlbum(smartAlbum: any) {
   editingSmartAlbum.value = smartAlbum;

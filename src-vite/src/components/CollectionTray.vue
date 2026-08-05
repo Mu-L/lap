@@ -69,9 +69,10 @@
           class="px-1"
           :animation="200"
           handle=".collection-drag-handle"
-          :disabled="Boolean(searchQuery) || renamingId !== null || isItemDragging"
+          :disabled="Boolean(searchQuery) || renamingId !== null || isItemDragging || reorderingCollectionId === null"
           @start="onReorderStart"
           @end="onReorderEnd"
+          @drop.stop
         >
           <div
             v-for="collection in filteredCollections"
@@ -84,11 +85,12 @@
             @click="selectCollection(collection)"
           >
           <IconDragHandle
-            class="collection-drag-handle invisible w-4 h-4 shrink-0 cursor-move text-base-content/30 group-hover:visible"
-            :class="selectedId === collection.id ? 'visible' : ''"
-            :title="$t('msgbox.manage_libraries.reorder')"
+            v-if="isReorderingCollection(collection)"
+            class="collection-drag-handle p-1 w-6 h-6 shrink-0 cursor-move text-base-content/70 hover:text-base-content"
+            :title="$t('collection.reorder')"
           />
-          <IconBookmark class="mx-1 w-4 h-4 shrink-0" />
+          <span v-else-if="reorderingCollectionId !== null" class="p-1 w-6 h-6 shrink-0"></span>
+          <IconBookmark class="pr-1 w-6 h-6 shrink-0" />
           <input
             v-if="renamingId === collection.id"
             ref="renameInputRef"
@@ -166,7 +168,7 @@ import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
 import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, listCollections, renameCollection, reorderCollections } from '@/common/api';
-import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch, IconDragHandle } from '@/common/icons';
+import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch, IconDragHandle, IconOrder } from '@/common/icons';
 import { VueDraggable } from 'vue-draggable-plus';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
@@ -204,6 +206,7 @@ watch(() => collections.value.length, (count) => {
   if (count <= 10) searchQuery.value = '';
 });
 const selectedId = ref<number | null>(Number(libConfig.collection.selectedId || 0) || null);
+const reorderingCollectionId = ref<number | null>(null);
 const renamingId = ref<number | null>(null);
 const renameValue = ref('');
 const renameInputRef = ref<HTMLInputElement | HTMLInputElement[] | null>(null);
@@ -224,6 +227,7 @@ onMounted(async () => {
   });
   unlistenLibrarySwitched = await listen('library-switched', async () => {
     selectedId.value = Number(libConfig.collection.selectedId || 0) || null;
+    reorderingCollectionId.value = null;
     renamingId.value = null;
     renameValue.value = '';
     deleteTarget.value = null;
@@ -264,6 +268,9 @@ async function loadCollections(preferredId?: number) {
 }
 
 function selectCollection(collection: Collection) {
+  if (reorderingCollectionId.value !== null && reorderingCollectionId.value !== collection.id) {
+    reorderingCollectionId.value = null;
+  }
   libConfig.activePane = 'collection';
   selectedId.value = collection.id;
   libConfig.collection.selectedId = collection.id;
@@ -344,6 +351,14 @@ function collectionMenuItems(collection: Collection) {
       action: () => startRename(collection),
     },
     {
+      label: t('collection.reorder'),
+      icon: IconOrder,
+      action: () => {
+        searchQuery.value = '';
+        reorderingCollectionId.value = reorderingCollectionId.value === collection.id ? null : collection.id;
+      },
+    },
+    {
       label: t('collection.clear'),
       disabled: collection.count === 0,
       action: () => { clearTarget.value = collection; },
@@ -356,6 +371,8 @@ function collectionMenuItems(collection: Collection) {
     },
   ];
 }
+
+const isReorderingCollection = (collection: Collection) => reorderingCollectionId.value === collection.id;
 
 function onReorderStart() {
   uiStore.removeInputHandler('CollectionTrayDrag');

@@ -463,6 +463,7 @@ import {
   IconWinMaximize,
   IconWinRestore,
   IconLink,
+  IconPalette,
   IconVideoPlay,
   IconLivePhoto,
 } from '@/common/icons';
@@ -685,13 +686,22 @@ const viewBackgroundStyle = computed(() => {
 const viewBackgroundMenuItems = computed(() => {
   const labels = localeMsg.value.settings.image_view.view_background_options || [];
   const selectedBackground = Number(config.settings.viewBackground ?? 0);
-  return VIEW_BACKGROUND_SHORTCUTS.map(({ actionId, value }) => ({
+  return [
+    {
+      label: localeMsg.value.settings.shortcuts.actions.cycle_background,
+      icon: IconPalette,
+      shortcut: shortcut('view.cycleBackground'),
+      action: cycleViewBackground,
+    },
+    { label: '-', action: null },
+    ...VIEW_BACKGROUND_SHORTCUTS.map(({ actionId, value }) => ({
     label: labels[value],
     swatch: viewBackgroundSwatches[value],
     selected: selectedBackground === value,
     shortcut: shortcut(actionId),
     action: () => emit('view-background-change', value),
-  }));
+    })),
+  ];
 });
 // const ratingButtonTooltip = computed(() => {
 //   const rating = Number(props.file?.rating || 0);
@@ -967,6 +977,11 @@ function handleBackgroundContextMenu(e: MouseEvent) {
   const target = e.target as HTMLElement;
   if (target.closest('button')) return;
   backgroundContextMenuRef.value?.open(e.clientX, e.clientY);
+}
+
+function cycleViewBackground() {
+  config.cycleViewBackground();
+  emit('view-background-change', config.settings.viewBackground);
 }
 
 const computedToolbarClass = computed(() => {

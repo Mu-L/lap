@@ -24,6 +24,7 @@
     "expand": "Ausklappen",
     "collapse": "Einklappen",
     "rename": "Umbenennen",
+    "reorder": "Neu anordnen",
     "delete": "Löschen",
     "delete_confirm_title": "Sammlung löschen",
     "delete_confirm_message": "\"{name}\" löschen? Dateien in der Sammlung werden nicht gelöscht.",
@@ -36,7 +37,7 @@
     "added_toast": "{count} Datei(en) zur Sammlung hinzugefügt",
     "add_failed_toast": "Dateien konnten nicht zu {count} Sammlung(en) hinzugefügt werden",
     "already_exists_toast": "{count} Datei(en) bereits in der Sammlung",
-    "clear": "Leeren",
+    "clear": "Sammlung leeren",
     "clear_confirm_title": "Sammlung leeren",
     "clear_confirm_message": "Alle Dateien aus \"{name}\" entfernen? Die Dateien selbst werden nicht gelöscht.",
     "clear_confirm_ok": "Leeren",
@@ -82,7 +83,8 @@
     },
     "smart_edit": {
       "title_add": "Smart-Album hinzufügen",
-      "title_edit": "Smart-Album bearbeiten",
+      "title_edit": "Bearbeiten...",
+      "reorder": "Neu anordnen",
       "name": "Name",
       "description": "Beschreibung",
       "match": "Abgleich",
@@ -564,13 +566,13 @@
     },
     "album": {
       "add": "Album hinzufügen...",
-      "edit": "Album bearbeiten...",
+      "edit": "Bearbeiten...",
       "scan": "Album scannen",
-      "reorder": "Alben neu anordnen",
+      "reorder": "Neu anordnen",
       "pause_scan": "Scannen pausieren",
       "include_in_search": "In Suche einbeziehen",
       "exclude_from_search": "Vom Suchen ausschließen",
-      "remove": "Album entfernen",
+      "remove": "Entfernen",
       "refresh": "Ordner aktualisieren"
     },
     "file": {
@@ -1239,7 +1241,7 @@
       ],
       "section_view": "Ansicht",
       "view_background": "Hintergrund",
-      "view_background_hint": "Mit {shortcut} zwischen Hintergründen wechseln",
+      "view_background_hint": "Hintergrundfarbe für die Ansicht wählen",
       "view_background_options": [
         "Design übernehmen",
         "Schwarz",

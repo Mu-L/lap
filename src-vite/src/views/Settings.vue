@@ -293,7 +293,7 @@
               <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.image_view.view_background') }}</div>
                 <div class="text-xs text-base-content/30">
-                  {{ $t('settings.image_view.view_background_hint', { shortcut: cycleBackgroundShortcut }) }}
+                  {{ $t('settings.image_view.view_background_hint') }}
                 </div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.viewBackground">
@@ -891,10 +891,6 @@ const viewBackgroundOptions = computed(() => {
   const options = localeMsg.value.settings.image_view.view_background_options;
   return options.map((label: string, value: number) => ({ label, value }));
 });
-const cycleBackgroundShortcut = computed(() =>
-  getShortcutLabels('view.cycleBackground', shortcutPlatform)[0] || 'Shift+B'
-);
-
 const slideShowTransitionOptions = computed(() => {
   const options = localeMsg.value.settings.image_view.slide_show_transition_options;
   const result = [];

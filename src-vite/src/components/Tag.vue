@@ -192,6 +192,7 @@ const getMoreMenuItems = () => [
       });
     }
   },
+  { label: "-", action: null },
   {
     label: localeMsg.value.menu.tag.delete,
     icon: IconTrash,

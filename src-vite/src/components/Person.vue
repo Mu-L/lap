@@ -281,6 +281,7 @@ const personPanelMenuItems = computed(() => [
     action: () => clickIndexFaces(),
     disabled: isIndexing.value,
   },
+  { label: "-", action: null },
   {
     label: localeMsg.value.menu.person.reset_index,
     icon: IconTrash,
@@ -308,6 +309,7 @@ const getMoreMenuItems = () => [
       });
     }
   },
+  { label: "-", action: null },
   {
     label: localeMsg.value.menu?.person?.delete || 'Delete',
     icon: IconTrash,

@@ -24,6 +24,7 @@
     "expand": "展開",
     "collapse": "折りたたむ",
     "rename": "名前を変更",
+    "reorder": "並べ替え",
     "delete": "削除",
     "delete_confirm_title": "コレクションを削除",
     "delete_confirm_message": "「{name}」を削除しますか？コレクション内のファイルは削除されません。",
@@ -36,7 +37,7 @@
     "added_toast": "{count} 件のファイルをコレクションに追加しました",
     "add_failed_toast": "{count} 件のコレクションにファイルを追加できませんでした",
     "already_exists_toast": "{count} 件のファイルはすでにコレクションにあります",
-    "clear": "クリア",
+    "clear": "コレクションを空にする",
     "clear_confirm_title": "コレクションをクリア",
     "clear_confirm_message": "\"{name}\" からすべてのファイルを削除しますか？ファイル自体は削除されません。",
     "clear_confirm_ok": "クリア",
@@ -82,7 +83,8 @@
     },
     "smart_edit": {
       "title_add": "スマートアルバムを追加",
-      "title_edit": "スマートアルバムを編集",
+      "title_edit": "編集...",
+      "reorder": "並べ替え",
       "name": "名前",
       "description": "説明",
       "match": "一致条件",
@@ -564,13 +566,13 @@
     },
     "album": {
       "add": "アルバムを追加...",
-      "edit": "アルバムを編集...",
+      "edit": "編集...",
       "scan": "アルバムをスキャン",
-      "reorder": "アルバムを並べ替え",
+      "reorder": "並べ替え",
       "pause_scan": "スキャンを一時停止",
       "include_in_search": "検索に含める",
       "exclude_from_search": "検索から除外",
-      "remove": "アルバムを削除",
+      "remove": "削除",
       "refresh": "フォルダーを更新"
     },
     "file": {
@@ -1239,7 +1241,7 @@
       ],
       "section_view": "表示",
       "view_background": "背景",
-      "view_background_hint": "{shortcut} で背景を切り替えます",
+      "view_background_hint": "ビューアの背景色を選択します",
       "view_background_options": [
         "テーマに従う",
         "黒",

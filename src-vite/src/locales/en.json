@@ -24,6 +24,7 @@
     "expand": "Expand",
     "collapse": "Collapse",
     "rename": "Rename",
+    "reorder": "Reorder",
     "delete": "Delete",
     "delete_confirm_title": "Delete collection",
     "delete_confirm_message": "Delete \"{name}\"? Files in the collection will not be deleted.",
@@ -36,7 +37,7 @@
     "added_toast": "{count} file(s) added to collection",
     "add_failed_toast": "Could not add files to {count} collection(s)",
     "already_exists_toast": "{count} file(s) already in collection",
-    "clear": "Clear",
+    "clear": "Empty Collection",
     "clear_confirm_title": "Clear collection",
     "clear_confirm_message": "Remove all files from \"{name}\"? Files themselves will not be deleted.",
     "clear_confirm_ok": "Clear",
@@ -82,7 +83,8 @@
     },
     "smart_edit": {
       "title_add": "Add smart album",
-      "title_edit": "Edit smart album",
+      "title_edit": "Edit...",
+      "reorder": "Reorder",
       "name": "Name",
       "description": "Description",
       "match": "Match",
@@ -564,13 +566,13 @@
     },
     "album": {
       "add": "Add album...",
-      "edit": "Edit album...",
-      "scan": "Scan album files",
-      "reorder": "Reorder Albums",
+      "edit": "Edit...",
+      "scan": "Scan album",
+      "reorder": "Reorder",
       "pause_scan": "Pause scanning",
       "include_in_search": "Include in search",
       "exclude_from_search": "Exclude from search",
-      "remove": "Remove album",
+      "remove": "Remove",
       "refresh": "Refresh folder"
     },
     "file": {
@@ -1239,7 +1241,7 @@
       ],
       "section_view": "View",
       "view_background": "Background",
-      "view_background_hint": "Press {shortcut} to cycle backgrounds",
+      "view_background_hint": "Choose the viewer background color",
       "view_background_options": [
         "Follow Theme",
         "Black",

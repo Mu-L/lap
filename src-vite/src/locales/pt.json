@@ -24,6 +24,7 @@
     "expand": "Expandir",
     "collapse": "Recolher",
     "rename": "Renomear",
+    "reorder": "Reordenar",
     "delete": "Excluir",
     "delete_confirm_title": "Excluir coleção",
     "delete_confirm_message": "Excluir \"{name}\"? Os arquivos na coleção não serão excluídos.",
@@ -36,7 +37,7 @@
     "added_toast": "{count} arquivo(s) adicionado(s) à coleção",
     "add_failed_toast": "Não foi possível adicionar os arquivos a {count} coleção(ões)",
     "already_exists_toast": "{count} arquivo(s) já na coleção",
-    "clear": "Limpar",
+    "clear": "Esvaziar coleção",
     "clear_confirm_title": "Limpar coleção",
     "clear_confirm_message": "Remover todos os arquivos de \"{name}\"? Os arquivos em si não serão excluídos.",
     "clear_confirm_ok": "Limpar",
@@ -82,7 +83,8 @@
     },
     "smart_edit": {
       "title_add": "Adicionar álbum inteligente",
-      "title_edit": "Editar álbum inteligente",
+      "title_edit": "Editar...",
+      "reorder": "Reordenar",
       "name": "Nome",
       "description": "Descrição",
       "match": "Correspondência",
@@ -564,13 +566,13 @@
     },
     "album": {
       "add": "Adicionar álbum...",
-      "edit": "Editar álbum...",
+      "edit": "Editar...",
       "scan": "Escanear álbum",
-      "reorder": "Reordenar álbuns",
+      "reorder": "Reordenar",
       "pause_scan": "Pausar varredura",
       "include_in_search": "Incluir na pesquisa",
       "exclude_from_search": "Excluir da pesquisa",
-      "remove": "Remover álbum",
+      "remove": "Remover",
       "refresh": "Atualizar pasta"
     },
     "file": {
@@ -1239,7 +1241,7 @@
       ],
       "section_view": "Visualização",
       "view_background": "Fundo",
-      "view_background_hint": "Pressione {shortcut} para alternar o fundo",
+      "view_background_hint": "Escolha a cor de fundo do visualizador",
       "view_background_options": [
         "Seguir tema",
         "Preto",

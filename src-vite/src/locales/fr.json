@@ -24,6 +24,7 @@
     "expand": "Développer",
     "collapse": "Réduire",
     "rename": "Renommer",
+    "reorder": "Réorganiser",
     "delete": "Supprimer",
     "delete_confirm_title": "Supprimer la collection",
     "delete_confirm_message": "Supprimer « {name} » ? Les fichiers de la collection ne seront pas supprimés.",
@@ -36,7 +37,7 @@
     "added_toast": "{count} fichier(s) ajouté(s) à la collection",
     "add_failed_toast": "Impossible d’ajouter les fichiers à {count} collection(s)",
     "already_exists_toast": "{count} fichier(s) déjà dans la collection",
-    "clear": "Vider",
+    "clear": "Vider la collection",
     "clear_confirm_title": "Vider la collection",
     "clear_confirm_message": "Supprimer tous les fichiers de \"{name}\" ? Les fichiers eux-mêmes ne seront pas supprimés.",
     "clear_confirm_ok": "Vider",
@@ -82,7 +83,8 @@
     },
     "smart_edit": {
       "title_add": "Ajouter un album intelligent",
-      "title_edit": "Modifier l’album intelligent",
+      "title_edit": "Modifier...",
+      "reorder": "Réorganiser",
       "name": "Nom",
       "description": "Description",
       "match": "Correspondance",
@@ -564,13 +566,13 @@
     },
     "album": {
       "add": "Ajouter album...",
-      "edit": "Modifier album...",
+      "edit": "Modifier...",
       "scan": "Scanner l'album",
-      "reorder": "Réorganiser les albums",
+      "reorder": "Réorganiser",
       "pause_scan": "Mettre en pause le scan",
       "include_in_search": "Inclure dans recherche",
       "exclude_from_search": "Exclure de recherche",
-      "remove": "Supprimer album",
+      "remove": "Supprimer",
       "refresh": "Actualiser le dossier"
     },
     "file": {
@@ -1239,7 +1241,7 @@
       ],
       "section_view": "Affichage",
       "view_background": "Arrière-plan",
-      "view_background_hint": "Appuyez sur {shortcut} pour changer d’arrière-plan",
+      "view_background_hint": "Choisissez la couleur d’arrière-plan de la visionneuse",
       "view_background_options": [
         "Suivre le thème",
         "Noir",
