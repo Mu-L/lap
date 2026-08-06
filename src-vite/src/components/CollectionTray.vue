@@ -77,6 +77,7 @@
           <div
             v-for="collection in filteredCollections"
             :key="collection.id"
+            :data-reordering-collection="isReorderingCollection(collection) ? 'true' : undefined"
             :data-collection-drop-id="renamingId === collection.id ? undefined : collection.id"
             :class="[
               'sidebar-item group border-2 border-transparent',
@@ -218,6 +219,7 @@ let unlistenContentItemsDragState: (() => void) | null = null;
 let unlistenLibrarySwitched: (() => void) | null = null;
 
 onMounted(async () => {
+  document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   await loadCollections();
   unlistenCollectionFilesDropped = await listen('collection-files-dropped', async () => {
     await loadCollections();
@@ -236,6 +238,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   uiStore.removeInputHandler('CollectionTrayDrag');
   unlistenCollectionFilesDropped?.();
   unlistenCollectionFilesDropped = null;
@@ -268,9 +271,6 @@ async function loadCollections(preferredId?: number) {
 }
 
 function selectCollection(collection: Collection) {
-  if (reorderingCollectionId.value !== null && reorderingCollectionId.value !== collection.id) {
-    reorderingCollectionId.value = null;
-  }
   libConfig.activePane = 'collection';
   selectedId.value = collection.id;
   libConfig.collection.selectedId = collection.id;
@@ -373,6 +373,12 @@ function collectionMenuItems(collection: Collection) {
 }
 
 const isReorderingCollection = (collection: Collection) => reorderingCollectionId.value === collection.id;
+
+function handleReorderOutsidePointerDown(event: PointerEvent) {
+  if (event.button !== 0 || reorderingCollectionId.value === null) return;
+  if (event.target instanceof Element && event.target.closest('[data-reordering-collection="true"]')) return;
+  reorderingCollectionId.value = null;
+}
 
 function onReorderStart() {
   uiStore.removeInputHandler('CollectionTrayDrag');

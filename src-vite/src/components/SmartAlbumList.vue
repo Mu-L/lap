@@ -26,6 +26,7 @@
     >
       <li v-for="smartAlbum in customSmartAlbums" :key="smartAlbum.id">
         <div
+          :data-reordering-smart-album="isReorderingSmartAlbum(smartAlbum) ? 'true' : undefined"
           :class="[
             'sidebar-item sidebar-item-media group',
             libConfig.smartAlbum.type === 'custom' && libConfig.smartAlbum.id === smartAlbum.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
@@ -94,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { VueDraggable } from 'vue-draggable-plus';
 import { config, libConfig } from '@/common/config';
@@ -159,9 +160,6 @@ watch(
 );
 
 function clickCustomSmartAlbum(smartAlbum: any) {
-  if (reorderingSmartAlbumId.value !== null && reorderingSmartAlbumId.value !== smartAlbum.id) {
-    reorderingSmartAlbumId.value = null;
-  }
   uiStore.smartAlbumCountRequestedFor = String(smartAlbum.id);
   uiStore.smartAlbumCountRequestTick++;
   libConfig.smartAlbum.type = 'custom';
@@ -207,6 +205,20 @@ const getMoreMenuItems = (smartAlbum: any) => [
 ];
 
 const isReorderingSmartAlbum = (smartAlbum: any) => reorderingSmartAlbumId.value === smartAlbum.id;
+
+function handleReorderOutsidePointerDown(event: PointerEvent) {
+  if (event.button !== 0 || reorderingSmartAlbumId.value === null) return;
+  if (event.target instanceof Element && event.target.closest('[data-reordering-smart-album="true"]')) return;
+  reorderingSmartAlbumId.value = null;
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleReorderOutsidePointerDown, true);
+});
 
 function onDragStart() {
   uiStore.removeInputHandler('SmartAlbumListDrag');

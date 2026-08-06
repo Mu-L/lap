@@ -42,6 +42,7 @@
           "
         >
           <div
+            :data-reordering-album="isReorderingAlbum(album) ? 'true' : undefined"
             :data-file-drop-path="album.is_accessible === false ? undefined : album.path"
             :data-file-drop-album-id="album.is_accessible === false ? undefined : album.id"
             :class="[
@@ -479,6 +480,7 @@ const loadAlbumCovers = async () => {
 };
 
 onMounted( async () => {
+  document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   if (albums.value.length === 0) {
     albums.value = await getAllAlbums();
     await loadAlbumCovers();
@@ -608,6 +610,7 @@ watch(() => config.settings.folderSort, async () => {
 });
 
 onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   if (unlistenAlbumCoverChanged) unlistenAlbumCoverChanged();
   if (unlistenExpandAlbumFolder) unlistenExpandAlbumFolder();
   if (unlistenIndexProgress) unlistenIndexProgress();
@@ -777,9 +780,6 @@ const clickRemoveAlbum = async () => {
 
 /// click a album to select it
 const clickAlbum = async (album: Album) => {
-  if (reorderingAlbumId.value !== null && !isReorderingAlbum(album)) {
-    reorderingAlbumId.value = null;
-  }
   if (isMainPane.value) {
     uiStore.setActivePane('left-sidebar');
   }
@@ -833,9 +833,6 @@ const expandAlbum = async (album: any, forceRefresh = false) => {
 };
 
 const toggleAlbumExpansion = async (album: Album) => {
-  if (reorderingAlbumId.value !== null && !isReorderingAlbum(album)) {
-    reorderingAlbumId.value = null;
-  }
   await expandAlbum(album);
 };
 
@@ -992,6 +989,12 @@ const onDragEnd = async () => {
       await loadAlbumCovers();
     }
   }
+}
+
+function handleReorderOutsidePointerDown(event: PointerEvent) {
+  if (event.button !== 0 || reorderingAlbumId.value === null || isDragging.value) return;
+  if (event.target instanceof Element && event.target.closest('[data-reordering-album="true"]')) return;
+  reorderingAlbumId.value = null;
 }
 
 // Expose methods
