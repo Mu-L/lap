@@ -2720,6 +2720,12 @@ pub fn meta_date_to_timestamp(date: &str) -> Option<i64> {
         return Some(datetime.timestamp());
     }
 
+    // QuickTime commonly stores a numeric UTC offset without a colon, such as
+    // `2025-12-31T13:36:26+0100`.
+    if let Ok(datetime) = DateTime::parse_from_str(date, "%Y-%m-%dT%H:%M:%S%z") {
+        return Some(datetime.timestamp());
+    }
+
     // Fallback to EXIF format: YYYY:MM:DD HH:MM:SS
     // Some EXIF dates might use different separators or formats, so we can try to be a bit more robust
     // Standard EXIF is "YYYY:MM:DD HH:MM:SS"

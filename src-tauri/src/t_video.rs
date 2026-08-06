@@ -18,6 +18,7 @@
  *    background tokio tasks.
  */
 use once_cell::sync::OnceCell;
+use crate::t_utils;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -691,6 +692,14 @@ pub async fn get_video_metadata_async(file_path: &str) -> Result<VideoMetadata, 
         })
     });
 
+    let e_date_time = first_parseable_date(&meta, &["com.apple.quicktime.creationdate"])
+        .or_else(|| {
+            stream_meta.as_ref().and_then(|meta| {
+                first_parseable_date(meta, &["com.apple.quicktime.creationdate"])
+            })
+        })
+        .or_else(|| first_exist(&meta, &["creation_time"]));
+
     Ok(VideoMetadata {
         width: w,
         height: h,
@@ -698,7 +707,7 @@ pub async fn get_video_metadata_async(file_path: &str) -> Result<VideoMetadata, 
         e_make: first_exist(&meta, &["make", "camera_make"]),
         e_model: first_exist(&meta, &["model", "camera_model"]),
         e_software: first_exist(&meta, &["software", "encoder"]),
-        e_date_time: first_exist(&meta, &["creation_time"]),
+        e_date_time,
         gps_latitude,
         gps_longitude,
         gps_altitude,
@@ -931,6 +940,10 @@ fn first_exist(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> 
         }
     }
     None
+}
+
+fn first_parseable_date(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> {
+    first_exist(meta, keys).filter(|value| t_utils::meta_date_to_timestamp(value).is_some())
 }
 
 #[derive(Serialize)]
