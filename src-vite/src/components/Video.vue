@@ -125,7 +125,6 @@ let currentLoadingId = 0;
 let nextBackendRequestId = 0;
 const activeBackendRequestIds: Array<number | null> = [null, null];
 const loadAttemptCleanups: Array<(() => void) | null> = [null, null];
-const videoBackdropCleanups = ref<Array<(() => void) | null>>([null, null]);
 
 const externalVideoAppPath = computed(() => String(config.settings?.externalVideoAppPath || '').trim());
 const externalVideoAppName = computed(() => String(config.settings?.externalVideoAppName || '').trim());
@@ -392,53 +391,12 @@ const setupPlayer = (index: number) => {
         config.setVideoMuted(player.muted());
       }
     });
-
-    player.ready(() => {
-      const videoEl = player.el();
-      if (videoEl) {
-        const CLICK_MOVE_TOLERANCE = 4;
-        let backdropPointer: { id: number; x: number; y: number } | null = null;
-        const pointerDownHandler = (event: PointerEvent) => {
-          backdropPointer = event.target === event.currentTarget
-            ? { id: event.pointerId, x: event.clientX, y: event.clientY }
-            : null;
-        };
-        const pointerUpHandler = (event: PointerEvent) => {
-          const pointer = backdropPointer;
-          backdropPointer = null;
-          if (
-            !pointer
-            || pointer.id !== event.pointerId
-            || event.target !== event.currentTarget
-            || Math.abs(event.clientX - pointer.x) > CLICK_MOVE_TOLERANCE
-            || Math.abs(event.clientY - pointer.y) > CLICK_MOVE_TOLERANCE
-          ) {
-            return;
-          }
-          emit('message-from-video-viewer', { message: 'close' });
-        };
-        const pointerCancelHandler = () => {
-          backdropPointer = null;
-        };
-        videoEl.addEventListener('pointerdown', pointerDownHandler, true);
-        videoEl.addEventListener('pointerup', pointerUpHandler, true);
-        videoEl.addEventListener('pointercancel', pointerCancelHandler, true);
-        const cleanup = () => {
-          videoEl.removeEventListener('pointerdown', pointerDownHandler, true);
-          videoEl.removeEventListener('pointerup', pointerUpHandler, true);
-          videoEl.removeEventListener('pointercancel', pointerCancelHandler, true);
-        };
-        videoBackdropCleanups.value[index] = cleanup;
-      }
-    });
   }
 };
 
 async function recreatePlayer(index: number) {
   loadAttemptCleanups[index]?.();
   loadAttemptCleanups[index] = null;
-  videoBackdropCleanups.value[index]?.();
-  videoBackdropCleanups.value[index] = null;
 
   const player = players.value[index];
   if (player) {
@@ -899,7 +857,6 @@ onBeforeUnmount(() => {
     }
   });
   loadAttemptCleanups.forEach((cleanup) => cleanup?.());
-  videoBackdropCleanups.value.forEach(cleanup => cleanup?.());
   players.value = [null, null];
   activeBackendRequestIds.forEach((requestId, index) => {
     if (requestId === null) return;

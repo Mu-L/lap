@@ -339,6 +339,9 @@
           @message-from-video-viewer="handleMessageFromImageViewer"
           @slideshow-next="emit('slideshow-next')"
           @context-menu="handleContextMenu"
+          @pointerdown.capture="handleOverlayPointerDown"
+          @pointerup.capture="handleOverlayPointerUp"
+          @pointercancel.capture="resetOverlayPointer"
         ></Video>
       </div>
 
@@ -388,19 +391,28 @@
         <span>LIVE</span>
       </button>
 
-      <Video v-if="file?.file_type === 2"
-        ref="mediaRef"
-        :filePath="file?.file_path"
-        :rotate="file?.rotate ?? 0"
-        :isZoomFit="isZoomFit"
-        :isSlideShow="isSlideShow"
-        :isActive="isPlaybackActive"
-        @scale="(e) => $emit('scale', e)"
-        @viewport-change="(e) => $emit('viewport-change', e)"
-        @message-from-video-viewer="handleMessageFromImageViewer"
-        @slideshow-next="emit('slideshow-next')"
-        @context-menu="handleContextMenu"
-      ></Video>
+      <div
+        v-if="file?.file_type === 2"
+        class="absolute inset-0 z-20"
+      >
+        <Video
+          ref="mediaRef"
+          class="h-full w-full"
+          :filePath="file?.file_path"
+          :rotate="file?.rotate ?? 0"
+          :isZoomFit="isZoomFit"
+          :isSlideShow="isSlideShow"
+          :isActive="isPlaybackActive"
+          @scale="(e) => $emit('scale', e)"
+          @viewport-change="(e) => $emit('viewport-change', e)"
+          @message-from-video-viewer="handleMessageFromImageViewer"
+          @slideshow-next="emit('slideshow-next')"
+          @context-menu="handleContextMenu"
+          @pointerdown.capture="handleOverlayPointerDown"
+          @pointerup.capture="handleOverlayPointerUp"
+          @pointercancel.capture="resetOverlayPointer"
+        ></Video>
+      </div>
     </div>
 
     </template>
@@ -1099,18 +1111,40 @@ const resetOverlayPointer = () => {
   overlayPointer = null;
 };
 
+const isOverlayBackdropTarget = (event: PointerEvent) => {
+  const target = event.target;
+  const currentTarget = event.currentTarget;
+
+  if (!(currentTarget instanceof HTMLElement)) return false;
+  if (!(target instanceof HTMLElement)) return target === currentTarget;
+  if (target === currentTarget) return true;
+
+  if (target.closest(
+    'img, video, button, a, input, select, textarea, label, [role="button"], .vjs-tech, .vjs-control-bar, .vjs-control, .vjs-big-play-button, .vjs-menu'
+  )) {
+    return false;
+  }
+
+  return currentTarget.contains(target);
+};
+
 const handleOverlayPointerDown = (event: PointerEvent) => {
-  if (event.pointerType === 'mouse' && event.button !== 0) {
+  if ((event.pointerType === 'mouse' || event.pointerType === 'pen') && event.button !== 0) {
     resetOverlayPointer();
     return;
   }
-  overlayPointer = event.target === event.currentTarget
+  const isBackdropTarget = isOverlayBackdropTarget(event);
+  if (hasOpenMenu.value && isBackdropTarget) {
+    resetOverlayPointer();
+    return;
+  }
+  overlayPointer = isBackdropTarget
     ? { id: event.pointerId, x: event.clientX, y: event.clientY }
     : null;
 };
 
 const handleOverlayPointerUp = (event: PointerEvent) => {
-  if (event.pointerType === 'mouse' && event.button !== 0) {
+  if ((event.pointerType === 'mouse' || event.pointerType === 'pen') && event.button !== 0) {
     resetOverlayPointer();
     return;
   }
@@ -1119,7 +1153,7 @@ const handleOverlayPointerUp = (event: PointerEvent) => {
   if (
     !pointer
     || pointer.id !== event.pointerId
-    || event.target !== event.currentTarget
+    || !isOverlayBackdropTarget(event)
     || Math.abs(event.clientX - pointer.x) > OVERLAY_CLICK_MOVE_TOLERANCE
     || Math.abs(event.clientY - pointer.y) > OVERLAY_CLICK_MOVE_TOLERANCE
   ) {
