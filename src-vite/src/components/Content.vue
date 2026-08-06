@@ -6881,7 +6881,7 @@ const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => 
       clearPreviewPreloadCache(payload.filePath);
       const inserted = await indexAndInsertSavedFile(payload.filePath);
       if (!inserted) {
-        updateContent();
+        await updateContent();
       } else {
         getCurrentQueryTimeLine().then(data => {
           timelineData.value = data;
@@ -7842,6 +7842,7 @@ type SavedFilePayload = {
 };
 
 const insertIndexedFileIntoList = async (indexedFile: any) => {
+  if (groupedModeActive.value) return false;
   const position = await getCurrentQueryFilePosition(indexedFile.id);
   if (position === null || position < 0) {
     return false;
