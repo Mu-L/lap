@@ -6,10 +6,11 @@
     @cancel="clickCancel"
   >
     <div class="flex flex-col flex-1 min-h-0 border border-base-content/5 bg-base-300/30 shadow-sm rounded-box overflow-hidden relative">
-      <div class="flex items-center px-3 py-2 shrink-0">
-        <span class="flex-1 sidebar-panel-header-title text-base-content/30">{{ $t('msgbox.manage_libraries.libraries') }}</span>
+      <div class="flex items-center px-3 py-2 shrink-0 select-none">
+        <span class="flex-1 sidebar-panel-header-title text-base-content/30">{{ $t('msgbox.manage_libraries.libraries') }} ({{ libraries.length }})</span>
         <PanelActionButton
           :icon="IconAdd"
+          primary
           :disabled="isMaxLibraryReached || showAddInput || isRenaming || isAddingLibrary"
           @click="startAddLibrary"
         >

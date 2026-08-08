@@ -39,7 +39,7 @@
               >
                 <IconLocation class="mx-1 w-4 h-4 shrink-0" />
                 <span class="sidebar-item-label">{{ name }}</span>
-                <span class="text-[10px] tabular-nums text-base-content/30 mr-2">{{ location.counts[index].toLocaleString() }}</span>
+                <span class="sidebar-item-count">{{ location.counts[index].toLocaleString() }}</span>
               </div>
             </li>
           </ul>

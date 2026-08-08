@@ -685,6 +685,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
 import { config, libConfig } from '@/common/config';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
+import { clearFolderFileCounts, setFolderFileCount } from '@/composables/useAlbumSelection';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { CULLING, DATE_SORT, GROUP, LIB_ITEM, RATE, SIDEBAR } from '@/common/constants';
 import { isWin, isMac, isLinux, setTheme, separator,
@@ -4961,6 +4962,13 @@ watch(
   }
 );
 
+watch(
+  () => [config.settings.showSubfolderFiles, libConfig._libraryId],
+  () => {
+    clearFolderFileCounts();
+  },
+);
+
 /// watch for file list changes
 watch(
   () => [
@@ -5088,6 +5096,17 @@ const getCurrentQueryCountAndSum = () => {
   }
   return getQueryCountAndSum(currentQueryParams.value);
 };
+
+function updateFolderFileCount(folderPath: string, count: number, includesSubfolders: boolean) {
+  if (
+    currentQuerySource.value === 'query' &&
+    !libConfig.album.selected &&
+    folderPath === libConfig.album.folderPath &&
+    includesSubfolders === config.settings.showSubfolderFiles
+  ) {
+    setFolderFileCount(folderPath, count);
+  }
+}
 
 const getCurrentQueryTimeLine = () => {
   if (currentQuerySource.value === 'collection' || currentQuerySource.value === 'search') {
@@ -5467,6 +5486,11 @@ async function initializeGroupedFileList(requestId: number) {
   totalFileCount.value = normalized.totalItemCount;
   totalRowCount.value = normalized.totalRowCount;
   totalFileSize.value = normalized.totalSize;
+  updateFolderFileCount(
+    currentQueryParams.value.searchFolder || currentQueryParams.value.searchAllSubfolders,
+    totalFileCount.value,
+    Boolean(currentQueryParams.value.searchAllSubfolders),
+  );
   scrollPosition.value = 0;
   timelineData.value = [];
   groupedRows.value = Array.from({ length: totalRowCount.value }).map((_, i) => ({
@@ -5793,6 +5817,7 @@ async function getFileList(
       clearSelectionForFileListUpdate();
       totalFileCount.value = result[0];
       totalFileSize.value = result[1];
+      updateFolderFileCount(searchFolder || searchAllSubfolders, totalFileCount.value, Boolean(searchAllSubfolders));
       
       // Get timeline data for date-based sorts
       getCurrentQueryTimeLine().then(data => {

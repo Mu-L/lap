@@ -65,7 +65,7 @@
               @blur="handleRenameTag"
             />
             <span v-else class="sidebar-item-label">{{ tag.name }}</span>
-            <span v-if="!isRenamingTag && tag.count" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ tag.count.toLocaleString() }}</span>
+            <span v-if="!isRenamingTag && Number(tag.count || 0) > 0" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ Number(tag.count || 0).toLocaleString() }}</span>
             <div
               v-if="!isRenamingTag"
               :class="['ml-auto flex flex-row items-center text-base-content/30', selectedTag?.id === tag.id ? '' : 'hidden group-hover:flex']"
@@ -233,6 +233,7 @@ function selectTag(tag: any) {
   if (isRenamingTag.value) return;
   selectedTag.value = tag;
   libConfig.tag.id = tag.id;
+  void loadTags();
 }
 
 async function handleRenameTag() {

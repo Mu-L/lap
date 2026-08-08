@@ -1,9 +1,21 @@
-import { provide, inject, computed, Ref } from 'vue';
+import { provide, inject, computed, reactive, Ref } from 'vue';
 import { libConfig } from '@/common/config';
 import { selectFolder as apiSelectFolder } from '@/common/api';
 import { Album, Folder, AlbumSelectionContext, ALBUM_SELECTION_KEY } from '@/common/types';
 
 export type SelectionSource = 'album' | 'destFolder';
+
+const folderFileCounts = reactive(new Map<string, number>());
+
+export const setFolderFileCount = (path: string, count: number) => {
+    folderFileCounts.set(path, count);
+};
+
+export const clearFolderFileCounts = () => {
+    folderFileCounts.clear();
+};
+
+export const getFolderFileCount = (path: string) => folderFileCounts.get(path) || 0;
 
 /**
  * Creates and provides an album selection context.

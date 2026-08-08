@@ -51,7 +51,7 @@
               >
                 <component :is="activeTab === 'lens' ? IconCameraAperture : IconCamera" class="mx-1 w-4 h-4 shrink-0" />
                 <span class="sidebar-item-label">{{ model }}</span>
-                <span class="text-[10px] tabular-nums text-base-content/30 mr-2">{{ item.counts[index].toLocaleString() }}</span>
+                <span class="sidebar-item-count">{{ item.counts[index].toLocaleString() }}</span>
               </div>
             </li>
           </ul>

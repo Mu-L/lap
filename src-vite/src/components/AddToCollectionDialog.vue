@@ -30,7 +30,7 @@
           </label>
           <IconBookmark class="w-4 h-4 shrink-0" />
           <span class="min-w-0 flex-1 truncate">{{ collection.name }}</span>
-          <span class="sidebar-item-count shrink-0">{{ Number(collection.count || 0).toLocaleString() }}</span>
+          <span v-if="Number(collection.count || 0) > 0" class="sidebar-item-count shrink-0">{{ Number(collection.count || 0).toLocaleString() }}</span>
         </div>
         <div v-if="visibleCollections.length === 0" class="min-h-24 flex items-center justify-center text-sm text-base-content/30">
           {{ $t('collection.not_found') }}

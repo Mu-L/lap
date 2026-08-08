@@ -19,10 +19,13 @@
         :class="[
           'p-1 h-8 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2',
           !selection.selected.value && selection.folderPath.value === child.path && !isRenamingFolder ? `${isMainSourceActive ? 'text-primary' : 'text-base-content/70 bg-base-100/30 hover:bg-base-100/30'} bg-base-100 hover:bg-base-100 border-transparent` : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
+          child.is_excluded_from_search ? 'text-base-content/30! hover:text-base-content/30!' : '',
         ]"
         @click="clickFolder(albumId, child)"
         @dblclick="expandFolder(child)"
         @contextmenu.prevent.stop="(e: MouseEvent) => handleFolderContextMenu(child, e)"
+        @mouseenter="hoveredFolderPath = child.path"
+        @mouseleave="hoveredFolderPath === child.path && (hoveredFolderPath = '')"
       >
         <IconRight
           :class="[
@@ -32,7 +35,7 @@
           ]"
           @click.stop="expandFolder(child)"
         />
-        <IconFolder class="p-1 w-6 h-6 shrink-0"/>
+        <component :is="child.is_excluded_from_search ? IconFolderOff : IconFolder" class="p-1 w-6 h-6 shrink-0" />
 
         <!-- name -->
         <input v-if="isRenamingFolder && selection.folderPath.value === child.path"
@@ -53,12 +56,16 @@
           </div>
           <div class="ml-auto flex flex-row items-center text-base-content/30">
             <IconHeartFilled v-if="child.is_favorite" class="mr-1 w-4 h-4 shrink-0 text-error/70" />
-            <IconHide v-if="child.is_excluded_from_search" class="mr-1 w-4 h-4 shrink-0" />
+            <span
+              v-if="allowContextMenu && getFolderFileCount(child.path) > 0"
+              v-show="!shouldShowFolderMenu(child)"
+              class="sidebar-item-count shrink-0"
+            >
+              {{ getFolderFileCount(child.path).toLocaleString() }}
+            </span>
             <ContextMenu v-if="allowContextMenu && !isRenamingFolder"
+              v-show="shouldShowFolderMenu(child)"
               :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
-              :class="[
-                selection.folderPath.value != child.path ? 'invisible group-hover:visible' : ''
-              ]"
               :iconMenu="IconMore"
               :menuItems="() => getMenuItemsForFolder(child)"
               :smallIcon="true"
@@ -151,13 +158,12 @@ import {
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
-import { useAlbumSelection } from '@/composables/useAlbumSelection';
+import { getFolderFileCount, useAlbumSelection } from '@/composables/useAlbumSelection';
 
 import AlbumFolder from '@/components/AlbumFolder.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MoveTo from '@/components/MoveTo.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import TButton from '@/components/TButton.vue';
 import FileConflictDialog from '@/components/FileConflictDialog.vue';
 import { useToast } from '@/common/toast';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -170,6 +176,7 @@ import {
   IconMove,
   IconTrash,
   IconFolder,
+  IconFolderOff,
   IconHide,
   IconUnhide,
   IconRefresh,
@@ -399,6 +406,11 @@ const clickFolder = async (albumIdVal: number, folder: Folder) => {
   }
   await selection.selectFolder(albumIdVal, folder);
 };
+
+const hoveredFolderPath = ref('');
+const shouldShowFolderMenu = (folder: Folder) =>
+  (!selection.selected.value && selection.folderPath.value === folder.path) ||
+  hoveredFolderPath.value === folder.path;
 
 const toggleFolderFavorite = async (folder: Folder) => {
   const persistedFolder = await selectFolderInDb(props.albumId, folder.path);
