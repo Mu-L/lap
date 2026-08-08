@@ -56,6 +56,10 @@
       "title": "Pasta indisponível",
       "description": "Reconecte o dispositivo de armazenamento ou verifique a localização da pasta."
     },
+    "folder_not_found": {
+      "title": "Pasta não encontrada",
+      "description": "A pasta pode ter sido movida ou excluída. Atualize a pasta pai."
+    },
     "edit": {
       "title_add": "Adicionar álbum",
       "title": "Editar álbum",

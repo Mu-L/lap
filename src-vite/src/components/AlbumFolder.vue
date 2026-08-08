@@ -362,7 +362,7 @@ const getMenuItemsForFolder = async (folder: any) => {
         await selection.selectFolder(props.albumId, folder);
         const folderId = Number(selection.folderId.value || 0);
         if (folderId > 0) {
-          await syncAlbumFolderMtimes(props.albumId, folderId, folder.path);
+          await syncAlbumFolderMtimes(props.albumId, folderId, folder.path, true);
         }
         await expandFolder(folder, true);
         await tauriEmit('refresh-content');

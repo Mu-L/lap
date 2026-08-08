@@ -532,70 +532,33 @@ impl FolderSubfolderState {
 }
 
 impl AFolder {
-    /// Preserve folder metadata when an external rename or move changes a
-    /// path but leaves the directory's filesystem identity intact.
-    pub fn migrate_paths_by_inode(
+    pub fn migrate_path_by_inode(
         album_id: i64,
-        states: &[FolderSubfolderState],
-    ) -> Result<(), String> {
-        let paths_by_inode = states
-            .iter()
-            .filter_map(|state| state.inode.filter(|inode| *inode != 0).map(|inode| (inode, &state.path)))
-            .collect::<HashMap<_, _>>();
-        if paths_by_inode.is_empty() {
-            return Ok(());
-        }
-
-        let mut conn = open_conn()?;
-        let known_paths = {
-            let mut stmt = conn
-                .prepare("SELECT inode, path FROM afolders WHERE album_id = ?1 AND inode IS NOT NULL")
-                .map_err(|e| e.to_string())?;
-            stmt.query_map(params![album_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))
-                .map_err(|e| e.to_string())?
-                .filter_map(|row| row.ok())
-                .collect::<Vec<_>>()
-        };
-        let mut moves = known_paths
-            .into_iter()
-            .filter_map(|(inode, old_path)| {
-                let new_path = paths_by_inode.get(&inode)?;
-                (old_path != **new_path).then(|| (old_path, (*new_path).clone()))
-            })
-            .collect::<Vec<_>>();
-        moves.sort_by_key(|(path, _)| path.len());
-        let moves = moves
-            .iter()
-            .filter(|(old_path, _)| {
-                !moves.iter().any(|(parent_path, _)| {
-                    parent_path.len() < old_path.len()
-                        && Path::new(old_path).strip_prefix(parent_path).is_ok_and(|relative| !relative.as_os_str().is_empty())
-                })
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        Self::apply_path_migrations(&mut conn, album_id, moves)
-    }
-
-    pub fn migrate_path_by_inode(album_id: i64, path: &str, inode: Option<i64>) -> Result<(), String> {
+        path: &str,
+        inode: Option<i64>,
+    ) -> Result<Option<String>, String> {
         let Some(inode) = inode.filter(|inode| *inode != 0) else {
-            return Ok(());
+            return Ok(None);
         };
         let mut conn = open_conn()?;
         let old_path = conn
             .query_row(
-                "SELECT path FROM afolders WHERE album_id = ?1 AND inode = ?2",
-                params![album_id, inode],
+                "SELECT path FROM afolders WHERE album_id = ?1 AND inode = ?2 AND path <> ?3",
+                params![album_id, inode, path],
                 |row| row.get::<_, String>(0),
             )
             .optional()
             .map_err(|e| e.to_string())?;
         match old_path {
             Some(old_path) if old_path != path => {
-                Self::apply_path_migrations(&mut conn, album_id, vec![(old_path, path.to_string())])
+                Self::apply_path_migrations(
+                    &mut conn,
+                    album_id,
+                    vec![(old_path.clone(), path.to_string())],
+                )?;
+                Ok(Some(old_path))
             }
-            _ => Ok(()),
+            _ => Ok(None),
         }
     }
 
@@ -759,6 +722,17 @@ impl AFolder {
         Self::fetch_with_conn(&conn, folder_path)
     }
 
+    pub fn get_inode(album_id: i64, folder_path: &str) -> Result<Option<i64>, String> {
+        let conn = open_conn()?;
+        conn.query_row(
+            "SELECT inode FROM afolders WHERE album_id = ?1 AND path = ?2",
+            params![album_id, folder_path],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())
+    }
+
     pub fn fetch_with_conn(conn: &Connection, folder_path: &str) -> Result<Option<Self>, String> {
         conn.query_row(
             "SELECT id, album_id, name, path, created_at, modified_at, is_favorite, COALESCE(is_excluded_from_search, 0), has_subfolders
@@ -911,8 +885,22 @@ impl AFolder {
             })
             .collect::<Vec<_>>();
 
+        let folders = Self::get_all()?;
         let mut deleted_count = 0;
         for path in missing_children {
+            let descendant_prefix = format!("{}{}", path, std::path::MAIN_SEPARATOR);
+            for folder in folders.iter().filter(|folder| {
+                folder.album_id == album_id
+                    && (folder.path == path || folder.path.starts_with(&descendant_prefix))
+            }) {
+                if let Some(folder_id) = folder.id {
+                    for file in AFile::get_files_by_folder_id(folder_id)? {
+                        if let Some(file_id) = file.id {
+                            AThumb::delete(file_id)?;
+                        }
+                    }
+                }
+            }
             deleted_count += Self::delete_folder(&path)?;
         }
         Ok(deleted_count)

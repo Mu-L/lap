@@ -56,6 +56,10 @@
       "title": "Ordner nicht verfügbar",
       "description": "Verbinden Sie das Speichergerät erneut oder prüfen Sie den Ordnerpfad."
     },
+    "folder_not_found": {
+      "title": "Ordner nicht gefunden",
+      "description": "Der Ordner wurde möglicherweise verschoben oder gelöscht. Aktualisieren Sie den übergeordneten Ordner."
+    },
     "edit": {
       "title_add": "Album hinzufügen",
       "title": "Album bearbeiten",

@@ -681,7 +681,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
-         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder } from '@/common/api';
+         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
@@ -881,6 +881,7 @@ function handleBreadcrumbClick(segmentIndex: number) {
 
 // album's folder mode
 const isCurrentFolderExcluded = ref(false);
+const isCurrentFolderMissing = ref(false);
 
 const showFolderFiles = computed(() =>
   Boolean(config.main.sidebarIndex === SIDEBAR.ALBUM && libConfig.album.id && libConfig.album.id > 0 && !libConfig.album.selected)
@@ -6334,6 +6335,7 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
 
   contentReady.value = false;
   isCurrentFolderExcluded.value = false;
+  isCurrentFolderMissing.value = false;
 
   if (preserveMultiSelection) {
     captureSelectionForFileListRefresh();
@@ -6459,11 +6461,18 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
           } else {                        
             // folder is selected, show files in the folder
             const folderPath = libConfig.album.folderPath || "";
+            const folderId = Number(libConfig.album.folderId || 0);
+            if (!folderPath || !(await isDirectoryAccessible(folderPath))) {
+              if (requestId !== currentContentRequestId) return;
+              isCurrentFolderMissing.value = true;
+              contentTitle.value = formatFolderBreadcrumb(folderPath, album.path);
+              showEmptyContent(requestId);
+              return;
+            }
             getFolderSearchExcluded(folderPath).then(excluded => {
               if (requestId === currentContentRequestId) isCurrentFolderExcluded.value = !!excluded;
             });
             contentTitle.value = formatFolderBreadcrumb(folderPath, album.path);
-            const folderId = Number(libConfig.album.folderId || 0);
             const folderNode = await fetchFolder(folderPath, false, config.settings.folderSort);
             if (requestId !== currentContentRequestId) return;
             selectedFolderHasChildren.value = Boolean(folderNode?.children?.length);
@@ -8355,6 +8364,7 @@ function normalizeFileTypeMask(mask: number): number {
 }
 
 const emptyFilesMessage = computed(() => {
+  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.title;
   // if (currentQuerySource.value === 'collection') {
   //   return `${localeMsg.value.collection.empty_content}`;
   // }
@@ -8373,6 +8383,7 @@ const emptyFilesMessage = computed(() => {
 });
 
 const emptyFilesHint = computed(() => {
+  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.description;
   if (!showFolderFiles.value) return '';
   const notFound = localeMsg.value.tooltip.not_found;
   if (isCurrentFolderExcluded.value) return notFound.folder_excluded_hint || '';

@@ -56,6 +56,10 @@
       "title": "Carpeta no disponible",
       "description": "Vuelve a conectar el dispositivo de almacenamiento o comprueba la ubicación de la carpeta."
     },
+    "folder_not_found": {
+      "title": "Carpeta no encontrada",
+      "description": "Es posible que la carpeta se haya movido o eliminado. Actualiza su carpeta principal."
+    },
     "edit": {
       "title_add": "Añadir álbum",
       "title": "Editar álbum",

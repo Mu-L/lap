@@ -30,7 +30,7 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
@@ -462,6 +462,40 @@ pub fn clear_index_recovery_info() -> Result<(), String> {
 
 // folder
 
+fn find_renamed_sibling_folder(
+    album_id: i64,
+    folder_path: &str,
+) -> Result<Option<String>, String> {
+    let Some(inode) = AFolder::get_inode(album_id, folder_path)? else {
+        return Ok(None);
+    };
+    if inode == 0 {
+        return Ok(None);
+    }
+    let Some(parent) = Path::new(folder_path).parent() else {
+        return Ok(None);
+    };
+    let entries = match fs::read_dir(parent) {
+        Ok(entries) => entries,
+        Err(_) => return Ok(None),
+    };
+
+    for entry in entries.flatten() {
+        if t_utils::is_fs_entry_hidden(&entry) || !entry.file_type().is_ok_and(|file_type| file_type.is_dir()) {
+            continue;
+        }
+        let path = entry.path().to_string_lossy().to_string();
+        if t_utils::FileInfo::new(&path)
+            .ok()
+            .is_some_and(|info| info.inode as i64 == inode)
+        {
+            return Ok(Some(path));
+        }
+    }
+
+    Ok(None)
+}
+
 // click to select a sub-folder under an album
 #[tauri::command]
 pub fn select_folder(
@@ -469,6 +503,28 @@ pub fn select_folder(
     album_id: i64,
     folder_path: &str,
 ) -> Result<AFolder, String> {
+    if !t_utils::directory_accessible(folder_path) {
+        if let Some(renamed_path) = find_renamed_sibling_folder(album_id, folder_path)? {
+            t_utils::authorize_directory_scope(&app_handle, &renamed_path).map_err(|e| {
+                format!("Error while authorizing folder '{}': {}", renamed_path, e)
+            })?;
+            let inode = t_utils::FileInfo::new(&renamed_path)
+                .ok()
+                .map(|info| info.inode as i64)
+                .filter(|inode| *inode != 0);
+            AFolder::migrate_path_by_inode(album_id, &renamed_path, inode)?;
+            return AFolder::fetch(&renamed_path)?.ok_or_else(|| {
+                format!("Renamed folder missing from DB: {}", renamed_path)
+            });
+        }
+
+        if let Some(folder) = AFolder::fetch(folder_path)? {
+            if folder.album_id == album_id {
+                return Ok(folder);
+            }
+        }
+    }
+
     t_utils::authorize_directory_scope(&app_handle, folder_path)
         .map_err(|e| format!("Error while authorizing folder '{}': {}", folder_path, e))?;
 
@@ -972,18 +1028,28 @@ pub async fn sync_album_folder_mtimes(
     folder_id: i64,
     folder_path: String,
     group_raw_jpeg_pairs: bool,
+    reconcile_missing: bool,
 ) -> Result<crate::t_utils::FolderMtimeSyncResult, String> {
-    tauri::async_runtime::spawn_blocking(move || {
+    let sync_app_handle = app_handle.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         crate::t_utils::sync_single_folder(
-            &app_handle,
+            &sync_app_handle,
             album_id,
             folder_id,
             &folder_path,
             group_raw_jpeg_pairs,
+            reconcile_missing,
         )
     })
     .await
-    .map_err(|e| format!("folder sync task failed: {}", e))?
+    .map_err(|e| format!("folder sync task failed: {}", e))??;
+    if !result.folder_path_migrations.is_empty() {
+        let _ = app_handle.emit(
+            "album-folder-paths-migrated",
+            &result.folder_path_migrations,
+        );
+    }
+    Ok(result)
 }
 
 #[tauri::command]

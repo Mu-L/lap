@@ -56,6 +56,10 @@
       "title": "Folder unavailable",
       "description": "Reconnect the storage device or check the folder location."
     },
+    "folder_not_found": {
+      "title": "Folder not found",
+      "description": "The folder may have been moved or deleted. Refresh its parent folder."
+    },
     "edit": {
       "title_add": "Add album",
       "title": "Edit album",

@@ -1632,6 +1632,15 @@ pub struct FolderMtimeSyncResult {
     pub deleted_file_count: u32,
     pub rename_count: u32,
     pub deleted_folder_count: u32,
+    pub folder_path_migrations: Vec<FolderPathMigration>,
+}
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderPathMigration {
+    pub album_id: i64,
+    pub old_path: String,
+    pub new_path: String,
 }
 
 struct SyncedFileTask {
@@ -1656,22 +1665,6 @@ const FOLDER_SYNC_THUMBNAIL_SIZE: u32 = 512;
 fn is_path_not_found(err: &str) -> bool {
     err.contains("No such file or directory")
         || err.contains("The system cannot find the file specified")
-}
-
-fn remove_missing_folder(folder: &AFolder) -> Result<(), String> {
-    eprintln!("Removing missing folder from DB: {}", folder.path);
-
-    // Clean up thumbnails for all files in this folder before cascading delete.
-    if let Ok(files) = AFile::get_files_by_folder_id(folder.id.unwrap_or(0)) {
-        for file in files {
-            if let Some(id) = file.id {
-                let _ = AThumb::delete(id);
-            }
-        }
-    }
-
-    AFolder::delete_folder(&folder.path)?;
-    Ok(())
 }
 
 /// Guard to ensure only one folder sync runs at a time. When a new sync
@@ -1718,6 +1711,12 @@ pub fn start_folder_mtime_sync(app_handle: tauri::AppHandle) {
                 if !sync_generation_valid(generation) {
                     return;
                 }
+                if !result.folder_path_migrations.is_empty() {
+                    let _ = app_handle.emit(
+                        "album-folder-paths-migrated",
+                        &result.folder_path_migrations,
+                    );
+                }
                 for task in tasks {
                     schedule_synced_file_processing(app_handle.clone(), task);
                 }
@@ -1743,6 +1742,7 @@ fn sync_dirty_folders_by_mtime(
     let mut deleted_file_count = 0u32;
     let mut rename_count = 0u32;
     let mut deleted_folder_count = 0u32;
+    let mut folder_path_migrations = Vec::new();
     let mut tasks = Vec::new();
     let mut queue = Vec::new();
     let mut album_accessibility = HashMap::new();
@@ -1772,19 +1772,9 @@ fn sync_dirty_folders_by_mtime(
             Ok(info) => info,
             Err(e) => {
                 if is_path_not_found(&e) {
-                    let can_remove = Album::get_album_by_id(folder.album_id)
-                        .map(|album| folder.path != album.path && directory_accessible(&album.path))
-                        .unwrap_or(false);
-                    if can_remove {
-                        if let Err(e2) = remove_missing_folder(&folder) {
-                            eprintln!(
-                                "sync_dirty_folders_by_mtime: failed to remove missing folder {}: {}",
-                                folder.path, e2
-                            );
-                        } else {
-                            deleted_folder_count += 1;
-                        }
-                    }
+                    // A missing folder may have been renamed or moved outside
+                    // its parent. Keep its metadata until an explicit parent
+                    // refresh can reconcile or remove it.
                 } else {
                     eprintln!(
                         "sync_dirty_folders_by_mtime: failed to stat {} ({})",
@@ -1819,6 +1809,7 @@ fn sync_dirty_folders_by_mtime(
         let child_scan = scan_new_child_folders(folder.album_id, &folder.path, false)?;
         new_folder_count += child_scan.folders.len() as u32;
         deleted_folder_count += child_scan.deleted_folder_count;
+        folder_path_migrations.extend(child_scan.folder_path_migrations);
         for child in child_scan.folders {
             queue.push((child, None, true));
         }
@@ -1859,6 +1850,7 @@ fn sync_dirty_folders_by_mtime(
             deleted_file_count,
             rename_count,
             deleted_folder_count,
+            folder_path_migrations,
         },
         tasks,
     ))
@@ -1868,6 +1860,7 @@ struct ChildFolderScan {
     folders: Vec<AFolder>,
     has_subfolders: bool,
     deleted_folder_count: u32,
+    folder_path_migrations: Vec<FolderPathMigration>,
 }
 
 fn scan_new_child_folders(
@@ -1896,37 +1889,33 @@ fn scan_new_child_folders(
         seen_paths.insert(child_path.clone());
     }
 
-    // A manual parent refresh must preserve a renamed child's folder id and
-    // its files' metadata before treating unseen paths as deleted.
-    if reconcile_removed_children {
-        let child_states = seen_paths
-            .iter()
-            .map(|path| FolderSubfolderState {
-                path: path.clone(),
-                created_at: None,
-                modified_at: None,
-                inode: FileInfo::new(path)
-                    .ok()
-                    .map(|info| info.inode as i64)
-                    .filter(|inode| *inode != 0),
-                has_subfolders: false,
-            })
-            .collect::<Vec<_>>();
-        AFolder::migrate_paths_by_inode(album_id, &child_states)?;
-    }
-
     let mut new_folders = Vec::new();
+    let mut folder_path_migrations = Vec::new();
     for child_path in &seen_paths {
+        if AFolder::fetch(&child_path)?.is_some() {
+            continue;
+        }
+        let inode = FileInfo::new(child_path)
+            .ok()
+            .map(|info| info.inode as i64)
+            .filter(|inode| *inode != 0);
+        if let Some(old_path) = AFolder::migrate_path_by_inode(album_id, child_path, inode)? {
+            folder_path_migrations.push(FolderPathMigration {
+                album_id,
+                old_path,
+                new_path: child_path.clone(),
+            });
+        }
         if AFolder::fetch(&child_path)?.is_some() {
             continue;
         }
         new_folders.push(AFolder::add_to_db(album_id, child_path)?);
     }
 
-    // The background mtime sync already visits every known folder and removes
-    // missing paths itself. Avoid loading every album path once per dirty
-    // folder there; this reconciliation is needed only for an explicit
-    // foreground refresh of the selected folder.
+    // The background mtime sync visits every known folder but preserves
+    // missing paths. Avoid loading every album path once per dirty folder;
+    // reconciliation is needed only for an explicit foreground refresh of
+    // the selected folder.
     let deleted_folder_count = if reconcile_removed_children {
         AFolder::delete_unseen_direct_children(album_id, folder_path, &seen_paths)? as u32
     } else {
@@ -1937,6 +1926,7 @@ fn scan_new_child_folders(
         folders: new_folders,
         has_subfolders,
         deleted_folder_count,
+        folder_path_migrations,
     })
 }
 
@@ -2265,6 +2255,7 @@ pub fn sync_single_folder(
     folder_id: i64,
     folder_path: &str,
     group_raw_jpeg_pairs: bool,
+    reconcile_missing: bool,
 ) -> Result<FolderMtimeSyncResult, String> {
     // A complete album scan owns folder and file reconciliation for this
     // album. Skip foreground refreshes until it finishes to avoid concurrent
@@ -2282,14 +2273,8 @@ pub fn sync_single_folder(
         Ok(info) => info,
         Err(e) => {
             if is_path_not_found(&e) {
-                // Only clean up a missing child while the album root is still
-                // readable. A missing root may be a disconnected external disk.
-                let mut removed = false;
-                if folder_path != album.path && directory_accessible(&album.path) {
-                    if let Ok(Some(folder)) = AFolder::fetch(folder_path) {
-                        removed = remove_missing_folder(&folder).is_ok();
-                    }
-                }
+                // Keep missing folders until an explicit parent refresh can
+                // reconcile a rename or remove an intentionally deleted path.
                 return Ok(FolderMtimeSyncResult {
                     dirty_folder_count: 0,
                     new_folder_count: 0,
@@ -2297,7 +2282,8 @@ pub fn sync_single_folder(
                     updated_file_count: 0,
                     deleted_file_count: 0,
                     rename_count: 0,
-                    deleted_folder_count: u32::from(removed),
+                    deleted_folder_count: 0,
+                    folder_path_migrations: Vec::new(),
                 });
             }
             return Err(e);
@@ -2325,7 +2311,7 @@ pub fn sync_single_folder(
     // Reconcile direct children even when the mtime is unchanged. A manual
     // refresh must remove a deleted child from the database, and some
     // filesystems expose directory mtimes at a coarser resolution.
-    let child_scan = scan_new_child_folders(album_id, folder_path, true)?;
+    let child_scan = scan_new_child_folders(album_id, folder_path, reconcile_missing)?;
     let new_folder_count = child_scan.folders.len() as u32;
 
     let needs_live_photo_reindex = FolderScanState::needs_version(
@@ -2361,6 +2347,7 @@ pub fn sync_single_folder(
             deleted_file_count: 0,
             rename_count: 0,
             deleted_folder_count: child_scan.deleted_folder_count,
+            folder_path_migrations: child_scan.folder_path_migrations,
         });
     }
 
@@ -2397,6 +2384,7 @@ pub fn sync_single_folder(
         deleted_file_count: outcome.deleted_file_count,
         rename_count: outcome.rename_count,
         deleted_folder_count: child_scan.deleted_folder_count,
+        folder_path_migrations: child_scan.folder_path_migrations,
     })
 }
 

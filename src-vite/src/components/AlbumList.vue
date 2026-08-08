@@ -294,6 +294,7 @@ let unlistenExpandAlbumFolder: (() => void) | undefined;
 let unlistenIndexProgress: (() => void) | undefined;
 let unlistenIndexFinished: (() => void) | undefined;
 let unlistenAlbumsRefreshed: (() => void) | undefined;
+let unlistenAlbumFolderPathsMigrated: (() => void) | undefined;
 
 // Computed to check if we're in main album pane
 const isMainPane = computed(() => props.selectionSource === 'album');
@@ -313,6 +314,20 @@ const isLoading = ref(true);    // loading albums
 const isDragging = ref(false);  // dragging albums
 const reorderingAlbumId = ref<number | null>(null);
 const albumCoverErrors = ref<Record<number, boolean>>({});
+
+const updateFolderPath = (folders: Folder[] | undefined, oldPath: string, newPath: string) => {
+  if (!folders) return;
+  const oldPathPrefix = `${oldPath}${oldPath.includes('\\') ? '\\' : '/'}`;
+  for (const folder of folders) {
+    if (folder.path === oldPath) {
+      folder.path = newPath;
+      folder.name = newPath.split(/[\\/]/).filter(Boolean).pop() || folder.name;
+    } else if (folder.path.startsWith(oldPathPrefix)) {
+      folder.path = `${newPath}${folder.path.slice(oldPath.length)}`;
+    }
+    updateFolderPath(folder.children, oldPath, newPath);
+  }
+};
 const albumContextMenus = ref<Record<number, any>>({});
 
 function handleAlbumContextMenu(album: Album, event: MouseEvent) {
@@ -523,6 +538,24 @@ onMounted( async () => {
     }
   });
 
+  unlistenAlbumFolderPathsMigrated = await listen('album-folder-paths-migrated', (event: any) => {
+    for (const migration of event.payload || []) {
+      const albumId = Number(migration?.albumId || 0);
+      const oldPath = String(migration?.oldPath || '');
+      const newPath = String(migration?.newPath || '');
+      const album = getAlbumById(albumId);
+      if (!album || !oldPath || !newPath) continue;
+      updateFolderPath(album.children, oldPath, newPath);
+      if (
+        selection.albumId.value === albumId &&
+        !selection.selected.value &&
+        selection.folderPath.value === oldPath
+      ) {
+        selection.folderPath.value = newPath;
+      }
+    }
+  });
+
   // listen for index progress
   unlistenIndexProgress = await listenIndexProgress(async (event: any) => {
     const { album_id, current, total } = event.payload;
@@ -616,6 +649,7 @@ onBeforeUnmount(() => {
   if (unlistenIndexProgress) unlistenIndexProgress();
   if (unlistenIndexFinished) unlistenIndexFinished();
   if (unlistenAlbumsRefreshed) unlistenAlbumsRefreshed();
+  if (unlistenAlbumFolderPathsMigrated) unlistenAlbumFolderPathsMigrated();
   uiStore.removeInputHandler('AlbumListDrag');
 });
 

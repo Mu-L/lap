@@ -56,6 +56,10 @@
       "title": "Dossier indisponible",
       "description": "Reconnectez le périphérique de stockage ou vérifiez l’emplacement du dossier."
     },
+    "folder_not_found": {
+      "title": "Dossier introuvable",
+      "description": "Le dossier a peut-être été déplacé ou supprimé. Actualisez son dossier parent."
+    },
     "edit": {
       "title_add": "Ajouter album",
       "title": "Modifier album",

@@ -964,13 +964,14 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
 };
 
 // sync a single folder's mtime and DB records with the filesystem
-export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
+export async function syncAlbumFolderMtimes(albumId, folderId, folderPath, reconcileMissing = false) {
   try {
     const result = await invoke('sync_album_folder_mtimes', {
       albumId,
       folderId,
       folderPath,
       groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
+      reconcileMissing,
     });
     if (result) {
       return {

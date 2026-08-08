@@ -76,6 +76,18 @@ export function useAlbumSelectionProvider(
     });
     let confirmedSelection = currentSelection();
 
+    const updateFolderPath = (folder: Folder, oldPath: string, newPath: string) => {
+        if (folder.path === oldPath) {
+            folder.path = newPath;
+            folder.name = newPath.split(/[\\/]/).filter(Boolean).pop() || folder.name;
+        } else if (folder.path.startsWith(`${oldPath}${oldPath.includes('\\') ? '\\' : '/'}`)) {
+            folder.path = `${newPath}${folder.path.slice(oldPath.length)}`;
+        }
+        for (const child of folder.children || []) {
+            updateFolderPath(child, oldPath, newPath);
+        }
+    };
+
     /**
      * Select an album (shows all files in the album)
      */
@@ -118,6 +130,10 @@ export function useAlbumSelectionProvider(
 
         if (result && selectionIsCurrent) {
             folderId.value = result.id;
+            folderPath.value = result.path;
+            if (result.path !== selectedPath) {
+                updateFolderPath(folder, selectedPath, result.path);
+            }
             confirmedSelection = currentSelection();
         } else if (!result && selectionIsCurrent) {
             albumId.value = confirmedSelection.albumId;

@@ -53,8 +53,12 @@
     "smart_album_list": "智能相册",
     "add_smart_album": "添加智能相册",
     "folder_unavailable": {
-      "title": "无法访问文件夹",
+      "title": "文件夹无法访问",
       "description": "请重新连接存储设备，或检查文件夹位置。"
+    },
+    "folder_not_found": {
+      "title": "文件夹不存在",
+      "description": "文件夹可能已移动或删除。请刷新父文件夹。"
     },
     "edit": {
       "title_add": "添加相册",
