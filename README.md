@@ -72,7 +72,7 @@ Lap is folder-first, but not every piece of information shown in Lap is embedded
 
 - Your original photos and videos always remain ordinary files in their existing folders.
 - File metadata already embedded in a file, such as EXIF capture date, camera, lens, GPS, and orientation, is read from that file when Lap indexes it.
-- Saving a built-in image edit writes the resulting image to the selected destination. This is separate from Lap's library-only display rotation.
+- Saving a built-in image edit writes the resulting image to the selected destination.
 - When you rename, move, copy, or delete files **in Lap**, Lap updates its local catalog at the same time. It also keeps supported grouped assets, such as Apple Live Photo components, AAE sidecars, and enabled RAW + JPEG/HEIC pairs, together.
 
 ### What is stored locally by Lap
@@ -87,9 +87,9 @@ This data does not travel with a file when it is copied, exported, or moved outs
 
 ### Working with files outside Lap
 
-Lap can rescan folders and detect many filesystem changes. However, when files are renamed, moved, replaced, or copied outside Lap, Lap cannot guarantee that local associations—especially Collection membership and other library-only data—will follow the file.
+Lap can rescan folders and detect many filesystem changes. But changes made outside Lap—such as renaming, moving, replacing, or copying files—can disrupt organization that is stored only in Lap.
 
-For a workflow that depends on Collections, Tags, Comments, Favorites, Ratings, culling states, or Lap rotation, use Lap for file moves and renames whenever possible. If you work extensively outside Lap, treat those features as local-to-Lap organization and keep a backup of Lap's database and configuration alongside your photo backup. You can view or change the database location, and create a database backup, in **Settings → Storage**.
+For the most reliable results, rename and move files in Lap whenever you rely on Collections, Tags, Comments, Favorites, Ratings, or culling states. If you also manage files outside Lap, back up Lap's database and configuration together with your photos. You can manage the database location and create a backup in **Settings → Storage**.
 
 Deleting Lap's database or configuration removes this local organization and index data, but does not delete your original media files.
 

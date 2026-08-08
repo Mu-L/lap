@@ -71,7 +71,7 @@ Lap está centrado en las carpetas, pero no toda la información que muestra se 
 
 - Sus fotos y vídeos originales siempre siguen siendo archivos normales en sus carpetas existentes.
 - Los metadatos ya integrados en un archivo, como la fecha EXIF, la cámara, el objetivo, el GPS y la orientación, se leen de ese archivo cuando Lap lo indexa.
-- Al guardar una edición de imagen integrada se escribe la imagen resultante en el destino elegido. Esto es distinto de la orientación de visualización, que solo se guarda en Lap.
+- Al guardar una edición de imagen integrada se escribe la imagen resultante en el destino elegido.
 - Cuando renombra, mueve, copia o elimina archivos **en Lap**, Lap actualiza al mismo tiempo su catálogo local. También mantiene juntos los recursos agrupados compatibles, como los componentes de Apple Live Photo, los archivos auxiliares AAE y los pares RAW + JPEG/HEIC activados.
 
 ### Lo que Lap almacena localmente
@@ -86,9 +86,9 @@ Estos datos no viajan con un archivo cuando se copia, exporta o mueve fuera de L
 
 ### Trabajar con archivos fuera de Lap
 
-Lap puede volver a escanear carpetas y detectar muchos cambios del sistema de archivos. Sin embargo, si los archivos se renombran, mueven, sustituyen o copian fuera de Lap, Lap no puede garantizar que las asociaciones locales —especialmente la pertenencia a colecciones y otros datos solo de la biblioteca— sigan al archivo.
+Lap puede volver a escanear carpetas y detectar muchos cambios del sistema de archivos. Sin embargo, los cambios realizados fuera de Lap —como renombrar, mover, sustituir o copiar archivos— pueden afectar a la organización que solo se guarda en Lap.
 
-Si su flujo de trabajo depende de colecciones, etiquetas, comentarios, favoritos, valoraciones, estado de selección u orientación de Lap, use Lap para mover y renombrar archivos siempre que sea posible. Si trabaja mucho fuera de Lap, considere estas funciones como organización local de Lap y mantenga una copia de seguridad de la base de datos y la configuración de Lap junto con sus fotos. Puede consultar o cambiar la ubicación de la base de datos, y crear una copia de seguridad de la base de datos, en **Ajustes → Almacenamiento**.
+Para obtener los resultados más fiables, renombre y mueva archivos en Lap cuando use colecciones, etiquetas, comentarios, favoritos, valoraciones o estados de selección. Si también administra archivos fuera de Lap, haga una copia de seguridad de la base de datos y la configuración de Lap junto con sus fotos. Puede gestionar la ubicación de la base de datos y crear una copia de seguridad en **Ajustes → Almacenamiento**.
 
 Eliminar la base de datos o la configuración de Lap elimina esta organización local y los datos de índice, pero no elimina sus archivos multimedia originales.
 

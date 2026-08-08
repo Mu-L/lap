@@ -71,7 +71,7 @@ O Lap é centrado em pastas, mas nem todas as informações exibidas nele estão
 
 - Suas fotos e vídeos originais permanecem sempre como arquivos comuns em suas pastas existentes.
 - Metadados já incorporados a um arquivo, como data de captura EXIF, câmera, lente, GPS e orientação, são lidos desse arquivo quando o Lap o indexa.
-- Salvar uma edição de imagem integrada grava a imagem resultante no destino escolhido. Isso é diferente da orientação de exibição, que é armazenada apenas pelo Lap.
+- Salvar uma edição de imagem integrada grava a imagem resultante no destino escolhido.
 - Quando você renomeia, move, copia ou exclui arquivos **no Lap**, ele atualiza simultaneamente seu catálogo local. Ele também mantém juntos os recursos agrupados compatíveis, como componentes de Apple Live Photo, arquivos auxiliares AAE e pares RAW + JPEG/HEIC ativados.
 
 ### O que o Lap armazena localmente
@@ -86,9 +86,9 @@ Esses dados não acompanham o arquivo quando ele é copiado, exportado ou movido
 
 ### Trabalhar com arquivos fora do Lap
 
-O Lap pode reexaminar pastas e detectar muitas alterações no sistema de arquivos. No entanto, quando arquivos são renomeados, movidos, substituídos ou copiados fora do Lap, ele não pode garantir que associações locais — especialmente a participação em coleções e outros dados exclusivos da biblioteca — acompanharão o arquivo.
+O Lap pode reexaminar pastas e detectar muitas alterações no sistema de arquivos. No entanto, alterações feitas fora do Lap — como renomear, mover, substituir ou copiar arquivos — podem afetar a organização armazenada apenas no Lap.
 
-Se seu fluxo de trabalho depende de coleções, tags, comentários, favoritos, classificações, estado de seleção ou orientação do Lap, use o Lap para mover e renomear arquivos sempre que possível. Se você trabalha muito fora do Lap, considere esses recursos como organização local do Lap e mantenha um backup do banco de dados e da configuração do Lap junto com suas fotos. Você pode ver ou alterar o local do banco de dados, e criar um backup dele, em **Configurações → Armazenamento**.
+Para obter resultados mais confiáveis, renomeie e mova arquivos no Lap quando usar coleções, tags, comentários, favoritos, classificações ou estados de seleção. Se também gerencia arquivos fora do Lap, mantenha um backup do banco de dados e da configuração do Lap junto com suas fotos. Você pode gerenciar o local do banco de dados e criar um backup em **Configurações → Armazenamento**.
 
 Excluir o banco de dados ou a configuração do Lap remove essa organização local e os dados de índice, mas não exclui seus arquivos de mídia originais.
 

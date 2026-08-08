@@ -71,7 +71,7 @@ Lap arbeitet ordnerorientiert, aber nicht jede in Lap angezeigte Information ist
 
 - Ihre Originalfotos und -videos bleiben stets normale Dateien in ihren vorhandenen Ordnern.
 - Bereits in einer Datei eingebettete Metadaten wie EXIF-Aufnahmedatum, Kamera, Objektiv, GPS und Ausrichtung werden beim Indizieren von Lap aus der Datei gelesen.
-- Das Speichern einer integrierten Bildbearbeitung schreibt das resultierende Bild an den gewählten Speicherort. Dies unterscheidet sich von der nur in Lap gespeicherten Anzeigeausrichtung.
+- Das Speichern einer integrierten Bildbearbeitung schreibt das resultierende Bild an den gewählten Speicherort.
 - Wenn Sie Dateien **in Lap** umbenennen, verschieben, kopieren oder löschen, aktualisiert Lap gleichzeitig seinen lokalen Katalog. Unterstützte zusammengehörige Dateien wie Apple-Live-Photo-Komponenten, AAE-Seitendateien und aktivierte RAW- + JPEG/HEIC-Paare werden dabei zusammengehalten.
 
 ### Was Lap lokal speichert
@@ -86,9 +86,9 @@ Diese Daten reisen nicht mit einer Datei mit, wenn sie außerhalb von Lap kopier
 
 ### Arbeiten mit Dateien außerhalb von Lap
 
-Lap kann Ordner erneut scannen und viele Änderungen im Dateisystem erkennen. Werden Dateien jedoch außerhalb von Lap umbenannt, verschoben, ersetzt oder kopiert, kann Lap nicht garantieren, dass lokale Zuordnungen – insbesondere die Mitgliedschaft in Sammlungen und andere nur lokal gespeicherte Daten – der Datei folgen.
+Lap kann Ordner erneut scannen und viele Änderungen im Dateisystem erkennen. Werden Dateien jedoch außerhalb von Lap umbenannt, verschoben, ersetzt oder kopiert, können nur in Lap gespeicherte Organisationsdaten beeinträchtigt werden.
 
-Wenn Ihr Workflow auf Sammlungen, Tags, Kommentaren, Favoriten, Bewertungen, Auswahl-Status oder der Lap-Ausrichtung beruht, sollten Sie Dateien nach Möglichkeit in Lap verschieben und umbenennen. Wenn Sie umfangreich außerhalb von Lap arbeiten, betrachten Sie diese Funktionen als lokale Organisation in Lap und sichern Sie die Datenbank und Konfiguration von Lap zusammen mit Ihren Fotos. Den Datenbankort können Sie in **Einstellungen → Speicher** anzeigen oder ändern; dort können Sie auch eine Datenbanksicherung erstellen.
+Für die zuverlässigsten Ergebnisse sollten Sie Dateien in Lap umbenennen und verschieben, wenn Sie Sammlungen, Tags, Kommentare, Favoriten, Bewertungen oder Auswahl-Status verwenden. Wenn Sie Dateien auch außerhalb von Lap verwalten, sichern Sie die Datenbank und Konfiguration von Lap zusammen mit Ihren Fotos. Den Datenbankort können Sie in **Einstellungen → Speicher** verwalten und dort auch eine Sicherung erstellen.
 
 Das Löschen der Datenbank oder Konfiguration von Lap entfernt diese lokale Organisation und Indexdaten, löscht jedoch nicht Ihre Originalmediendateien.
 
