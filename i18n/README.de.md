@@ -12,7 +12,7 @@
 [English](../README.md) | Deutsch | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) 
 
 Lap ist ein quelloffener, lokal orientierter Fotomanager zum Durchsuchen von Familienalben, zum schnellen Finden alter Fotos und zum Offline-Verwalten großer persönlichen Medienbibliotheken.
-Es ist eine datenschutzorientierte Alternative zu Cloud-Fotodiensten: kein erzwungener Upload, lokale KI-Suche, ordnerbasierter Workflow und kostenlos nutzbar.
+Es ist eine datenschutzorientierte Alternative zu Cloud-Fotodiensten: kein erzwungener Upload, lokale KI-Suche, ordnerorientierter Workflow und kostenlos nutzbar.
 
 - Website: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Demo-Video: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
@@ -45,20 +45,20 @@ brew install --cask lap
 
 - **Lokal zuerst konzipiert**: Ihre Fotos bleiben auf Ihrer eigenen Festplatte, ohne erforderliches Cloud-Konto oder Upload.
 - **Kein Bibliotheks-Lock-in**: Arbeiten Sie direkt mit Ihren vorhandenen Ordnern, statt alles in eine geschlossene Datenbank zu importieren.
-- **Private KI-Werkzeuge**: Suche, Ähnlichkeit, intelligente Schlagworte und Gesichtsfunktionen laufen lokal auf Ihrem Gerät.
+- **Lokale KI-Werkzeuge**: Suche, Ähnlichkeit, intelligente Tags und Gesichtserkennung laufen lokal auf Ihrem Gerät.
 - **Für große Sammlungen gebaut**: Optimiert für flüssiges Durchsuchen und Organisieren von Bibliotheken mit 100.000+ Dateien.
 - **Open Source und kostenlos**: Kein Abonnement, kein erzwungenes Ökosystem und Code, den Sie prüfen können.
 
 ## Funktionen
 
-- **Flexibles Durchsuchen der Bibliothek** mit Timeline-, Ordner-, Standort-, Kamera-, Objektiv-, Schlagwort-, Favoriten-, Bewertungs-, Motiv- und Gesichtsfiltern.
+- **Flexibles Durchsuchen der Bibliothek** mit Timeline-, Ordner-, Standort-, Kamera-, Objektiv-, Tag-, Favoriten-, Bewertungs-, Motiv- und Gesichtsfiltern.
 - **Smart-Alben** speichern regelbasierte Ansichten mit eigener Gruppierung, Sortierung und Reihenfolge.
-- **Sammlungsleiste** für spontane Dateisammlungen, ohne Dateien aus ihren ursprünglichen Ordnern zu verschieben.
+- **Sammlungen**: Organisieren Sie Dateien in flexiblen Sammlungen, ohne die Originale zu verschieben oder zu duplizieren.
 - **Lokale KI-Suche** für Textanfragen, visuelle Ähnlichkeit, Motive, Gesichts-Clustering und optionale mehrsprachige Suche in über 50 Sprachen.
 - **Apple Live Photos** erkennt gekoppelte HEIC/MOV-Live-Photos, spielt sie im Viewer ab und hält verknüpfte MOV- und AAE-Seitendateien beim Umbenennen, Verschieben, Kopieren und Löschen zusammen.
 - **RAW- + JPEG/HEIC-Paare** gruppieren optional eine RAW-Datei und die gleichnamige JPEG- oder HEIC-Begleitdatei im selben Ordner als ein Element. Die Originale bleiben getrennte Dateien; beim Umbenennen, Verschieben, Kopieren, Einfügen und Löschen werden beide Dateien zusammen behandelt.
 - **Ordnerorientierter Workflow** mit mehreren Bibliotheken, Drag-and-drop-Import, Kopieren-und-Einfügen-Import, Dateisystem-Synchronisierung und sicheren Verschiebe-/Kopier-/Löschvorgängen.
-- **Prüf- und Vergleichswerkzeuge** einschließlich eines Vierfach-Bildvergleichs im Viewer.
+- **Auswahl- und Vergleichswerkzeuge** einschließlich eines Vierfach-Bildvergleichs im Viewer.
 - **Aufräumwerkzeuge** zum Finden von Duplikaten und zum stapelweisen Verschieben unerwünschter Dateien in den Papierkorb.
 - **Integrierte Bearbeitung** für Zuschneiden, Drehen, Spiegeln, Größenänderung und grundlegende Bildanpassungen.
 - **Breite Formatunterstützung** für über 60 Foto-, RAW- und Videoformate.
@@ -78,11 +78,7 @@ Lap arbeitet ordnerorientiert, aber nicht jede in Lap angezeigte Information ist
 
 Die folgenden Informationen sind Bibliotheksdaten von Lap. Sie werden in der lokalen Datenbank oder Bibliothekskonfiguration von Lap gespeichert und nicht in EXIF, IPTC oder XMP-Seitendateien geschrieben:
 
-- Sammlungen und ihre Mitgliedschaft
-- Tags
-- Kommentare
-- Favoriten, Bewertungen und Prüfstatus (einschließlich Picks und Rejects)
-- Die Anzeigeausrichtung von Lap und anderer nur für die Bibliothek geltender Zustand
+- Sammlungen, Tags, Kommentare, Favoriten, Bewertungen und Auswahl-Status (Ausgewählt und Abgelehnt)
 - Smart-Alben sowie deren Regeln, Gruppierung, Sortierung und Reihenfolge
 - KI-Suchdaten, Gesichtsdaten, Thumbnails und weitere Index- bzw. Cache-Daten
 
@@ -92,7 +88,7 @@ Diese Daten reisen nicht mit einer Datei mit, wenn sie außerhalb von Lap kopier
 
 Lap kann Ordner erneut scannen und viele Änderungen im Dateisystem erkennen. Werden Dateien jedoch außerhalb von Lap umbenannt, verschoben, ersetzt oder kopiert, kann Lap nicht garantieren, dass lokale Zuordnungen – insbesondere die Mitgliedschaft in Sammlungen und andere nur lokal gespeicherte Daten – der Datei folgen.
 
-Wenn Ihr Workflow auf Sammlungen, Tags, Kommentaren, Favoriten, Bewertungen, Prüfstatus oder der Lap-Ausrichtung beruht, sollten Sie Dateien nach Möglichkeit in Lap verschieben und umbenennen. Wenn Sie umfangreich außerhalb von Lap arbeiten, betrachten Sie diese Funktionen als lokale Organisation in Lap und sichern Sie die Datenbank und Konfiguration von Lap zusammen mit Ihren Fotos. Den Datenbankort können Sie in **Einstellungen → Speicher** anzeigen oder ändern; dort können Sie auch eine Datenbanksicherung erstellen.
+Wenn Ihr Workflow auf Sammlungen, Tags, Kommentaren, Favoriten, Bewertungen, Auswahl-Status oder der Lap-Ausrichtung beruht, sollten Sie Dateien nach Möglichkeit in Lap verschieben und umbenennen. Wenn Sie umfangreich außerhalb von Lap arbeiten, betrachten Sie diese Funktionen als lokale Organisation in Lap und sichern Sie die Datenbank und Konfiguration von Lap zusammen mit Ihren Fotos. Den Datenbankort können Sie in **Einstellungen → Speicher** anzeigen oder ändern; dort können Sie auch eine Datenbanksicherung erstellen.
 
 Das Löschen der Datenbank oder Konfiguration von Lap entfernt diese lokale Organisation und Indexdaten, löscht jedoch nicht Ihre Originalmediendateien.
 

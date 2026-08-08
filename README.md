@@ -54,12 +54,12 @@ brew install --cask lap
 
 - **Flexible library browsing** with timeline, folder, location, camera, lens, tag, favorite, rating, subject, and face filters.
 - **Smart Albums** save rule-based views with custom grouping, sorting, ordering.
-- **Collection tray** keep ad-hoc collections of files without moving them from their original folders.
+- **Collections**: Organize files into flexible collections without moving or duplicating the originals.
 - **Local AI search** for text prompts, visual similarity, subjects, face clustering, and optional multilingual search in 50+ languages.
 - **Apple Live Photos** recognize paired HEIC/MOV Live Photos, play them in the viewer, and keep linked MOV and AAE sidecars together during rename, move, copy, and delete operations.
 - **RAW + JPEG/HEIC pairs** optionally group a RAW file and its same-named JPEG or HEIC companion in the same folder as one item. The originals remain separate files, while rename, move, copy, paste, and delete operations keep the pair together.
 - **Folder-first workflow** with multiple libraries, drag-and-drop import, copy-paste import, filesystem sync, and safe move/copy/delete operations.
-- **Review and comparison tools** including a four-pane image comparison viewer.
+- **Culling and comparison tools** including a four-pane image comparison viewer.
 - **Cleanup tools** to find duplicates and batch move unwanted files to trash.
 - **Built-in editing** for crop, rotate, flip, resize, and basic image adjustments.
 - **Broad format support** for 60+ photo, RAW, and video formats.
@@ -79,11 +79,7 @@ Lap is folder-first, but not every piece of information shown in Lap is embedded
 
 The following are Lap library data. They are stored in Lap's local database or library configuration, not written into EXIF, IPTC, or XMP sidecars:
 
-- Collections and their membership
-- Tags
-- Comments
-- Favorites, ratings, and review states (including Picks and Rejects)
-- Lap's display rotation and other library-only state
+- Collections, Tags, Comments, Favorites, Ratings, and Culling states (including Picks and Rejects)
 - Smart Albums and their rules, grouping, sorting, and ordering
 - AI search data, face data, thumbnails, and other index/cache data
 
@@ -93,7 +89,7 @@ This data does not travel with a file when it is copied, exported, or moved outs
 
 Lap can rescan folders and detect many filesystem changes. However, when files are renamed, moved, replaced, or copied outside Lap, Lap cannot guarantee that local associations—especially Collection membership and other library-only data—will follow the file.
 
-For a workflow that depends on Collections, Tags, Comments, Favorites, Ratings, review states, or Lap rotation, use Lap for file moves and renames whenever possible. If you work extensively outside Lap, treat those features as local-to-Lap organization and keep a backup of Lap's database and configuration alongside your photo backup. You can view or change the database location, and create a database backup, in **Settings → Storage**.
+For a workflow that depends on Collections, Tags, Comments, Favorites, Ratings, culling states, or Lap rotation, use Lap for file moves and renames whenever possible. If you work extensively outside Lap, treat those features as local-to-Lap organization and keep a backup of Lap's database and configuration alongside your photo backup. You can view or change the database location, and create a database backup, in **Settings → Storage**.
 
 Deleting Lap's database or configuration removes this local organization and index data, but does not delete your original media files.
 

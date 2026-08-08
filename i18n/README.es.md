@@ -53,12 +53,12 @@ brew install --cask lap
 
 - **Exploración flexible de bibliotecas** con filtros por línea de tiempo, carpeta, ubicación, cámara, lente, etiqueta, favorito, valoración, tema y rostro.
 - **Álbumes inteligentes** para guardar vistas basadas en reglas con agrupación, ordenación y orden personalizados.
-- **Bandeja de colecciones** para mantener colecciones de archivos puntuales sin moverlos de sus carpetas originales.
+- **Colecciones**: organice archivos en colecciones flexibles sin mover ni duplicar los originales.
 - **Búsqueda local con IA** para indicaciones de texto, similitud visual, temas, agrupación de rostros y búsqueda multilingüe opcional en más de 50 idiomas.
 - **Live Photos de Apple** reconoce pares HEIC/MOV, los reproduce en el visor y conserva juntos los archivos auxiliares MOV y AAE al renombrar, mover, copiar y eliminar.
 - **Pares RAW + JPEG/HEIC** agrupan opcionalmente como un solo elemento un archivo RAW y su archivo JPEG o HEIC complementario con el mismo nombre en la misma carpeta. Los originales siguen siendo archivos independientes; al renombrar, mover, copiar, pegar o eliminar se tratan juntos.
 - **Flujo de trabajo basado en carpetas** con múltiples bibliotecas, importación por arrastrar y soltar, importación por copiar y pegar, sincronización del sistema de archivos y operaciones seguras de mover/copiar/eliminar.
-- **Herramientas de revisión y comparación**, incluido un visor de comparación de imágenes en cuatro paneles.
+- **Herramientas de selección y comparación**, incluido un visor de comparación de imágenes en cuatro paneles.
 - **Herramientas de limpieza** para encontrar duplicados y mover archivos no deseados a la papelera por lotes.
 - **Edición integrada** para recortar, rotar, voltear, redimensionar y realizar ajustes básicos de imagen.
 - **Amplio soporte de formatos** para más de 60 formatos de foto, RAW y vídeo.
@@ -78,11 +78,7 @@ Lap está centrado en las carpetas, pero no toda la información que muestra se 
 
 La siguiente información son datos de biblioteca de Lap. Se almacenan en la base de datos local o en la configuración de biblioteca de Lap, y no se escriben en EXIF, IPTC ni en archivos auxiliares XMP:
 
-- Las colecciones y sus miembros
-- Las etiquetas
-- Los comentarios
-- Los favoritos, valoraciones y estados de revisión (incluidos Picks y Rejects)
-- La orientación de visualización de Lap y otros estados solo de la biblioteca
+- Colecciones, etiquetas, comentarios, favoritos, valoraciones y estados de selección (Seleccionadas y Rechazadas)
 - Los álbumes inteligentes y sus reglas, agrupación, ordenación y orden
 - Los datos de búsqueda con IA, datos de rostros, miniaturas y otros datos de índice o caché
 
@@ -92,7 +88,7 @@ Estos datos no viajan con un archivo cuando se copia, exporta o mueve fuera de L
 
 Lap puede volver a escanear carpetas y detectar muchos cambios del sistema de archivos. Sin embargo, si los archivos se renombran, mueven, sustituyen o copian fuera de Lap, Lap no puede garantizar que las asociaciones locales —especialmente la pertenencia a colecciones y otros datos solo de la biblioteca— sigan al archivo.
 
-Si su flujo de trabajo depende de colecciones, etiquetas, comentarios, favoritos, valoraciones, estados de revisión u orientación de Lap, use Lap para mover y renombrar archivos siempre que sea posible. Si trabaja mucho fuera de Lap, considere estas funciones como organización local de Lap y mantenga una copia de seguridad de la base de datos y la configuración de Lap junto con sus fotos. Puede consultar o cambiar la ubicación de la base de datos, y crear una copia de seguridad de la base de datos, en **Ajustes → Almacenamiento**.
+Si su flujo de trabajo depende de colecciones, etiquetas, comentarios, favoritos, valoraciones, estado de selección u orientación de Lap, use Lap para mover y renombrar archivos siempre que sea posible. Si trabaja mucho fuera de Lap, considere estas funciones como organización local de Lap y mantenga una copia de seguridad de la base de datos y la configuración de Lap junto con sus fotos. Puede consultar o cambiar la ubicación de la base de datos, y crear una copia de seguridad de la base de datos, en **Ajustes → Almacenamiento**.
 
 Eliminar la base de datos o la configuración de Lap elimina esta organización local y los datos de índice, pero no elimina sus archivos multimedia originales.
 
