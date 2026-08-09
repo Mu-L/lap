@@ -12,7 +12,7 @@
 
       <template v-if="selectedItemIndex >= 0 && hasRealSelectedFile">
         <div class="flex items-center gap-1 shink-0">
-          <component :is="selectMode ? IconCheckAll : IconChecked" class="t-icon-size-xs" />
+          <component :is="selectMode ? IconChecked : (currentFile?.file_type === 1 || currentFile?.file_type === 3 ? IconPhoto : IconVideo)" class="t-icon-size-xs" />
           <span>
             {{ selectMode
               ? $t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() }) + ' (' + formatFileSize(selectedSize) + ')'
@@ -22,7 +22,7 @@
         </div>
 
         <div class="flex items-center gap-1 shink-0">
-          <component :is="currentFile?.file_type === 1 || currentFile?.file_type === 3 ? IconAspectRatio : IconVideo" class="t-icon-size-xs" />
+          <IconAspectRatio class="t-icon-size-xs" />
           <span>{{ formatDimensionText(currentFile?.width, currentFile?.height, true) }}</span>
         </div>
 
@@ -75,9 +75,9 @@ import {
   formatTimestamp,
 } from '@/common/utils';
 import {
-  IconCheckAll,
   IconChecked,
   IconAspectRatio,
+  IconPhoto,
   IconVideo,
   IconCamera,
   IconCameraAperture,

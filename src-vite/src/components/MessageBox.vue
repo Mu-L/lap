@@ -42,7 +42,7 @@
       @input="validateInput"
     ></textarea>
 
-    <p class="h-4 text-error text-xs">{{ inputErrorMessage }}</p>
+    <p class="p-1 text-error text-xs">{{ inputErrorMessage }}</p>
 
     <!-- buttons -->
     <div class="mt-2 flex justify-end space-x-4">

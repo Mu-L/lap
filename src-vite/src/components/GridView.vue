@@ -35,37 +35,39 @@
     >
       <div
         v-if="isGroupRow(item)"
-        class="w-full h-12 px-1 flex items-center text-base-content/70 select-none bg-base-100/5 rounded-box"
+        class="w-full h-full flex items-center"
       >
-        <div class="group flex items-center gap-1">
-          <div
-            class="flex shrink-0 items-center overflow-hidden transition-all duration-100 ease-out"
-            :class="selectMode
-              ? 'w-4 mr-1 opacity-100'
-              : 'w-0 mr-0 opacity-0 group-hover:w-4 group-hover:mr-1 group-hover:opacity-100'"
-          >
-            <span v-if="isGroupSelectionLoading(item)" class="loading loading-spinner loading-xs text-primary"></span>
-            <input
-              v-else
-              type="checkbox"
-              class="checkbox checkbox-xs border-base-content/30 hover:border-base-content/70"
-              :checked="getGroupSelectionState(item).checked"
-              :indeterminate.prop="getGroupSelectionState(item).indeterminate"
-              @change="(event) => $emit('group-select-toggled', item, (event.target as HTMLInputElement).checked)"
+        <div class="w-full h-8 px-1 flex items-center text-base-content/70 select-none bg-base-200/30 rounded-box">
+          <div class="group flex items-center gap-1">
+            <div
+              class="flex shrink-0 items-center overflow-hidden transition-all duration-100 ease-out"
+              :class="selectMode
+                ? 'w-4 mr-1 opacity-100'
+                : 'w-0 mr-0 opacity-0 group-hover:w-4 group-hover:mr-1 group-hover:opacity-100'"
+            >
+              <span v-if="isGroupSelectionLoading(item)" class="loading loading-spinner loading-xs text-primary"></span>
+              <input
+                v-else
+                type="checkbox"
+                class="checkbox checkbox-xs border-base-content/30 hover:border-base-content/70"
+                :checked="getGroupSelectionState(item).checked"
+                :indeterminate.prop="getGroupSelectionState(item).indeterminate"
+                @change="(event) => $emit('group-select-toggled', item, (event.target as HTMLInputElement).checked)"
+              />
+            </div>
+            <component :is="getGroupIcon(item)" class="w-4 h-4 shrink-0 text-base-content/30" />
+            <Breadcrumb
+              v-if="isFolderPathGroup()"
+              :items="getFolderGroupBreadcrumbItems(item)"
+              disabled
+              class="min-w-0 flex-1 overflow-hidden"
             />
+            <span v-else class="min-w-0 truncate text-sm text-base-content/30">{{ item.label }}</span>
           </div>
-          <component :is="getGroupIcon(item)" class="w-4 h-4 shrink-0 text-base-content/30" />
-          <Breadcrumb
-            v-if="isFolderPathGroup()"
-            :items="getFolderGroupBreadcrumbItems(item)"
-            disabled
-            class="min-w-0 flex-1 overflow-hidden"
-          />
-          <span v-else class="min-w-0 truncate text-sm text-base-content/30">{{ item.label }}</span>
+          <span class="ml-auto badge badge-xs shrink-0 text-xs text-base-content/30">
+            {{ item.countLabel || Number(item.count || 0).toLocaleString() }}
+          </span>
         </div>
-        <span class="ml-auto badge badge-xs shrink-0 text-xs text-base-content/30">
-          {{ item.countLabel || Number(item.count || 0).toLocaleString() }}
-        </span>
       </div>
       <div
         v-else
@@ -198,7 +200,8 @@ const containerRef = ref<HTMLElement | null>(null);
 const scroller = ref<any>(null);
 const columnCount = ref(4);
 const containerWidth = ref(0);
-const groupHeaderHeight = computed(() => 48 * Number(config.settings.scale || 1));
+const GROUP_HEADER_HEIGHT = 40;
+const groupHeaderHeight = computed(() => GROUP_HEADER_HEIGHT * Number(config.settings.scale || 1));
 let pendingPointerDrag: {
   pointerId: number;
   index: number;

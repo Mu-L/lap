@@ -82,7 +82,7 @@
 
         <!-- global grouping options for query-backed grid views -->
         <DropDownSelect
-          :icon="IconStack"
+          :icon="IconGroup"
           :options="toolbarGroupOptions"
           :defaultIndex="toolbarGroupIndex"
           :separatorsAfter="toolbarGroupOptions.length > 1 ? [0] : []"
@@ -719,7 +719,7 @@ import StatusBar from '@/components/StatusBar.vue';
 
 import {
   IconFolders,
-  IconStack,
+  IconGroup,
   IconFiles,
   IconFolder,
   IconFolderCog,
@@ -7070,6 +7070,10 @@ const onRenameFile = async (newName: string) => {
   if(selectedItemIndex.value >= 0) {
     const file = fileList.value[selectedItemIndex.value];
     const fileName = combineFileName(newName, renamingFileName.value.ext ?? '');
+    if (fileName === file.name) {
+      showRenameMsgbox.value = false;
+      return;
+    }
     const newFilePath = await renameFile(file.id, file.file_path, fileName );
     if(newFilePath) {
       console.log('onRenameFile:', newFilePath);

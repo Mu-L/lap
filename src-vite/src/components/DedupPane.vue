@@ -112,7 +112,7 @@
             </div>
             <div class="flex flex-wrap gap-1">
               <PanelActionButton
-                :icon="isAllSimilarItemsSelected(activeSimilarGroup.id) ? IconCheckNone : IconCheckAll"
+                :icon="isAllSimilarItemsSelected(activeSimilarGroup.id) ? IconUnChecked : IconChecked"
                 @click="selectAllSimilarItems(activeSimilarGroup)"
               >
                 {{ isAllSimilarItemsSelected(activeSimilarGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
@@ -304,7 +304,7 @@
 
           <div class="flex flex-wrap gap-1">
             <PanelActionButton
-              :icon="isAllGroupDuplicatesSelected(activeGroup.id) ? IconCheckNone : IconCheckAll"
+              :icon="isAllGroupDuplicatesSelected(activeGroup.id) ? IconUnChecked : IconChecked"
               @click="selectGroupDuplicates(activeGroup.id, activeGroup.keepItem?.file_id || 0)"
             >
               {{ isAllGroupDuplicatesSelected(activeGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
@@ -408,7 +408,7 @@ import {
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import { IconCheckAll, IconCheckNone, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash } from '@/common/icons';
+import { IconChecked, IconUnChecked, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
