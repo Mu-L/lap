@@ -22,7 +22,6 @@ mod t_common;
 mod t_config;
 mod t_dedup;
 mod t_face;
-#[cfg(all(not(target_os = "macos"), lap_has_libheif))]
 mod t_heif;
 mod t_http;
 mod t_image;

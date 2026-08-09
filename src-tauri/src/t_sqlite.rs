@@ -6186,31 +6186,10 @@ impl AThumb {
                     match ext.to_lowercase().as_str() {
                         "heic" | "heif" | "hif" => {
                             // heic/heif/hif
-                            #[cfg(target_os = "macos")]
-                            let res = match t_image::get_heic_thumbnail_with_sips(
-                                file_path,
-                                thumbnail_size,
-                            ) {
-                                Ok(Some(data)) => (Some(data), 0),
-                                Ok(None) => (None, 1), // empty thumb
-                                Err(_) => (None, 1),   // error
-                            };
-                            #[cfg(all(not(target_os = "macos"), lap_has_libheif))]
                             let res = match crate::t_heif::get_heif_thumbnail(
                                 file_path,
                                 orientation,
                                 thumbnail_size,
-                            ) {
-                                Ok(Some(data)) => (Some(data), 0),
-                                Ok(None) => (None, 1), // empty thumb
-                                Err(_) => (None, 1),   // error
-                            };
-                            #[cfg(all(not(target_os = "macos"), not(lap_has_libheif)))]
-                            let res = match t_video::get_video_thumbnail_sync(
-                                file_path,
-                                thumbnail_size,
-                                known_duration,
-                                None,
                             ) {
                                 Ok(Some(data)) => (Some(data), 0),
                                 Ok(None) => (None, 1), // empty thumb

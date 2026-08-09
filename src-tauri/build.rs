@@ -11,15 +11,9 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() {
-    // Allow conditional compilation based on whether libheif is available.
-    println!("cargo::rustc-check-cfg=cfg(lap_has_libheif)");
-
     write_build_info();
     build_libraw();
-    let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
-    if target_os != "macos" {
-        build_libheif();
-    }
+    build_libheif();
 
     // build tauri
     tauri_build::build();
@@ -32,11 +26,10 @@ fn build_libheif() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let source_dir = manifest_dir.join("third_party").join("libheif");
     if !source_dir.exists() {
-        println!(
-            "cargo:warning=libheif submodule not found at {}. Add it under src-tauri/third_party/libheif to enable HEIC/HEIF decoding on Windows/Linux.",
+        panic!(
+            "libheif source not found at {}. Run: git submodule update --init --recursive",
             source_dir.display()
         );
-        return;
     }
 
     // NOTE: We intentionally keep this build minimal and static, mirroring the libjpeg-turbo approach.
@@ -49,15 +42,7 @@ fn build_libheif() {
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     let is_windows = target_os == "windows";
     let use_cmake_default_generator = is_windows;
-    let libde265 = match build_libde265(&manifest_dir, &out_dir, use_cmake_default_generator) {
-        Some(build) => build,
-        None => {
-            println!(
-                "cargo:warning=libde265 is unavailable, so libheif will be built without a working HEIC decoder backend."
-            );
-            return;
-        }
-    };
+    let libde265 = build_libde265(&manifest_dir, &out_dir, use_cmake_default_generator);
 
     // Configure
     let mut configure = Command::new("cmake");
@@ -169,11 +154,10 @@ fn build_libheif() {
         Some((name, path)) => (name.to_string(), path.clone()),
         None => {
             log_library_search_failure(&binary_dir, "libheif");
-            println!(
-                "cargo:warning=libheif build completed but static library was not found under {}",
+            panic!(
+                "libheif build completed but static library was not found under {}",
                 binary_dir.display()
             );
-            return;
         }
     };
 
@@ -191,9 +175,6 @@ fn build_libheif() {
         // Some libheif builds depend on the C++ runtime.
         _ => println!("cargo:rustc-link-lib=stdc++"),
     }
-
-    // Enable the Rust-side libheif bindings only when the native library is available.
-    println!("cargo:rustc-cfg=lap_has_libheif");
 }
 
 /// writes the build information to a file
@@ -481,14 +462,13 @@ fn build_libde265(
     manifest_dir: &Path,
     out_dir: &Path,
     use_cmake_default_generator: bool,
-) -> Option<LibDe265Build> {
+) -> LibDe265Build {
     let source_dir = manifest_dir.join("third_party/libde265");
     if !source_dir.exists() {
-        println!(
-            "cargo:warning=libde265 submodule not found at {}. Run: git submodule update --init --recursive",
+        panic!(
+            "libde265 source not found at {}. Run: git submodule update --init --recursive",
             source_dir.display()
         );
-        return None;
     }
 
     let build_root = out_dir.join("libde265-build");
@@ -574,11 +554,10 @@ fn build_libde265(
         Some((name, path)) => (name.to_string(), path.clone()),
         None => {
             log_library_search_failure(&binary_dir, "libde265");
-            println!(
-                "cargo:warning=libde265 build completed but static library was not found under {}",
+            panic!(
+                "libde265 build completed but static library was not found under {}",
                 binary_dir.display()
             );
-            return None;
         }
     };
 
@@ -597,21 +576,20 @@ fn build_libde265(
         binary_dir.join("Debug").join("de265-version.h"),
     ];
     let Some(version_header) = version_header_candidates.iter().find(|path| path.exists()) else {
-        println!(
-            "cargo:warning=libde265 build completed but generated de265-version.h was not found under {}",
+        panic!(
+            "libde265 build completed but generated de265-version.h was not found under {}",
             binary_dir.display()
         );
-        return None;
     };
     fs::copy(version_header, include_libde265_dir.join("de265-version.h")).unwrap();
     let lib_dir = lib_path.parent().unwrap_or(&binary_dir).to_path_buf();
 
-    Some(LibDe265Build {
+    LibDe265Build {
         include_dir,
         lib_dir,
         lib_name,
         lib_path,
-    })
+    }
 }
 
 /// Recursively collect all .cpp files under a directory

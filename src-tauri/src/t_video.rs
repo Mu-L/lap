@@ -32,6 +32,7 @@ const PROBE_TIMEOUT_SECS: u64 = 5;
 const INDEX_PROBE_TIMEOUT_SECS: u64 = 20;
 const PROBE_SIZE_BYTES: &str = "5000000";
 const ANALYZE_DURATION_MICROSECONDS: &str = "5000000";
+#[cfg(debug_assertions)]
 const FFMPEG_DEBUG_STDERR_LIMIT_BYTES: u64 = 64 * 1024;
 const EXTERNAL_PLAYER_REQUIRED_ERROR: &str = "video_requires_external_player";
 

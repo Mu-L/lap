@@ -127,6 +127,12 @@ pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
         return Ok((metadata.width, metadata.height));
     }
 
+    if is_heic_path(file_path) {
+        if let Ok(dimensions) = crate::t_heif::get_heif_dimensions(file_path) {
+            return Ok(dimensions);
+        }
+    }
+
     // Catch potential panics in the third-party imagesize crate
     let result = panic::catch_unwind(|| imagesize::size(file_path));
 
@@ -1342,22 +1348,11 @@ async fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>,
     }
 
     if is_heic_path(file_path) {
-        #[cfg(target_os = "macos")]
-        {
-            return get_thumbnail_with_sips(file_path, 4096);
-        }
-        #[cfg(all(not(target_os = "macos"), lap_has_libheif))]
-        {
-            return crate::t_heif::get_heif_preview(
-                file_path,
-                get_image_orientation(file_path),
-                4096,
-            );
-        }
-        #[cfg(all(not(target_os = "macos"), not(lap_has_libheif)))]
-        {
-            return crate::t_video::get_video_thumbnail(file_path, 4096, None, None).await;
-        }
+        return crate::t_heif::get_heif_preview(
+            file_path,
+            get_image_orientation(file_path),
+            4096,
+        );
     }
 
     if is_ffmpeg_backed_image_path(file_path) {
@@ -1436,19 +1431,7 @@ async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
         let img = image::load_from_memory(&preview)
             .map_err(|e| format!("Failed to decode editable preview image: {}", e))?;
 
-        #[cfg(target_os = "macos")]
-        {
-            if is_heic_path(&params.source_file_path) {
-                apply_orientation(img, params.orientation)
-            } else {
-                img
-            }
-        }
-
-        #[cfg(not(target_os = "macos"))]
-        {
-            img
-        }
+        img
     } else {
         let path = Path::new(&params.source_file_path);
         let mut img = image::open(path).map_err(|e| e.to_string())?;
@@ -1683,14 +1666,6 @@ pub fn get_dimensions_with_sips(file_path: &str) -> Result<Option<(u32, u32)>, S
     }
 }
 
-#[cfg(target_os = "macos")]
-pub fn get_heic_thumbnail_with_sips(
-    file_path: &str,
-    thumbnail_size: u32,
-) -> Result<Option<Vec<u8>>, String> {
-    get_thumbnail_with_sips(file_path, thumbnail_size)
-}
-
 const FILE_IMAGE_RESULT_CACHE_MAX: usize = 8;
 
 #[derive(Clone)]
@@ -1777,22 +1752,8 @@ pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, Str
         t_jxl::get_jxl_preview_image(file_path, 4096)?
             .ok_or_else(|| format!("Failed to resolve JXL preview image: {}", file_path))?
     } else if is_heic_path(file_path) {
-        #[cfg(target_os = "macos")]
-        {
-            get_thumbnail_with_sips(file_path, 4096)?
-                .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
-        }
-        #[cfg(all(not(target_os = "macos"), lap_has_libheif))]
-        {
-            crate::t_heif::get_heif_preview(file_path, get_image_orientation(file_path), 4096)?
-                .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
-        }
-        #[cfg(all(not(target_os = "macos"), not(lap_has_libheif)))]
-        {
-            crate::t_video::get_video_thumbnail(file_path, 4096, None, None)
-                .await?
-                .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
-        }
+        crate::t_heif::get_heif_preview(file_path, get_image_orientation(file_path), 4096)?
+            .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
     } else if is_ffmpeg_backed_image_path(file_path) {
         crate::t_video::get_video_thumbnail(file_path, 4096, None, None)
             .await?

@@ -89,6 +89,48 @@ fn fmt_heif_error(err: HeifError) -> String {
     }
 }
 
+pub fn get_heif_dimensions(file_path: &str) -> Result<(u32, u32), String> {
+    let c_path = CString::new(file_path).map_err(|_| "Invalid file path".to_string())?;
+    unsafe {
+        let ctx = heif_context_alloc();
+        if ctx.is_null() {
+            return Err("Failed to allocate heif context".to_string());
+        }
+        struct CtxGuard(*mut HeifContext);
+        impl Drop for CtxGuard {
+            fn drop(&mut self) {
+                unsafe { heif_context_free(self.0) }
+            }
+        }
+        let _ctx_guard = CtxGuard(ctx);
+
+        let err = heif_context_read_from_file(ctx, c_path.as_ptr(), ptr::null());
+        if err.code != 0 {
+            return Err(fmt_heif_error(err));
+        }
+
+        let mut handle: *mut HeifImageHandle = ptr::null_mut();
+        let err = heif_context_get_primary_image_handle(ctx, &mut handle);
+        if err.code != 0 || handle.is_null() {
+            return Err(fmt_heif_error(err));
+        }
+        struct HandleGuard(*mut HeifImageHandle);
+        impl Drop for HandleGuard {
+            fn drop(&mut self) {
+                unsafe { heif_image_handle_release(self.0) }
+            }
+        }
+        let _handle_guard = HandleGuard(handle);
+
+        let width = heif_image_handle_get_width(handle).max(0) as u32;
+        let height = heif_image_handle_get_height(handle).max(0) as u32;
+        if width == 0 || height == 0 {
+            return Err("libheif returned empty dimensions".to_string());
+        }
+        Ok((width, height))
+    }
+}
+
 fn decode_primary_rgb(file_path: &str) -> Result<(Vec<u8>, u32, u32, u32), String> {
     let c_path = CString::new(file_path).map_err(|_| "Invalid file path".to_string())?;
     unsafe {
@@ -122,8 +164,6 @@ fn decode_primary_rgb(file_path: &str) -> Result<(Vec<u8>, u32, u32, u32), Strin
         }
         let _handle_guard = HandleGuard(handle);
 
-        let _handle_w = heif_image_handle_get_width(handle);
-        let _handle_h = heif_image_handle_get_height(handle);
         let has_alpha = heif_image_handle_has_alpha_channel(handle) != 0;
 
         let mut img: *mut HeifImage = ptr::null_mut();
