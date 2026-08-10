@@ -2247,7 +2247,7 @@ fn reconcile_raw_jpeg_pairs_after_album_index(
     Ok(())
 }
 
-/// Sync a single folder if its directory mtime has changed since the last scan.
+/// Sync a single folder if its directory mtime has changed or reconciliation is requested.
 /// Returns counts and schedules thumbnail/embedding generation.
 pub fn sync_single_folder(
     app_handle: &tauri::AppHandle,
@@ -2319,8 +2319,8 @@ pub fn sync_single_folder(
         FolderScanState::LIVE_PHOTO_PAIRING,
         FolderScanState::LIVE_PHOTO_PAIRING_VERSION,
     )?;
-    if info.modified == folder.modified_at && !needs_live_photo_reindex {
-        // A manual folder refresh also reconciles the existing pair state.
+    if info.modified == folder.modified_at && !needs_live_photo_reindex && !reconcile_missing {
+        // An unchanged mtime-driven sync still reconciles the existing pair state.
         // This is intentionally the only incremental path that receives the
         // setting; changing Settings alone does not mutate the database.
         let raw_pairing_changed = if group_raw_jpeg_pairs {
