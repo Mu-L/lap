@@ -10,7 +10,7 @@
       config.settings.grid.style === 0 && isSelected ? 'bg-base-100 hover:bg-base-100' : 'hover:bg-base-100/30 hover:text-base-content ',
     ]"
     @click="(event: MouseEvent) => $emit('clicked', { shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey })"
-    @dblclick="(event: MouseEvent) => $emit('dblclicked', { shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey })"
+    @dblclick="handleDoubleClick"
     @contextmenu="handleContextMenu"
   >
     <div
@@ -316,6 +316,7 @@ const ANIMATABLE_IMAGE_EXTENSIONS = new Set(['gif', 'png', 'apng', 'webp', 'avif
 const isAnimatableImageFile = computed(() => ANIMATABLE_IMAGE_EXTENSIONS.has(
   getFileExtension(props.file?.name || props.file?.file_path || '').toLowerCase(),
 ));
+const isGifFile = computed(() => getFileExtension(props.file?.name || props.file?.file_path || '').toLowerCase() === 'gif');
 const animatedImagePreviewSrc = computed(() => getAssetSrc(props.file?.file_path || '', Number(props.file?.modified_at || 0)));
 const canPreviewAnimatedImage = computed(() => isAnimatableImageFile.value && !!animatedImagePreviewSrc.value);
 const isGeometryGridStyle = computed(() => config.settings.grid.style === 2 || config.settings.grid.style === 3);
@@ -471,6 +472,25 @@ function stopAnimatedImagePreview() {
   }
   isAnimatedImagePreviewReady.value = false;
   showAnimatedImagePreview.value = false;
+}
+
+function handleDoubleClick(event: MouseEvent) {
+  if (isGifFile.value) {
+    // The hover preview and viewer must not share an animated GIF resource.
+    // Tear down the thumbnail image first, then give the viewer a fresh asset
+    // URL so Chromium creates a new decoder from frame zero.
+    stopMediaPreview();
+    const filePath = props.file?.file_path;
+    if (filePath) {
+      uiStore.updateFileVersion(filePath);
+    }
+  }
+
+  emit('dblclicked', {
+    shiftKey: event.shiftKey,
+    metaKey: event.metaKey,
+    ctrlKey: event.ctrlKey,
+  });
 }
 
 function handleContextMenu(event: MouseEvent) {
