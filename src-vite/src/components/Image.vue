@@ -182,13 +182,14 @@ import {
   getAssetSrc,
   getPreviewUrl,
   shouldUseBackendPreview,
+  getFileExtension,
   getThumbUrl,
   getThumbnailDataUrl,
   getThumbnailDataUrlInflight,
   isWin,
   setThumbnailDataUrlInflight,
 } from '@/common/utils';
-import { getFacesForFile, getFileThumbById } from '@/common/api';
+import { getFacesForFile, getFileThumbById, getFfmpegBackedImageExtensions } from '@/common/api';
 import { RawFace, Face } from '@/common/types';
 
 import { IconError } from '@/common/icons';
@@ -387,6 +388,18 @@ let warmImageIdleId: number | null = null;
 const resolvedThumbnailSrc = ref('');
 const resolvedThumbnailFileId = ref(0);
 const displayThumbnailSrc = computed(() => props.thumbnailSrc || resolvedThumbnailSrc.value);
+
+// Keep this list in Rust, alongside the preview implementation, so adding a
+// new FFmpeg-backed format cannot reintroduce the placeholder/preview race.
+let ffmpegBackedPreviewExtensions: Promise<Set<string>> | null = null;
+
+function getFfmpegBackedPreviewExtensions() {
+  if (!ffmpegBackedPreviewExtensions) {
+    ffmpegBackedPreviewExtensions = getFfmpegBackedImageExtensions()
+      .then((extensions: string[]) => new Set(extensions.map((extension) => extension.toLowerCase())));
+  }
+  return ffmpegBackedPreviewExtensions;
+}
 
 function waitForNextPaint() {
   return new Promise<void>((resolve) => {
@@ -1209,12 +1222,14 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
   }, 500);
 
   const usesBackendPreview = shouldUseBackendPreview(newFilePath, Number(props.fileType || 0));
+  const ffmpegExtensionsPromise = getFfmpegBackedPreviewExtensions();
   const isRawPreview = Number(props.fileType || 0) === 3;
 
   try {
     const imageResultPromise = loadImageResource(newFilePath)
       .then((loaded) => ({ kind: 'image' as const, loaded }));
-    const thumbnailResultPromise = usesBackendPreview || props.showThumbnailPlaceholder
+    const usesRealtimePreview = (await ffmpegExtensionsPromise).has(getFileExtension(newFilePath).toLowerCase());
+    const thumbnailResultPromise = !usesRealtimePreview && (usesBackendPreview || props.showThumbnailPlaceholder)
       ? getEffectiveThumbnailSrc()
         .then(async (src) => {
           if (!src) return { kind: 'thumbnail' as const, placeholder: null };
@@ -1330,7 +1345,8 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
   if (!currentFilePath) return;
 
   const usesBackendPreview = shouldUseBackendPreview(currentFilePath, Number(props.fileType || 0));
-  if (!usesBackendPreview) return;
+  const ffmpegExtensions = await getFfmpegBackedPreviewExtensions();
+  if (!usesBackendPreview || ffmpegExtensions.has(getFileExtension(currentFilePath).toLowerCase())) return;
 
   // Only update if we are still waiting for the full image OR if we are currently showing a stale placeholder
   const activeIndex = activeImage.value;

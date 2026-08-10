@@ -27,6 +27,15 @@ export async function getSupportedFormatExtensions() {
   return { image: [], raw: [], video: [], options: [] };
 }
 
+export async function getFfmpegBackedImageExtensions() {
+  try {
+    return await invoke('get_ffmpeg_backed_image_extensions');
+  } catch (error) {
+    console.error('Failed to get FFmpeg-backed image extensions:', error);
+  }
+  return [];
+}
+
 // set last selected item index
 export async function setLastSelectedItemIndex(index) {
   try {

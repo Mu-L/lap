@@ -348,8 +348,10 @@
       <div
         v-if="file?.file_type === 1 || file?.file_type === 3"
         :class="[
-          'absolute inset-0 z-20 transition-opacity duration-150',
-          isLivePhotoPlaying ? 'pointer-events-none opacity-0' : 'opacity-100',
+          isLivePhoto
+            ? 'absolute inset-0 z-20 transition-opacity duration-150'
+            : 'contents',
+          isLivePhoto && (isLivePhotoPlaying ? 'pointer-events-none opacity-0' : 'opacity-100'),
         ]"
       >
         <Image

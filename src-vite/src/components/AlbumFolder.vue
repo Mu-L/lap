@@ -177,8 +177,6 @@ import {
   IconTrash,
   IconFolder,
   IconFolderOff,
-  IconHide,
-  IconUnhide,
   IconRefresh,
   IconClipboard,
   IconHeart,
@@ -377,7 +375,7 @@ const getMenuItemsForFolder = async (folder: any) => {
     },
     {
       label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
-      icon: folder?.is_excluded_from_search ? IconUnhide : IconHide,
+      icon: folder?.is_excluded_from_search ? IconFolder : IconFolderOff,
       action: () => {
         toggleFolderSearchExcluded(folder);
       }

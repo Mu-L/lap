@@ -3961,6 +3961,16 @@ const handleKeyDown = (e: any) => {
 
   if (matchesShortcut('file.openNewWindow', event, shortcutPlatform)) {
     openImageViewer(selectedItemIndex.value, true);
+  } else if (
+    isMac &&
+    selectedItemIndex.value >= 0 &&
+    selectedItemIndex.value < fileList.value.length &&
+    fileList.value.length > 0 &&
+    matchesShortcut('file.rename', event, shortcutPlatform)
+  ) {
+    // GridView may consume Enter before Content's DOM keydown handler on macOS.
+    // Handle the shortcut in the capture/global channel as a fallback.
+    clickRename();
   } else if (matchesShortcut('file.copy', event, shortcutPlatform)) {
     void clickCopyImages(fileList.value[selectedItemIndex.value]);
   // macOS handles Cmd+Arrow in App's capture listener before the content DOM handler.

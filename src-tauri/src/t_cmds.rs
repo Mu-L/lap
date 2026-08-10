@@ -188,6 +188,17 @@ pub fn get_supported_format_extensions() -> SupportedFormatExtensions {
     }
 }
 
+/// Return formats whose preview pixels are generated through the bundled
+/// FFmpeg sidecar, so the frontend can avoid racing the preview with a
+/// thumbnail placeholder.
+#[tauri::command]
+pub fn get_ffmpeg_backed_image_extensions() -> Vec<String> {
+    t_common::FFMPEG_BACKED_IMGS
+        .iter()
+        .map(|ext| (*ext).to_string())
+        .collect()
+}
+
 /// set last selected item index
 #[tauri::command]
 pub fn set_last_selected_item_index(index: i64) -> Result<(), String> {
