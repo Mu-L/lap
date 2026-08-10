@@ -474,9 +474,6 @@
       :selected-item-index="selectedItemIndex"
       :total-file-count="totalFileCount"
       :total-file-size="totalFileSize"
-      :select-mode="selectMode"
-      :selected-count="selectedCount"
-      :selected-size="selectedSize"
       :show-film-strip="config.settings.grid.showFilmStrip"
       :show-quick-view="showQuickView"
       :image-scale="imageDisplayScale"
@@ -2040,6 +2037,7 @@ const layoutVersion = ref(0);     // version to force layout update
 let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 const isGeometryGridStyle = computed(() => config.settings.grid.style === 2 || config.settings.grid.style === 3);
 const usesGeometryNavigation = computed(() =>
+  (groupedModeActive.value && !config.settings.grid.showFilmStrip) ||
   config.settings.grid.style === 2 ||
   (!config.settings.grid.showFilmStrip && config.settings.grid.style === 3)
 );
@@ -3136,16 +3134,13 @@ function toggleKeyboardSelection(direction: 'prev' | 'next') {
 
       const start = Math.min(keyboardSelectionAnchorIndex.value, nextIndex);
       const end = Math.max(keyboardSelectionAnchorIndex.value, nextIndex);
-      const nextItem = fileList.value[nextIndex];
-      if (!nextItem) return;
-      const targetState = !nextItem.isSelected;
       if (!await hydrateSelectionRange(start, end)) {
         toast.error(t('info_panel.selection_load_failed'));
         return;
       }
       for (let i = start; i <= end; i++) {
         if (isRealFileItem(fileList.value[i])) {
-          setItemSelected(i, targetState);
+          setItemSelected(i, true);
         }
       }
 

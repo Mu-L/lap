@@ -783,7 +783,9 @@ function centerItem(index: number) {
 
 function getNextItemIndex(currentIndex: number, direction: 'up' | 'down'): number {
   const style = config.settings.grid.style;
-  const supportsGeometryNavigation = style === 2 || (!config.settings.grid.showFilmStrip && isGeometryGridStyle(style));
+  const supportsGeometryNavigation = hasGroupRows.value
+    || style === 2
+    || (!config.settings.grid.showFilmStrip && isGeometryGridStyle(style));
   if (!supportsGeometryNavigation || layoutGeometry.value.length === 0) {
     return -1;
   }
