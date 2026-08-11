@@ -33,7 +33,7 @@
     "drop_here": "将文件拖放到这里",
     "drop_action": "添加",
     "drop_title_hint": "拖放以添加",
-    "empty_drop_hint": "将项目拖到合集中以添加。",
+    "empty_drop_hint": "将文件拖到合集中以添加。",
     "added_toast": "已添加 {count} 个文件到合集",
     "add_failed_toast": "无法将文件添加到 {count} 个合集",
     "already_exists_toast": "{count} 个文件已在合集中",
@@ -466,7 +466,8 @@
         "groups_count": "{count} 个相似组",
         "load_more": "加载更多",
         "error_title": "无法加载相似照片",
-        "empty_title": "未发现相似照片"
+        "empty_title": "未发现相似照片",
+        "analyze_confirm": "分析"
       },
       "reclaimable_size": "可回收",
       "groups_title": "重复组",
@@ -752,7 +753,7 @@
     "move_to_folder": {
       "title": "移动到文件夹",
       "confirm_title": "移动到库外？",
-      "warning": "将 '{source}' 移动到：\n{dest}\n\n这些项目将从当前库中移除。",
+      "warning": "将 '{source}' 移动到：\n{dest}\n\n这些文件将从当前库中移除。",
       "ok": "移动",
       "success": "已将 '{source}' 移动到 '{dest}'。",
       "error": "将 '{source}' 移动到 '{dest}' 失败。"
@@ -765,12 +766,12 @@
     },
     "file_conflict": {
       "title": "文件已存在",
-      "message": "名为 '{name}' 的项目已存在于：\n{destination}",
+      "message": "文件 '{name}' 已存在于 '{destination}'。",
       "skip": "跳过",
-      "keep_both": "保留两者",
+      "keep_both": "保留两个文件",
       "replace": "替换",
       "apply_all": "应用到所有冲突",
-      "same_folder": "该项目已在所选文件夹中。"
+      "same_folder": "该文件已在所选文件夹中。"
     },
     "rename_file": {
       "title": "重命名文件",
@@ -1141,7 +1142,7 @@
       "show_subfolder_files_hint": "文件夹视图包含子文件夹内的文件",
       "section_file_grouping": "文件分组",
       "group_raw_jpeg_pairs": "合并显示 RAW 配对",
-      "group_raw_jpeg_pairs_hint": "将同名的 RAW 与 JPEG/HEIC 文件作为一个项目显示",
+      "group_raw_jpeg_pairs_hint": "将同名的 RAW 与 JPEG/HEIC 文件合并显示为一个条目",
       "section_sorting": "排序",
       "folder_sort": "文件夹",
       "folder_sort_hint": "相册下显示的文件夹排序方式",

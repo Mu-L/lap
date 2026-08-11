@@ -466,7 +466,8 @@
         "groups_count": "{count} grupos similares",
         "load_more": "Cargar más",
         "error_title": "No se pudieron cargar las fotos similares",
-        "empty_title": "No se encontraron fotos similares"
+        "empty_title": "No se encontraron fotos similares",
+        "analyze_confirm": "Analizar"
       },
       "reclaimable_size": "Recuperable",
       "groups_title": "Grupos duplicados",

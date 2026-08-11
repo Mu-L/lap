@@ -466,7 +466,8 @@
         "groups_count": "{count} groupes similaires",
         "load_more": "Charger plus",
         "error_title": "Impossible de charger les photos similaires",
-        "empty_title": "Aucune photo similaire trouvée"
+        "empty_title": "Aucune photo similaire trouvée",
+        "analyze_confirm": "Analyser"
       },
       "reclaimable_size": "Récupérable",
       "groups_title": "Groupes de doublons",

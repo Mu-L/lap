@@ -466,7 +466,8 @@
         "groups_count": "類似グループ {count} 件",
         "load_more": "さらに読み込む",
         "error_title": "類似写真を読み込めません",
-        "empty_title": "類似写真が見つかりません"
+        "empty_title": "類似写真が見つかりません",
+        "analyze_confirm": "分析"
       },
       "reclaimable_size": "削減可能",
       "groups_title": "重複グループ",

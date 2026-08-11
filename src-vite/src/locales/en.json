@@ -466,7 +466,8 @@
         "groups_count": "{count} similar sets",
         "load_more": "Load more",
         "error_title": "Unable to load similar photos",
-        "empty_title": "No similar photos found"
+        "empty_title": "No similar photos found",
+        "analyze_confirm": "Analyze"
       },
       "reclaimable_size": "Reclaimable",
       "groups_title": "Duplicate Sets",
