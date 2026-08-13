@@ -107,6 +107,14 @@ impl AiEngine {
             self.set_text_model(app, ImageSearchTextModel::Default)?;
         }
 
+        // Verify that text and vision embedding dimensions are compatible. If
+        // not, attempt automatic fallback to the multilingual text model (if
+        // available) and re-check. Fail fast if compatibility cannot be
+        // established so the app doesn't run with mismatched embedding spaces.
+        if let Err(e) = self.verify_embedding_compatibility(app) {
+            return Err(format!("AI model compatibility check failed: {}", e));
+        }
+
         println!("AI Models Loaded Successfully!");
         Ok(())
     }
@@ -307,6 +315,75 @@ impl AiEngine {
         let image_input = self.preprocess_dynamic_image(img)?;
 
         self.run_vision_model(image_input)
+    }
+
+    // Helpers for embedding dimension checks and compatibility verification
+    fn fetch_text_embedding_dim(&mut self) -> Result<usize, String> {
+        // Use a short deterministic text to get the embedding length
+        let emb = self.encode_text("__lap_embedding_probe__")?;
+        Ok(emb.len())
+    }
+
+    fn fetch_vision_embedding_dim(&mut self) -> Result<usize, String> {
+        // Create a zero tensor with the expected image input shape (1,3,224,224)
+        let zeros = Array::zeros((1, 3, 224, 224));
+        let emb = self.run_vision_model(zeros)?;
+        Ok(emb.len())
+    }
+
+    fn verify_embedding_compatibility(&mut self, app: &tauri::AppHandle) -> Result<(), String> {
+        if !self.is_loaded() {
+            return Err("AI models not fully loaded".to_string());
+        }
+
+        let text_dim = self.fetch_text_embedding_dim().map_err(|e| format!("text probe failed: {}", e))?;
+        let vision_dim = self.fetch_vision_embedding_dim().map_err(|e| format!("vision probe failed: {}", e))?;
+
+        if text_dim == vision_dim {
+            println!("Embedding dims compatible: {}", text_dim);
+            return Ok(());
+        }
+
+        eprintln!("Embedding dimension mismatch: text={} vision={}", text_dim, vision_dim);
+
+        // Try automatic fallback to multilingual text model if available and
+        // current is Default
+        if self.text_model_kind == ImageSearchTextModel::Default &&
+            Self::is_multilingual_model_available(app)
+        {
+            eprintln!("Attempting fallback to Multilingual text model to match vision dims");
+            if self.set_text_model(app, ImageSearchTextModel::Multilingual).is_ok() {
+                let new_text_dim = self.fetch_text_embedding_dim().map_err(|e| format!("text probe after fallback failed: {}", e))?;
+                if new_text_dim == vision_dim {
+                    println!("Fallback succeeded — embedding dims now compatible: {}", new_text_dim);
+                    return Ok(());
+                } else {
+                    eprintln!("Fallback did not resolve mismatch: text={} vision={}", new_text_dim, vision_dim);
+                }
+            } else {
+                eprintln!("Failed to set multilingual text model during fallback");
+            }
+        }
+
+        // As a last attempt, if current model is Multilingual try switching to Default
+        if self.text_model_kind == ImageSearchTextModel::Multilingual {
+            if let Ok(paths) = Self::text_model_paths(app, ImageSearchTextModel::Default) {
+                if paths.model.exists() && paths.tokenizer.exists() {
+                    eprintln!("Attempting fallback to Default text model to match vision dims");
+                    if self.set_text_model(app, ImageSearchTextModel::Default).is_ok() {
+                        let new_text_dim = self.fetch_text_embedding_dim().map_err(|e| format!("text probe after fallback failed: {}", e))?;
+                        if new_text_dim == vision_dim {
+                            println!("Fallback to Default succeeded — embedding dims now compatible: {}", new_text_dim);
+                            return Ok(());
+                        } else {
+                            eprintln!("Fallback to Default did not resolve mismatch: text={} vision={}", new_text_dim, vision_dim);
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(format!("Embedding dimensionality mismatch after fallbacks: text={} vision={}", text_dim, vision_dim))
     }
 
     fn run_vision_model(&mut self, image_input: Array4<f32>) -> Result<Vec<f32>, String> {
