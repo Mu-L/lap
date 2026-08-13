@@ -55,11 +55,13 @@
         <div v-else-if="similarGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
           <div class="text-center text-base-content/30 space-y-3 max-w-65">
             <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
-            <p v-if="similarHasScanned" class="text-xs font-medium">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
-            <p v-else class="text-xs leading-5 text-base-content/50">{{ $t('info_panel.dedup.similar.description') }}</p>
-            <PanelActionButton v-if="!similarHasScanned" primary :disabled="similarEligibleCountLoading || similarEligibleCount === 0 || similarLoading" @click="startSimilar">
-              {{ similarEligibleCountLoading ? $t('tooltip.loading') : $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
-            </PanelActionButton>
+            <p v-if="similarHasScanned || (!similarEligibleCountLoading && similarEligibleCount === 0)" class="text-xs font-medium">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
+            <template v-else>
+              <p class="text-xs leading-5 text-base-content/50">{{ $t('info_panel.dedup.similar.description') }}</p>
+              <PanelActionButton primary :disabled="similarEligibleCountLoading || similarEligibleCount === 0 || similarLoading" @click="startSimilar">
+                {{ similarEligibleCountLoading ? $t('tooltip.loading') : $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
+              </PanelActionButton>
+            </template>
           </div>
         </div>
         <div v-else ref="similarSplitPaneRef" class="flex min-h-0 flex-1 flex-col">

@@ -166,7 +166,7 @@
 
     <!-- progress bar -->
     <div v-if="showTopProgressBar" class="absolute top-11 left-0 right-0 z-50">
-      <ProgressBar :percent="topProgressPercent" />
+      <ProgressBar :key="scanProgressSession" :percent="topProgressPercent" />
     </div>
 
     <!-- content view -->
@@ -885,9 +885,7 @@ const showFolderFiles = computed(() =>
   Boolean(config.main.sidebarIndex === SIDEBAR.ALBUM && libConfig.album.id && libConfig.album.id > 0 && !libConfig.album.selected)
 );
 
-// progress bar
-const thumbCount = ref(0);      // thumbnail count (from 0 to fileList.length)
-const showProgressBar = ref(false); // show progress bar
+const scanProgressSession = ref(0);
 
 // div elements
 const contentRootRef = ref<HTMLElement | null>(null);
@@ -1185,8 +1183,6 @@ function createViewBackup() {
     currentSmartQueryParams: currentSmartQueryParams.value ? { ...currentSmartQueryParams.value } : null,
     currentCollectionId: currentCollectionId.value,
     currentSearchFileIds: [...currentSearchFileIds.value],
-    thumbCount: thumbCount.value,
-    showProgressBar: showProgressBar.value,
     scrollTop: gridViewRef.value ? gridViewRef.value.getScrollTop() : 0,
   };
 }
@@ -4036,6 +4032,9 @@ const indexRecoveryMessage = computed(() => {
 async function processNextAlbum(skipFilePath: string | null = null, skipRecoveryCheck = false) {
   if (libConfig.index.albumQueue.length > 0) {
     const albumId = libConfig.index.albumQueue[0];
+    // Hide the previous scan's completed progress before awaiting album lookup.
+    scanProgressSession.value++;
+    libConfig.index.phase = 'complete';
     const album = await getAlbum(albumId);
     if (album) {
       // Check for crash recovery: if trace file exists and matches this album
@@ -4102,11 +4101,6 @@ watch(isScanStreamingMode, (streaming) => {
   if (groupedModeActive.value || effectiveGroupBy.value > 0) {
     updateContent();
   }
-});
-
-const thumbProgressPercent = computed(() => {
-  if (fileList.value.length <= 0) return 0;
-  return Number(((thumbCount.value / fileList.value.length) * 100).toFixed(0));
 });
 
 const isAlbumPaused = (albumId: number | null | undefined) =>
@@ -4220,11 +4214,31 @@ const statusBarScanText = computed(() => {
     .replace('{total}', total);
 });
 
-const showTopProgressBar = computed(() =>
-  fileList.value.length > 0 && showProgressBar.value
-);
+const topProgressPercent = computed(() => {
+  const phase = String(libConfig.index.phase || 'discovering');
+  const total = Number(libConfig.index.total || 0);
+  const discovered = Number(libConfig.index.discovered || 0);
+  const processed = Number(libConfig.index.processed || 0);
+  const searchReady = Number(libConfig.index.searchReady || 0);
+  const searchTotal = Number(libConfig.index.searchTotal || 0);
+  const ratio = (current: number, max: number) => max > 0
+    ? Math.min(1, Math.max(0, current / max))
+    : 0;
 
-const topProgressPercent = computed(() => thumbProgressPercent.value);
+  if (phase === 'preparing_previews') {
+    return 46 + Math.round(ratio(processed, total) * 44);
+  }
+  if (phase === 'preparing_search') {
+    return 91 + Math.round(ratio(searchReady, searchTotal) * 8);
+  }
+  return Math.max(1, Math.round(ratio(discovered, total) * 45));
+});
+
+const showTopProgressBar = computed(() =>
+  Number(libConfig.index.status) === 1 &&
+  (libConfig.index.albumQueue as any[]).length > 0 &&
+  String(libConfig.index.phase || '') !== 'complete'
+);
 
 function buildScanStreamQueryParams() {
   return {
@@ -4271,8 +4285,6 @@ function enterScanStreamingMode(albumId: number) {
   totalFileCount.value = 0;
   totalFileSize.value = 0;
   selectedItemIndex.value = -1;
-  thumbCount.value = 0;
-  showProgressBar.value = false;
   isLoading.value = false;
   hasLoadedInitialResult.value = true;
   contentReady.value = true;
@@ -6408,9 +6420,6 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
   
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
-  thumbCount.value = 0;
-  showProgressBar.value = false;
-
   const requestId = ++currentContentRequestId;
 
   contentReady.value = false;
@@ -6733,8 +6742,6 @@ function enterSimilarSearchMode(file: any) {
 
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
-  thumbCount.value = 0;
-
   // 1. Backup current state
   if (tempViewMode.value === 'none') {
     backupState.value = createViewBackup();
@@ -6786,8 +6793,6 @@ async function enterPersonSearchMode(file: any) {
 
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
-  thumbCount.value = 0;
-
   // 1. Backup current state
   if (tempViewMode.value === 'none') {
     backupState.value = createViewBackup();
@@ -6834,8 +6839,6 @@ function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
   
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
-  thumbCount.value = 0;
-
   // 2. Set mode
   tempViewMode.value = 'album';
   showQuickView.value = false;
@@ -6906,9 +6909,6 @@ function exitTempViewMode() {
   currentSmartQueryParams.value = state.currentSmartQueryParams || null;
   currentCollectionId.value = state.currentCollectionId || null;
   currentSearchFileIds.value = [...(state.currentSearchFileIds || [])];
-  thumbCount.value = state.thumbCount;
-  showProgressBar.value = state.showProgressBar;
-
   // Increment request ID to cancel any previous thumbnail generation (from temp view)
   currentThumbRequestId++;
 
@@ -8930,7 +8930,6 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, 
     } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
-    thumbCount.value++;
   };
 
   const processBatch = async (startIndex: number) => {
@@ -8946,7 +8945,6 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, 
       const cached = getCachedThumbnailDataUrl(file.id, thumbnailSize);
       if (cached) {
         file.thumbnail = cached;
-        thumbCount.value++;
         continue;
       }
 
