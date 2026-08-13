@@ -192,22 +192,8 @@
     <!-- edit album information -->
     <AlbumEdit
       v-if="showAlbumEdit"
-      :isNewAlbum="isNewAlbum"
       :albumId="isNewAlbum ? 0 : editingAlbumId"
-      :inputName="isNewAlbum ? '' : editingAlbum?.name"
-      :inputDescription="isNewAlbum ? '' : editingAlbum?.description"
-      :albumPath="isNewAlbum ? newAlbumFolderPath : editingAlbum?.path"
-      :albumCoverFileId="isNewAlbum ? undefined : editingAlbum?.cover_file_id"
-      :createdAt="isNewAlbum ? '' : formatTimestamp(editingAlbum?.created_at ?? 0, $t('format.date_time'))"
-      :modifiedAt="isNewAlbum ? '' : formatTimestamp(editingAlbum?.modified_at ?? 0, $t('format.date_time'))"
-      :lastScanTime="isNewAlbum ? '' : formatTimestamp((editingAlbum?.last_scan_time ?? 0) / 1000, $t('format.date_time'))"
-      :indexedFileCount="isNewAlbum ? 0 : editingAlbum?.total"
-      :skippedFileCount="isNewAlbum ? 0 : editingAlbum?.skipped_count"
-      :skippedFileSize="isNewAlbum ? 0 : editingAlbum?.skipped_size"
-      :failedFileCount="isNewAlbum ? 0 : editingAlbum?.failed_count"
-      :failedFileSize="isNewAlbum ? 0 : editingAlbum?.failed_size"
-      :mergedFileCount="isNewAlbum ? 0 : editingAlbum?.merged_count"
-      :mergedFileSize="isNewAlbum ? 0 : editingAlbum?.merged_size"
+      :initialFolderPath="isNewAlbum ? newAlbumFolderPath : ''"
       @ok="clickEditAlbum"
       @cancel="showAlbumEdit = false"
     />
@@ -236,7 +222,6 @@ import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import {
   scrollToFolder,
-  formatTimestamp,
   getThumbUrl,
   getThumbnailDataUrl,
   getThumbnailDataUrlInflight,

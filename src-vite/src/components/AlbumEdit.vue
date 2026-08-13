@@ -142,9 +142,9 @@
 
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { countFolder, getAllAlbums, listenIndexProgress, listenIndexFinished } from '@/common/api';
+import { countFolder, getAlbum, getAllAlbums, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { useToast } from '@/common/toast';
-import { formatFileSize, openFolderDialog, getFolderName } from '@/common/utils';
+import { formatFileSize, formatTimestamp, openFolderDialog, getFolderName } from '@/common/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { getAlbumScanState } from '@/common/scanStatus';
@@ -154,69 +154,13 @@ import TButton from '@/components/TButton.vue';
 import { IconEdit, IconNewFolder } from '@/common/icons';
 
 const props = defineProps({
-  isNewAlbum: {
-    type: Boolean,
-    default: false
-  },
   albumId: {
     type: Number,
     required: true
   },
-  inputName: { 
+  initialFolderPath: {
     type: String, 
     default: '' 
-  },
-  inputDescription: { 
-    type: String, 
-    default: '' 
-  },
-  albumPath: { 
-    type: String, 
-    default: '' 
-  },
-  albumCoverFileId: { 
-    type: Number, 
-    default: null 
-  },
-  createdAt: { 
-    type: String, 
-    default: '' 
-  },
-  modifiedAt: { 
-    type: String, 
-    default: '' 
-  },
-  lastScanTime: { 
-    type: String, 
-    default: '' 
-  },
-  indexedFileCount: {
-    type: Number,
-    default: 0,
-  },
-  skippedFileCount: {
-    type: Number,
-    default: 0,
-  },
-  skippedFileSize: {
-    type: Number,
-    default: 0,
-  },
-  failedFileCount: {
-    type: Number,
-    default: 0,
-  },
-  failedFileSize: {
-    type: Number,
-    default: 0,
-  },
-  mergedFileCount: {
-    type: Number,
-    default: 0,
-  },
-  mergedFileSize: {
-    type: Number,
-    default: 0,
   },
 });
 
@@ -225,6 +169,11 @@ const uiStore = useUIStore();
 const libStore = useLibraryStore();
 const { t } = useI18n();
 const toast = useToast();
+const isNewAlbum = computed(() => props.albumId <= 0);
+const album = ref<any>(null);
+const createdAt = computed(() => formatTimestamp(Number(album.value?.created_at || 0), t('format.date_time')));
+const modifiedAt = computed(() => formatTimestamp(Number(album.value?.modified_at || 0), t('format.date_time')));
+const lastScanTime = computed(() => formatTimestamp(Number(album.value?.last_scan_time || 0) / 1000, t('format.date_time')));
 
 // select folder
 const selectedFolder = ref('');
@@ -232,9 +181,9 @@ const selectedFolder = ref('');
 // input 
 const inputNameRef = ref<HTMLInputElement | null>(null);
 const descriptionRef = ref<HTMLTextAreaElement | null>(null);
-const inputNameValue = ref(props.inputName);
-const inputDescriptionValue = ref(props.inputDescription);
-const showDescription = ref(props.isNewAlbum || inputDescriptionValue.value.trim().length > 0);
+const inputNameValue = ref('');
+const inputDescriptionValue = ref('');
+const showDescription = ref(isNewAlbum.value);
 
 // total file count of the album (from disk probe)
 const totalImageCount = ref(-1);
@@ -253,14 +202,14 @@ const failedCount = ref(0);
 const failedSize = ref(0);
 const scanTotalCount = ref(-1);
 const scanTotalSize = ref(0);
-const skippedFileCount = computed(() => Number(props.skippedFileCount || 0));
-const skippedFileSize = computed(() => Number(props.skippedFileSize || 0));
-const failedFileCount = computed(() => Number(props.failedFileCount || 0));
-const failedFileSize = computed(() => Number(props.failedFileSize || 0));
-const mergedFileCount = computed(() => Number(props.mergedFileCount || 0));
-const mergedFileSize = computed(() => Number(props.mergedFileSize || 0));
+const skippedFileCount = computed(() => Number(album.value?.skipped_count || 0));
+const skippedFileSize = computed(() => Number(album.value?.skipped_size || 0));
+const failedFileCount = computed(() => Number(album.value?.failed_count || 0));
+const failedFileSize = computed(() => Number(album.value?.failed_size || 0));
+const mergedFileCount = computed(() => Number(album.value?.merged_count || 0));
+const mergedFileSize = computed(() => Number(album.value?.merged_size || 0));
 const isScanning = computed(() => {
-  if (props.isNewAlbum) return false;
+  if (isNewAlbum.value) return false;
   return getAlbumScanState({
     albumId: props.albumId,
     albumQueue: libStore.index.albumQueue as any[],
@@ -271,19 +220,19 @@ const isScanning = computed(() => {
 
 const indexedFileCount = computed(() => totalImageCount.value + totalVideoCount.value);
 const indexedFileSize = computed(() => totalImageSize.value + totalVideoSize.value);
-const scanDisplayCount = computed(() => props.isNewAlbum
+const scanDisplayCount = computed(() => isNewAlbum.value
   ? scanTotalCount.value
   : isScanning.value
     ? discoveredCount.value + skippedCount.value
-    : Number(props.indexedFileCount || 0) + mergedFileCount.value + skippedFileCount.value + failedFileCount.value);
-const scanDisplaySize = computed(() => props.isNewAlbum
+    : Number(album.value?.total || 0) + mergedFileCount.value + skippedFileCount.value + failedFileCount.value);
+const scanDisplaySize = computed(() => isNewAlbum.value
   ? scanTotalSize.value
   : isScanning.value
     ? scannedSize.value
   : indexedFileSize.value + skippedFileSize.value);
 const indexedSummaryCount = computed(() => Math.max(0, isScanning.value
   ? discoveredCount.value - failedCount.value
-  : Number(props.indexedFileCount || 0)));
+  : Number(album.value?.total || 0)));
 const indexedSummarySize = computed(() => Math.max(0, isScanning.value
   ? scannedSize.value - skippedSize.value - failedSize.value
   : indexedFileSize.value - mergedFileSize.value - failedFileSize.value));
@@ -301,7 +250,7 @@ let unlistenIndexFinished: (() => void) | undefined;
 
 watch(() => selectedFolder.value, (newPath) => {
   if(newPath) {
-    if (props.isNewAlbum) {
+    if (isNewAlbum.value) {
       // get folder name
       inputNameValue.value = getFolderName(newPath);
       inputDescriptionValue.value = '';
@@ -346,9 +295,18 @@ onMounted(async () => {
     }
   });
 
-  if (props.albumPath) {
-    selectedFolder.value = props.albumPath;
+  if (isNewAlbum.value) {
+    selectedFolder.value = props.initialFolderPath;
+  } else {
+    album.value = await getAlbum(props.albumId);
+    if (!album.value) return;
+    inputNameValue.value = album.value.name || '';
+    inputDescriptionValue.value = album.value.description || '';
+    showDescription.value = inputDescriptionValue.value.trim().length > 0;
+    selectedFolder.value = album.value.path || '';
+  }
 
+  if (selectedFolder.value) {
     setTimeout(() => {
       inputNameRef.value?.focus();
     }, 50); // 50ms delay
@@ -406,7 +364,7 @@ function handleKeyDown(event: KeyboardEvent) {
 const clickOk = async () => {
   if (inputNameValue.value.trim().length > 0 && selectedFolder.value.length > 0) {
     // Check if album with this path already exists
-    if (props.isNewAlbum) {
+    if (isNewAlbum.value) {
       const albums = await getAllAlbums();
       const exists = albums?.some((album: any) => album.path === selectedFolder.value);
       if (exists) {
@@ -420,7 +378,7 @@ const clickOk = async () => {
       selectedFolder.value,
       inputNameValue.value, 
       inputDescriptionValue.value ? inputDescriptionValue.value : '',
-      props.isNewAlbum
+      isNewAlbum.value
     );
   }
 };
