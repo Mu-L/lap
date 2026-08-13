@@ -2443,13 +2443,15 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
     });
 }
 
-/// get folder and file count and total file size (include all sub-folders)
-pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64) {
+/// Get folder, media, and scan candidate totals (including all sub-folders).
+pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64, u64, u64) {
     let mut folder_count = 0;
     let mut image_file_count = 0;
     let mut total_image_size = 0;
     let mut video_file_count = 0;
     let mut total_video_size = 0;
+    let mut scan_file_count = 0;
+    let mut total_scan_size = 0;
 
     // Use WalkDir to iterate over directory entries
     for entry in WalkDir::new(path)
@@ -2462,8 +2464,12 @@ pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64) {
         if entry_type.is_dir() {
             folder_count += 1;
         } else if entry_type.is_file() {
+            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+            if !is_ignored_scan_sidecar(entry.path()) {
+                scan_file_count += 1;
+                total_scan_size += size;
+            }
             if let Some(file_ext_type) = get_file_type(entry.path().to_str().unwrap_or("")) {
-                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 match file_ext_type {
                     1 | 3 => {
                         image_file_count += 1;
@@ -2485,6 +2491,18 @@ pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64) {
         total_image_size,
         video_file_count,
         total_video_size,
+        scan_file_count,
+        total_scan_size,
+    )
+}
+
+fn is_ignored_scan_sidecar(path: &Path) -> bool {
+    matches!(
+        path.extension()
+            .and_then(|extension| extension.to_str())
+            .map(|extension| extension.to_ascii_lowercase())
+            .as_deref(),
+        Some("xmp" | "aae")
     )
 }
 
@@ -2771,7 +2789,12 @@ struct ProgressPayload {
     total: u64,
     search_total: u64,
     current_size: u64,
+    skipped: u64,
+    skipped_size: u64,
     failed: u64,
+    failed_size: u64,
+    scan_total: u64,
+    scan_total_size: u64,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -2783,7 +2806,12 @@ struct FinishedPayload {
     search_ready: u64,
     total: u64,
     search_total: u64,
+    skipped: u64,
+    skipped_size: u64,
     failed: u64,
+    failed_size: u64,
+    scan_total: u64,
+    scan_total_size: u64,
 }
 
 #[derive(serde::Serialize, Clone)]
@@ -2895,7 +2923,12 @@ struct ProgressSnapshot {
     total: u64,
     search_total: u64,
     current_size: u64,
+    skipped: u64,
+    skipped_size: u64,
     failed: u64,
+    failed_size: u64,
+    scan_total: u64,
+    scan_total_size: u64,
 }
 
 impl ProgressSnapshot {
@@ -2922,7 +2955,12 @@ impl ProgressSnapshot {
             total: self.total,
             search_total: self.search_total,
             current_size: self.current_size,
+            skipped: self.skipped,
+            skipped_size: self.skipped_size,
             failed: self.failed,
+            failed_size: self.failed_size,
+            scan_total: self.scan_total,
+            scan_total_size: self.scan_total_size,
         }
     }
 }
@@ -2943,6 +2981,8 @@ impl ProgressTracker {
         total: u64,
         search_total: u64,
         discovered: u64,
+        scan_total: u64,
+        scan_total_size: u64,
     ) -> Self {
         let snapshot = ProgressSnapshot {
             discovered,
@@ -2951,7 +2991,12 @@ impl ProgressTracker {
             total,
             search_total,
             current_size: 0,
+            skipped: 0,
+            skipped_size: 0,
             failed: 0,
+            failed_size: 0,
+            scan_total,
+            scan_total_size,
         };
         Self {
             album_id,
@@ -3166,12 +3211,8 @@ async fn process_thumbnail_task(
     .map_err(|e| format!("Thumbnail task failed: {}", e))?;
 
     if !thumb_ok {
-        with_progress_tracker(&tracker, |tracker| {
-            tracker.modify(|snapshot| {
-                snapshot.failed += 1;
-            });
-            tracker.maybe_emit();
-        });
+        // The file record was created successfully. A preview failure must not
+        // be counted as a scan failure, otherwise it overlaps with Indexed.
         return Ok(false);
     }
 
@@ -3227,12 +3268,7 @@ async fn process_thumbnail_task(
         });
         Ok(true)
     } else {
-        with_progress_tracker(&tracker, |tracker| {
-            tracker.modify(|snapshot| {
-                snapshot.failed += 1;
-            });
-            tracker.maybe_emit();
-        });
+        // Embedding is supplementary; the file remains indexed and visible.
         Ok(false)
     }
 }
@@ -3266,7 +3302,12 @@ pub async fn index_album_worker(
                     search_ready: previous_indexed,
                     total: previous_total,
                     search_total: previous_total,
+                    skipped: 0,
+                    skipped_size: 0,
                     failed: 1,
+                    failed_size: 0,
+                    scan_total: previous_total,
+                    scan_total_size: 0,
                 },
             )
             .map_err(|e| e.to_string())?;
@@ -3274,7 +3315,7 @@ pub async fn index_album_worker(
     }
 
     // 2. Count total files
-    let (_folders, image_count, _image_size, video_count, _video_size) =
+    let (_folders, image_count, _image_size, video_count, _video_size, scan_total, scan_total_size) =
         count_folder_files(&album.path);
     let total_files = image_count + video_count;
     let search_total = image_count;
@@ -3297,6 +3338,8 @@ pub async fn index_album_worker(
         total_files,
         search_total,
         resume_from,
+        scan_total,
+        scan_total_size,
     )));
     with_progress_tracker(&tracker, |tracker| tracker.emit_now());
 
@@ -3395,6 +3438,7 @@ pub async fn index_album_worker(
                         tracker.modify(|snapshot| {
                             snapshot.discovered += 1;
                             snapshot.failed += 1;
+                            snapshot.failed_size += file_size;
                             snapshot.current_size += file_size;
                         });
                         tracker.maybe_emit();
@@ -3447,16 +3491,29 @@ pub async fn index_album_worker(
                         let _ = Album::update_progress(album_id, processed_now, total_files);
                     }
                 } else {
+                    let file_size = std::fs::metadata(&path_str).map(|m| m.len()).unwrap_or(0);
                     with_progress_tracker(&tracker, |tracker| {
                         tracker.modify(|snapshot| {
                             snapshot.discovered += 1;
                             snapshot.failed += 1;
+                            snapshot.failed_size += file_size;
+                            snapshot.current_size += file_size;
                         });
                         tracker.maybe_emit();
                     });
                 }
 
                 traversed_count += 1;
+            } else if !is_ignored_scan_sidecar(entry.path()) {
+                let file_size = entry.metadata().map(|metadata| metadata.len()).unwrap_or(0);
+                with_progress_tracker(&tracker, |tracker| {
+                    tracker.modify(|snapshot| {
+                        snapshot.skipped += 1;
+                        snapshot.skipped_size += file_size;
+                        snapshot.current_size += file_size;
+                    });
+                    tracker.maybe_emit();
+                });
             }
         }
     }
@@ -3466,22 +3523,10 @@ pub async fn index_album_worker(
             Ok(Ok(_)) => {}
             Ok(Err(e)) => {
                 eprintln!("Processing task failed: {}", e);
-                with_progress_tracker(&tracker, |tracker| {
-                    tracker.modify(|snapshot| {
-                        snapshot.failed += 1;
-                    });
-                    tracker.maybe_emit();
-                });
             }
             Err(e) => {
                 if !e.is_cancelled() {
                     eprintln!("Processing task join failed: {}", e);
-                    with_progress_tracker(&tracker, |tracker| {
-                        tracker.modify(|snapshot| {
-                            snapshot.failed += 1;
-                        });
-                        tracker.maybe_emit();
-                    });
                 }
             }
         }
@@ -3538,9 +3583,24 @@ pub async fn index_album_worker(
         }
     }
 
+    let (merged_count, merged_size) = if scan_complete {
+        Album::merged_file_stats_in_album(album_id).unwrap_or((0, 0))
+    } else {
+        (0, 0)
+    };
+
     if scan_complete {
         // Update last scan time only after a complete filesystem traversal.
         let _ = Album::update_last_scan_time(album_id, current_scan_time);
+        let _ = Album::update_last_scan_results(
+            album_id,
+            final_snapshot.skipped,
+            final_snapshot.skipped_size,
+            final_snapshot.failed,
+            final_snapshot.failed_size,
+            merged_count,
+            merged_size,
+        );
 
         // Recount only after a complete traversal so an offline disk cannot
         // replace the existing album totals with a partial result.
@@ -3567,8 +3627,14 @@ pub async fn index_album_worker(
     // Summary log
     let elapsed = scan_start.elapsed().as_secs_f64();
     println!(
-        "[scan] album={} folder='{}' files={} time={:.1}s",
-        album_id, album.path, final_snapshot.processed, elapsed
+        "[scan] album={} folder='{}' files={} skipped={} merged={} failed={} time={:.1}s",
+        album_id,
+        album.path,
+        final_snapshot.processed,
+        final_snapshot.skipped,
+        merged_count,
+        final_snapshot.failed,
+        elapsed
     );
 
     // 6. Emit finished
@@ -3595,7 +3661,12 @@ pub async fn index_album_worker(
                     final_snapshot.total
                 },
                 search_total: final_snapshot.search_total,
+                skipped: final_snapshot.skipped,
+                skipped_size: final_snapshot.skipped_size,
                 failed: final_snapshot.failed,
+                failed_size: final_snapshot.failed_size,
+                scan_total: final_snapshot.scan_total,
+                scan_total_size: final_snapshot.scan_total_size,
             },
         )
         .map_err(|e| e.to_string())?;

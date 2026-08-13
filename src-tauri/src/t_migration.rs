@@ -132,6 +132,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Persist folder filesystem identity",
             sql: "",
         },
+        Migration {
+            version: 14,
+            description: "Store scan totals",
+            sql: "",
+        },
     ]
 }
 
@@ -411,6 +416,16 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                     [],
                 )
                 .map_err(|e| format!("Migration 13 failed creating inode index: {}", e))?;
+            } else if migration.version == 14 {
+                for column in ["skipped_count", "skipped_size", "failed_count", "failed_size", "merged_count", "merged_size"] {
+                    if !table_has_column(conn, "albums", column)? {
+                        conn.execute(
+                            &format!("ALTER TABLE albums ADD COLUMN {} INTEGER NOT NULL DEFAULT 0", column),
+                            [],
+                        )
+                        .map_err(|e| format!("Migration 14 failed adding {}: {}", column, e))?;
+                    }
+                }
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;

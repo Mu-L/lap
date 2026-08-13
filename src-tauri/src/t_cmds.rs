@@ -555,7 +555,7 @@ pub fn fetch_folder(
 
 /// count all files in a folder (include all sub-folders)
 #[tauri::command]
-pub fn count_folder(path: &str) -> (u64, u64, u64, u64, u64) {
+pub fn count_folder(path: &str) -> (u64, u64, u64, u64, u64, u64, u64) {
     t_utils::count_folder_files(path)
 }
 

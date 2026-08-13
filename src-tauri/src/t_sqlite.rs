@@ -97,6 +97,12 @@ pub struct Album {
     pub description: Option<String>,   // album description
     pub indexed: Option<u64>,          // indexed files count
     pub total: Option<u64>,            // total files count
+    pub skipped_count: Option<u64>, // unsupported files from the last complete scan
+    pub skipped_size: Option<u64>,  // total size of unsupported files
+    pub failed_count: Option<u64>,  // unreadable files from the last complete scan
+    pub failed_size: Option<u64>,   // total size of unreadable files
+    pub merged_count: Option<u64>,  // companions merged into logical items
+    pub merged_size: Option<u64>,   // total size of merged companions
     pub last_scan_time: Option<i64>,   // last scan time
 }
 
@@ -122,6 +128,12 @@ impl Album {
             description: Some(String::new()),
             indexed: Some(0),
             total: Some(0),
+            skipped_count: Some(0),
+            skipped_size: Some(0),
+            failed_count: Some(0),
+            failed_size: Some(0),
+            merged_count: Some(0),
+            merged_size: Some(0),
             last_scan_time: Some(0),
         })
     }
@@ -139,7 +151,13 @@ impl Album {
             description: row.get(7)?,
             indexed: row.get(8)?,
             total: row.get(9)?,
-            last_scan_time: row.get(10)?,
+            skipped_count: row.get(10)?,
+            skipped_size: row.get(11)?,
+            failed_count: row.get(12)?,
+            failed_size: row.get(13)?,
+            merged_count: row.get(14)?,
+            merged_size: row.get(15)?,
+            last_scan_time: row.get(16)?,
         })
     }
 
@@ -147,7 +165,7 @@ impl Album {
     fn fetch(path: &str) -> Result<Option<Self>, String> {
         let conn = open_conn()?;
         let result = conn.query_row(
-            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, last_scan_time
+            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, skipped_count, skipped_size, failed_count, failed_size, merged_count, merged_size, last_scan_time
             FROM albums WHERE path = ?1",
             params![path],
             Self::from_row
@@ -170,8 +188,8 @@ impl Album {
 
         // Insert the new album into the db
         let result = conn.execute(
-            "INSERT INTO albums (name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, last_scan_time) 
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            "INSERT INTO albums (name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, skipped_count, skipped_size, failed_count, failed_size, merged_count, merged_size, last_scan_time)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)",
             params![
                 self.name,
                 self.path,
@@ -182,6 +200,12 @@ impl Album {
                 self.description,
                 self.indexed,
                 self.total,
+                self.skipped_count,
+                self.skipped_size,
+                self.failed_count,
+                self.failed_size,
+                self.merged_count,
+                self.merged_size,
                 self.last_scan_time,
             ],
         ).map_err(|e| e.to_string())?;
@@ -257,7 +281,7 @@ impl Album {
         let conn = open_conn()?;
 
         let query =
-            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, last_scan_time
+            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, skipped_count, skipped_size, failed_count, failed_size, merged_count, merged_size, last_scan_time
             FROM albums
             ORDER BY display_order_id ASC";
 
@@ -283,7 +307,7 @@ impl Album {
     pub fn get_album_by_id(id: i64) -> Result<Self, String> {
         let conn = open_conn()?;
         let result = conn.query_row(
-            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, last_scan_time
+            "SELECT id, name, path, created_at, modified_at, display_order_id, cover_file_id, description, indexed, total, skipped_count, skipped_size, failed_count, failed_size, merged_count, merged_size, last_scan_time
             FROM albums WHERE id = ?1",
             params![id],
             Self::from_row
@@ -308,6 +332,23 @@ impl Album {
     /// update last scan time
     pub fn update_last_scan_time(album_id: i64, scan_time: i64) -> Result<usize, String> {
         Self::update_column(album_id, "last_scan_time", &scan_time)
+    }
+
+    pub fn update_last_scan_results(
+        album_id: i64,
+        skipped_count: u64,
+        skipped_size: u64,
+        failed_count: u64,
+        failed_size: u64,
+        merged_count: u64,
+        merged_size: u64,
+    ) -> Result<usize, String> {
+        let conn = open_conn()?;
+        conn.execute(
+            "UPDATE albums SET skipped_count = ?1, skipped_size = ?2, failed_count = ?3, failed_size = ?4, merged_count = ?5, merged_size = ?6 WHERE id = ?7",
+            params![skipped_count, skipped_size, failed_count, failed_size, merged_count, merged_size, album_id],
+        )
+        .map_err(|e| e.to_string())
     }
 
     /// rename the album root metadata and matching folders in one transaction
@@ -429,6 +470,21 @@ impl Album {
         .map_err(|e| e.to_string())?;
         let result = Self::get_album_by_id(id)?;
         Ok(result)
+    }
+
+    pub fn merged_file_stats_in_album(album_id: i64) -> Result<(u64, u64), String> {
+        let conn = open_conn()?;
+        conn.query_row(
+            "SELECT COUNT(*), COALESCE(SUM(companion.size), 0) FROM afiles companion
+             WHERE companion.id IN (
+                 SELECT live_photo_video_id FROM afiles
+                 WHERE live_photo_video_id IS NOT NULL
+                   AND folder_id IN (SELECT id FROM afolders WHERE album_id = ?1)
+             ) AND companion.folder_id IN (SELECT id FROM afolders WHERE album_id = ?1)",
+            params![album_id],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .map_err(|e| e.to_string())
     }
 }
 
@@ -8288,6 +8344,12 @@ fn create_db_internal() -> Result<(), String> {
             description TEXT,
             indexed INTEGER DEFAULT 0,
             total INTEGER DEFAULT 0,
+            skipped_count INTEGER NOT NULL DEFAULT 0,
+            skipped_size INTEGER NOT NULL DEFAULT 0,
+            failed_count INTEGER NOT NULL DEFAULT 0,
+            failed_size INTEGER NOT NULL DEFAULT 0,
+            merged_count INTEGER NOT NULL DEFAULT 0,
+            merged_size INTEGER NOT NULL DEFAULT 0,
             last_scan_time INTEGER DEFAULT 0
         )",
         [],

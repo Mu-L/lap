@@ -201,6 +201,13 @@
       :createdAt="isNewAlbum ? '' : formatTimestamp(editingAlbum?.created_at ?? 0, $t('format.date_time'))"
       :modifiedAt="isNewAlbum ? '' : formatTimestamp(editingAlbum?.modified_at ?? 0, $t('format.date_time'))"
       :lastScanTime="isNewAlbum ? '' : formatTimestamp((editingAlbum?.last_scan_time ?? 0) / 1000, $t('format.date_time'))"
+      :indexedFileCount="isNewAlbum ? 0 : editingAlbum?.total"
+      :skippedFileCount="isNewAlbum ? 0 : editingAlbum?.skipped_count"
+      :skippedFileSize="isNewAlbum ? 0 : editingAlbum?.skipped_size"
+      :failedFileCount="isNewAlbum ? 0 : editingAlbum?.failed_count"
+      :failedFileSize="isNewAlbum ? 0 : editingAlbum?.failed_size"
+      :mergedFileCount="isNewAlbum ? 0 : editingAlbum?.merged_count"
+      :mergedFileSize="isNewAlbum ? 0 : editingAlbum?.merged_size"
       @ok="clickEditAlbum"
       @cancel="showAlbumEdit = false"
     />
@@ -240,8 +247,7 @@ import {
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { getAllAlbums, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
-         getAlbum, hasImportableClipboard, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
-import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
+         getAlbum, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
 
@@ -254,7 +260,7 @@ import TButton from '@/components/TButton.vue';
 import {
   IconAdd,
   IconMore,
-  IconEdit,
+  IconInformation,
   IconRemove,
   IconUpdate,
   IconUpdateOff,
@@ -263,7 +269,6 @@ import {
   IconDragHandle,
   IconOrder,
   IconFolders,
-  IconClipboard,
   IconFolderError,
 } from '@/common/icons';
 
@@ -403,27 +408,12 @@ const openAlbumEdit = async (albumId: number) => {
 
 // Get menu items for a specific album (function for lazy evaluation)
 const getMoreMenuItems = async (album: any) => {
-  const [canPaste, isAccessible] = await Promise.all([
-    hasImportableClipboard(),
-    refreshAlbumAccess(album),
-  ]);
+  const isAccessible = await refreshAlbumAccess(album);
   return [
     {
       label: localeMsg.value.menu.album.edit,
-      icon: IconEdit,
+      icon: IconInformation,
       action: () => openAlbumEdit(album.id)
-    },
-    {
-      label: t('menu.file.paste'),
-      icon: IconClipboard,
-      shortcut: getShortcutLabel('file.paste', DEFAULT_PLATFORM),
-      disabled: !canPaste || !isAccessible,
-      action: () => {
-        void tauriEmit('paste-clipboard-to-folder', {
-          albumId: album.id,
-          folderPath: album.path,
-        });
-      }
     },
     {
       label: "-",   // separator
@@ -578,6 +568,12 @@ onMounted( async () => {
         album.cover_file_id = updatedAlbum.cover_file_id;
         album.last_scan_time = updatedAlbum.last_scan_time;
         album.last_scan_count = updatedAlbum.last_scan_count;
+        album.skipped_count = updatedAlbum.skipped_count;
+        album.skipped_size = updatedAlbum.skipped_size;
+        album.failed_count = updatedAlbum.failed_count;
+        album.failed_size = updatedAlbum.failed_size;
+        album.merged_count = updatedAlbum.merged_count;
+        album.merged_size = updatedAlbum.merged_size;
         
         // Reload the cover thumbnail
         await loadAlbumCover(album_id, album.cover_file_id ?? null);
@@ -607,6 +603,12 @@ onMounted( async () => {
       album.indexed = updatedAlbum.indexed;
       album.last_scan_time = updatedAlbum.last_scan_time;
       album.last_scan_count = updatedAlbum.last_scan_count;
+      album.skipped_count = updatedAlbum.skipped_count;
+      album.skipped_size = updatedAlbum.skipped_size;
+      album.failed_count = updatedAlbum.failed_count;
+      album.failed_size = updatedAlbum.failed_size;
+      album.merged_count = updatedAlbum.merged_count;
+      album.merged_size = updatedAlbum.merged_size;
       const previousCoverFileId = Number(album.cover_file_id || 0);
       if (updatedAlbum.cover_file_id !== undefined) {
         album.cover_file_id = updatedAlbum.cover_file_id;
@@ -772,6 +774,7 @@ const clickCancelIndexAlbum = async (albumId: number) => {
 /// Remove an album from the list
 const clickRemoveAlbum = async () => {
   const albumId = selection.albumId.value;
+  const removedAlbumIndex = albums.value.findIndex(album => Number(album.id) === Number(albumId));
   if (albumId > 0 && isAlbumScanning(albumId)) {
     await clickCancelIndexAlbum(albumId);
   }
@@ -808,7 +811,14 @@ const clickRemoveAlbum = async () => {
     tauriEmit('albums-refreshed');
     tauriEmit('library-total-refreshed');
 
-    selection.resetSelection();
+    const nextSelectedAlbum = removedAlbumIndex > 0
+      ? albums.value[removedAlbumIndex - 1]
+      : albums.value[0];
+    if (nextSelectedAlbum) {
+      await clickAlbum(nextSelectedAlbum);
+    } else {
+      selection.resetSelection();
+    }
   }
 };
 

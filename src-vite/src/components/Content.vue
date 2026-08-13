@@ -4077,8 +4077,9 @@ async function processNextAlbum(skipFilePath: string | null = null, skipRecovery
 // Check if current album is being indexed
 const isIndexing = computed(() => {
   return config.main.sidebarIndex === SIDEBAR.ALBUM &&
+         libConfig.activePane !== 'collection' &&
          !!libConfig.album.id && libConfig.album.id > 0 && // Valid album
-         libConfig.index.albumQueue.includes(libConfig.album.id) &&
+         Number(libConfig.index.albumQueue[0] || 0) === Number(libConfig.album.id) &&
          Number(libConfig.index.status || 0) !== 2;
 });
 
@@ -4251,8 +4252,20 @@ function buildScanStreamQueryParams() {
   };
 }
 
+async function syncScanStreamingTitle(albumId: number) {
+  const album = await getAlbum(albumId);
+  if (
+    isScanStreamingMode.value &&
+    Number(libConfig.album.id) === Number(albumId) &&
+    album
+  ) {
+    contentTitle.value = album.name;
+  }
+}
+
 function enterScanStreamingMode(albumId: number) {
   scanStreamAlbumId.value = albumId;
+  void syncScanStreamingTitle(albumId);
   clearSelectionForFileListUpdate();
   clearContentRows();
   totalFileCount.value = 0;
@@ -4263,6 +4276,10 @@ function enterScanStreamingMode(albumId: number) {
   isLoading.value = false;
   hasLoadedInitialResult.value = true;
   contentReady.value = true;
+  currentQuerySource.value = 'query';
+  currentSmartQueryParams.value = null;
+  currentCollectionId.value = null;
+  currentSearchFileIds.value = [];
   currentQueryParams.value = buildScanStreamQueryParams();
   timelineData.value = [];
   lastVisibleRange = { start: -1, end: -1 };
@@ -4355,7 +4372,7 @@ function queueScanStreamingPull(albumId: number, current: number) {
     if (
       isScanStreamingMode.value &&
       currentAlbumId > 0 &&
-      libConfig.index.albumQueue.includes(currentAlbumId) &&
+      Number(libConfig.index.albumQueue[0] || 0) === currentAlbumId &&
       Number(libConfig.index.discovered || 0) > fileList.value.length
     ) {
       queueScanStreamingPull(currentAlbumId, Number(libConfig.index.discovered || 0));
@@ -4385,7 +4402,7 @@ watch(isIndexing, (val) => {
 });
 
 watch(
-  () => [config.main.sidebarIndex, libConfig.album.id, isAnyIndexing.value],
+  () => [config.main.sidebarIndex, libConfig.activePane, libConfig.album.id, isAnyIndexing.value],
   () => {
     if (!isScanStreamingMode.value) {
       scanStreamAlbumId.value = null;
@@ -4405,11 +4422,12 @@ watch(
 );
 
 watch(
-  () => [config.main.sidebarIndex, libConfig.album.id, activeScanningAlbumId.value],
-  ([sidebarIndex, albumId, activeId]) => {
+  () => [config.main.sidebarIndex, libConfig.activePane, libConfig.album.id, activeScanningAlbumId.value],
+  ([sidebarIndex, activePane, albumId, activeId]) => {
     const targetAlbumId = Number(activeId || 0);
     if (
       sidebarIndex === SIDEBAR.ALBUM &&
+      activePane !== 'collection' &&
       Number(albumId || 0) > 0 &&
       Number(albumId || 0) === targetAlbumId &&
       targetAlbumId > 0
@@ -4425,12 +4443,13 @@ watch(
 );
 
 watch(
-  () => [libConfig.index.discovered, libConfig.album.id, config.main.sidebarIndex, libConfig.album.selected],
-  ([discovered, albumId, sidebarIndex, selected]) => {
+  () => [libConfig.index.discovered, libConfig.album.id, config.main.sidebarIndex, libConfig.activePane, libConfig.album.selected],
+  ([discovered, albumId, sidebarIndex, activePane, selected]) => {
     if (
       sidebarIndex === SIDEBAR.ALBUM &&
+      activePane !== 'collection' &&
       Number(albumId) > 0 &&
-      libConfig.index.albumQueue.includes(Number(albumId)) &&
+      Number(libConfig.index.albumQueue[0] || 0) === Number(albumId) &&
       Number(discovered || 0) >= 0
     ) {
       queueScanStreamingPull(Number(albumId), Number(discovered || 0));
@@ -6363,9 +6382,10 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
   const newIndex = config.main.sidebarIndex;
   const isCurrentAlbumIndexing =
     newIndex === SIDEBAR.ALBUM &&
+    libConfig.activePane !== 'collection' &&
     !!libConfig.album.id &&
     libConfig.album.id > 0 &&
-    libConfig.index.albumQueue.includes(libConfig.album.id);
+    Number(libConfig.index.albumQueue[0] || 0) === Number(libConfig.album.id);
 
   if (
     !force &&
