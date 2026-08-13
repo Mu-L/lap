@@ -506,6 +506,8 @@
       "files": "ファイルが見つかりません",
       "image_search_failed": "画像検索を利用できません",
       "image_search_failed_hint": "画像検索モデルを確認してから、もう一度お試しください。",
+      "image_search_language_unsupported": "デフォルトの検索モデルは英語のみ対応しています",
+      "image_search_language_unsupported_hint": "この言語で検索するには、設定で多言語モデルを選択してください。",
       "image_files": "写真ファイルが見つかりません",
       "raw_files": "RAWファイルが見つかりません",
       "video_files": "動画ファイルが見つかりません",

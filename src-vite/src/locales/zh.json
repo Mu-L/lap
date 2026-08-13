@@ -506,6 +506,8 @@
       "files": "未找到文件",
       "image_search_failed": "图像搜索不可用",
       "image_search_failed_hint": "请检查图像搜索模型是否可用，然后重试。",
+      "image_search_language_unsupported": "默认搜索模型仅支持英文",
+      "image_search_language_unsupported_hint": "请在设置中选择多语言模型以搜索此语言。",
       "image_files": "未找到照片",
       "raw_files": "未找到 RAW 文件",
       "video_files": "未找到视频文件",

@@ -506,6 +506,8 @@
       "files": "Keine Dateien gefunden",
       "image_search_failed": "Bildsuche nicht verfügbar",
       "image_search_failed_hint": "Prüfen Sie, ob das Bildsuchmodell verfügbar ist, und versuchen Sie es erneut.",
+      "image_search_language_unsupported": "Das Standard-Suchmodell unterstützt nur Englisch",
+      "image_search_language_unsupported_hint": "Wählen Sie in den Einstellungen das mehrsprachige Modell, um in dieser Sprache zu suchen.",
       "image_files": "Keine Fotos gefunden",
       "raw_files": "Keine RAW-Dateien gefunden",
       "video_files": "Keine Videodateien gefunden",

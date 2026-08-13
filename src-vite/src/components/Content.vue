@@ -2686,6 +2686,7 @@ async function clearContentInternalDrag(event?: PointerEvent) {
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
 const imageSearchError = ref(false);
+const imageSearchLanguageUnsupported = ref(false);
 const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
 const contentReady = ref(false);  // true after current view's content has loaded (empty or not), reset on navigation
 const dedupSourceVersion = ref(0);
@@ -6169,6 +6170,7 @@ async function getImageSearchFileList(
   currentCollectionId.value = null;
   currentSearchFileIds.value = [];
   imageSearchError.value = false;
+  imageSearchLanguageUnsupported.value = false;
 
   // set loading state
   isLoading.value = true;
@@ -6267,6 +6269,10 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     fileType: Number(config.search.fileType || 0),
   };
   imageSearchError.value = false;
+  const isDefaultModelUnsupportedLanguage =
+    Number(config.settings.imageSearch.model || 0) === 0
+    && hasNonLatinLetters(searchText);
+  imageSearchLanguageUnsupported.value = isDefaultModelUnsupportedLanguage;
   isLoading.value = true;
   timelineData.value = [];
   let visualSearchFailed = false;
@@ -6281,7 +6287,10 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
         console.error('Text search ID failed:', error);
         return [];
       }),
-      searchSimilarImages(currentImageSearchParams.value).catch(error => {
+      (isDefaultModelUnsupportedLanguage
+        ? Promise.resolve([])
+        : searchSimilarImages(currentImageSearchParams.value)
+      ).catch(error => {
         console.error('Visual search failed:', error);
         visualSearchFailed = true;
         return [];
@@ -6431,6 +6440,7 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
 
   contentReady.value = false;
   imageSearchError.value = false;
+  imageSearchLanguageUnsupported.value = false;
   isCurrentFolderExcluded.value = false;
   isCurrentFolderMissing.value = false;
 
@@ -8465,6 +8475,10 @@ const FILE_TYPE_VIDEO = 2;
 const FILE_TYPE_RAW = 4;
 const FILE_TYPE_ALL_MASK = FILE_TYPE_IMAGE | FILE_TYPE_VIDEO | FILE_TYPE_RAW;
 
+function hasNonLatinLetters(text: string): boolean {
+  return Array.from(text).some(char => /\p{L}/u.test(char) && !/\p{Script=Latin}/u.test(char));
+}
+
 function normalizeFileTypeMask(mask: number): number {
   if (!Number.isFinite(mask) || mask <= 0) return 0;
   const normalized = mask & FILE_TYPE_ALL_MASK;
@@ -8474,6 +8488,7 @@ function normalizeFileTypeMask(mask: number): number {
 const emptyFilesMessage = computed(() => {
   if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.title;
   if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed;
+  if (imageSearchLanguageUnsupported.value) return localeMsg.value.tooltip.not_found.image_search_language_unsupported;
   // if (currentQuerySource.value === 'collection') {
   //   return `${localeMsg.value.collection.empty_content}`;
   // }
@@ -8494,6 +8509,7 @@ const emptyFilesMessage = computed(() => {
 const emptyFilesHint = computed(() => {
   if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.description;
   if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed_hint;
+  if (imageSearchLanguageUnsupported.value) return localeMsg.value.tooltip.not_found.image_search_language_unsupported_hint;
   if (!showFolderFiles.value) return '';
   const notFound = localeMsg.value.tooltip.not_found;
   if (isCurrentFolderExcluded.value) return notFound.folder_excluded_hint || '';

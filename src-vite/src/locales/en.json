@@ -506,6 +506,8 @@
       "files": "No files found",
       "image_search_failed": "Image search unavailable",
       "image_search_failed_hint": "Check that the image search model is available, then try again.",
+      "image_search_language_unsupported": "The default search model supports English only",
+      "image_search_language_unsupported_hint": "Choose the Multilingual model in Settings to search in this language.",
       "image_files": "No photos found",
       "raw_files": "No RAW files found",
       "video_files": "No video files found",
