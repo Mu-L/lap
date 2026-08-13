@@ -31,6 +31,7 @@
           :key="item.year"
           :year="Number(item.year)" 
           :months="item.months"
+          :heatmap-thresholds="monthlyHeatmapThresholds"
         />
       </div>
       <div
@@ -43,6 +44,7 @@
           :year="item.year"
           :month="item.month"
           :dates="item.dates"
+          :heatmap-thresholds="dailyHeatmapThresholds"
         />
       </div>
     </div>
@@ -89,6 +91,36 @@ const calendarToggleTooltip = computed(() =>
 const scrollable = ref<HTMLDivElement | null>(null); // Ref for the scrollable element
 type CalendarDates = Record<number, Record<number, { date: number; count: number }[]>>;
 const calendar_dates = ref<CalendarDates>({});
+
+function buildHeatmapThresholds(values: number[]): number[] | null {
+  const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
+  if (sorted.length < 4) return null;
+
+  const percentile = (ratio: number) => sorted[Math.ceil(sorted.length * ratio) - 1];
+  const thresholds = [percentile(0.5), percentile(0.75), percentile(0.95)];
+
+  return thresholds[0] < thresholds[1] && thresholds[1] < thresholds[2]
+    ? thresholds
+    : null;
+}
+
+const dailyHeatmapThresholds = computed(() =>
+  buildHeatmapThresholds(
+    Object.values(calendar_dates.value).flatMap(months =>
+      Object.values(months).flatMap(dates => dates.map(({ count }) => count))
+    )
+  )
+);
+
+const monthlyHeatmapThresholds = computed(() =>
+  buildHeatmapThresholds(
+    Object.values(calendar_dates.value).flatMap(months =>
+      Object.values(months).map(dates =>
+        dates.reduce((total, { count }) => total + count, 0)
+      )
+    )
+  )
+);
 
 const sorted_calendar_items = computed(() => {
   const dates = calendar_dates.value;
