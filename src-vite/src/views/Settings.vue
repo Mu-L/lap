@@ -942,8 +942,6 @@ const syncImageSearchModelStatus = async () => {
 
   isMultilingualModelAvailable.value = Boolean(status.multilingualAvailable);
   if (Number(config.settings.imageSearch.model || 0) === 1 && !isMultilingualModelAvailable.value) {
-    config.settings.imageSearch.model = 0;
-    await setImageSearchModel(0);
     return;
   }
 
@@ -951,8 +949,6 @@ const syncImageSearchModelStatus = async () => {
     await setImageSearchModel(config.settings.imageSearch.model || 0);
   } catch (error) {
     console.error('Failed to activate image search model:', error);
-    config.settings.imageSearch.model = 0;
-    await setImageSearchModel(0);
   }
 };
 
@@ -1204,7 +1200,6 @@ const startMultilingualModelDownload = async (previousModel: number) => {
     if (multilingualModelTotalBytes.value > 0) {
       multilingualModelDownloadedBytes.value = multilingualModelTotalBytes.value;
     }
-    toast.success(localeMsg.value.settings.image_search.multilingual_model_download_success);
   } catch (error) {
     if (isCancelingMultilingualModelDownload.value || String(error).includes('Download canceled')) {
       isCancelingMultilingualModelDownload.value = false;

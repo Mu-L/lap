@@ -504,6 +504,8 @@
     "not_found": {
       "albums": "앨범을 찾을 수 없습니다. 사진이나 비디오가 있는 폴더를 추가하세요",
       "files": "파일을 찾을 수 없습니다",
+      "image_search_failed": "이미지 검색을 사용할 수 없습니다",
+      "image_search_failed_hint": "이미지 검색 모델을 확인한 후 다시 시도하세요.",
       "image_files": "사진 파일을 찾을 수 없습니다",
       "raw_files": "RAW 파일을 찾을 수 없습니다",
       "video_files": "비디오 파일을 찾을 수 없습니다",
@@ -1280,7 +1282,7 @@
     "image_search": {
       "title": "검색",
       "search_image": "사진 검색",
-      "search_model": "모델 선택(재시작 후 적용)",
+      "search_model": "모델 선택",
       "default_model_hint": "기본 모델은 영어 사진 검색만 지원합니다",
       "multilingual_model_hint": "50개 이상 언어 검색 지원",
       "search_model_options": [

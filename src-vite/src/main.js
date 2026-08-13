@@ -168,6 +168,9 @@ listen('settings-slideShowTransition-changed', (event) => {
 listen('settings-imageSearchThresholdIndex-changed', (event) => {
   config.setImageSearchThresholdIndex(event.payload)
 })
+listen('settings-imageSearchModel-changed', (event) => {
+  config.setImageSearchModel(event.payload)
+})
 listen('settings-imageSearchLimit-changed', (event) => {
   config.setImageSearchLimit(event.payload)
 })

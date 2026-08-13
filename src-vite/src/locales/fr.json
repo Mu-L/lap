@@ -504,6 +504,8 @@
     "not_found": {
       "albums": "Aucun album trouvé. Ajoutez un dossier avec des photos ou des vidéos",
       "files": "Aucun fichier trouvé",
+      "image_search_failed": "Recherche d’images indisponible",
+      "image_search_failed_hint": "Vérifiez que le modèle de recherche d’images est disponible, puis réessayez.",
       "image_files": "Aucun fichier photo trouvé",
       "raw_files": "Aucun fichier RAW trouvé",
       "video_files": "Aucun fichier vidéo trouvé",
@@ -1280,7 +1282,7 @@
     "image_search": {
       "title": "Recherche",
       "search_image": "Recherche de photos",
-      "search_model": "Choisir le modèle (redémarrage requis)",
+      "search_model": "Choisir le modèle",
       "default_model_hint": "Le modèle par défaut prend uniquement en charge la recherche de photos en anglais",
       "multilingual_model_hint": "Recherche dans plus de 50 langues",
       "search_model_options": [

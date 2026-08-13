@@ -504,6 +504,8 @@
     "not_found": {
       "albums": "No albums found. Add a folder with photos or videos",
       "files": "No files found",
+      "image_search_failed": "Image search unavailable",
+      "image_search_failed_hint": "Check that the image search model is available, then try again.",
       "image_files": "No photos found",
       "raw_files": "No RAW files found",
       "video_files": "No video files found",
@@ -1280,7 +1282,7 @@
     "image_search": {
       "title": "Search",
       "search_image": "Photo search",
-      "search_model": "Choose model (restart required)",
+      "search_model": "Choose model",
       "default_model_hint": "The default model only supports English photo search",
       "multilingual_model_hint": "Search across 50+ languages",
       "search_model_options": [

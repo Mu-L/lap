@@ -5920,7 +5920,12 @@ impl AFile {
     }
 
     fn cosine_similarity_blob(query: &[f32], query_norm: f32, blob: &[u8]) -> f32 {
-        if query_norm == 0.0 {
+        if query_norm == 0.0 || blob.len() % 4 != 0 {
+            return 0.0;
+        }
+
+        let file_len = blob.len() / 4;
+        if file_len != query.len() {
             return 0.0;
         }
 
@@ -5928,9 +5933,7 @@ impl AFile {
         let mut file_norm_squared = 0.0_f32;
         for (index, chunk) in blob.chunks_exact(4).enumerate() {
             let value = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
-            if let Some(query_value) = query.get(index) {
-                dot_product += query_value * value;
-            }
+            dot_product += query[index] * value;
             file_norm_squared += value * value;
         }
 

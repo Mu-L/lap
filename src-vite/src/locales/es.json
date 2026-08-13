@@ -504,6 +504,8 @@
     "not_found": {
       "albums": "No se encontraron álbumes. Añade una carpeta con fotos o videos",
       "files": "No se encontraron archivos",
+      "image_search_failed": "Búsqueda de imágenes no disponible",
+      "image_search_failed_hint": "Comprueba que el modelo de búsqueda de imágenes esté disponible y vuelve a intentarlo.",
       "image_files": "No se encontraron fotos",
       "raw_files": "No se encontraron archivos RAW",
       "video_files": "No se encontraron archivos de video",
@@ -1280,7 +1282,7 @@
     "image_search": {
       "title": "Buscar",
       "search_image": "Búsqueda de fotos",
-      "search_model": "Elegir modelo (requiere reinicio)",
+      "search_model": "Elegir modelo",
       "default_model_hint": "El modelo predeterminado solo admite búsqueda de fotos en inglés",
       "multilingual_model_hint": "Busca en más de 50 idiomas",
       "search_model_options": [

@@ -293,6 +293,9 @@ export const useConfigStore = defineStore('configStore', {
     //   this.settings.showComment = showComment;
     // },
     // image search settings
+    setImageSearchModel(imageSearchModel) {
+      this.settings.imageSearch.model = imageSearchModel;
+    },
     setImageSearchThresholdIndex(imageSearchThresholdIndex) {
       this.settings.imageSearch.thresholdIndex = imageSearchThresholdIndex;
     },

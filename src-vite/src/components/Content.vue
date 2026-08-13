@@ -2685,6 +2685,7 @@ async function clearContentInternalDrag(event?: PointerEvent) {
 
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
+const imageSearchError = ref(false);
 const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
 const contentReady = ref(false);  // true after current view's content has loaded (empty or not), reset on navigation
 const dedupSourceVersion = ref(0);
@@ -6167,6 +6168,7 @@ async function getImageSearchFileList(
   };
   currentCollectionId.value = null;
   currentSearchFileIds.value = [];
+  imageSearchError.value = false;
 
   // set loading state
   isLoading.value = true;
@@ -6210,6 +6212,7 @@ async function getImageSearchFileList(
   } catch (err) {
     console.error('getImageSearchFileList error:', err);
     if (requestId === currentContentRequestId) {
+      imageSearchError.value = true;
       clearSelectionForFileListUpdate();
       clearContentRows();
       totalFileCount.value = 0;
@@ -6263,8 +6266,10 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     limit: config.settings.imageSearch.limit,
     fileType: Number(config.search.fileType || 0),
   };
+  imageSearchError.value = false;
   isLoading.value = true;
   timelineData.value = [];
+  let visualSearchFailed = false;
 
   try {
     const [textResult, textIdResult, visualResult] = await Promise.all([
@@ -6278,10 +6283,12 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
       }),
       searchSimilarImages(currentImageSearchParams.value).catch(error => {
         console.error('Visual search failed:', error);
+        visualSearchFailed = true;
         return [];
       }),
     ]);
     if (requestId !== currentContentRequestId) return;
+    imageSearchError.value = visualSearchFailed;
 
     const textMatches = Array.isArray(textResult) ? textResult : [];
     const allTextIds = Array.isArray(textIdResult) ? textIdResult : [];
@@ -6423,6 +6430,7 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
   const requestId = ++currentContentRequestId;
 
   contentReady.value = false;
+  imageSearchError.value = false;
   isCurrentFolderExcluded.value = false;
   isCurrentFolderMissing.value = false;
 
@@ -8465,6 +8473,7 @@ function normalizeFileTypeMask(mask: number): number {
 
 const emptyFilesMessage = computed(() => {
   if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.title;
+  if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed;
   // if (currentQuerySource.value === 'collection') {
   //   return `${localeMsg.value.collection.empty_content}`;
   // }
@@ -8484,6 +8493,7 @@ const emptyFilesMessage = computed(() => {
 
 const emptyFilesHint = computed(() => {
   if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.description;
+  if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed_hint;
   if (!showFolderFiles.value) return '';
   const notFound = localeMsg.value.tooltip.not_found;
   if (isCurrentFolderExcluded.value) return notFound.folder_excluded_hint || '';

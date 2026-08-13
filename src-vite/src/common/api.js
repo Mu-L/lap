@@ -1722,25 +1722,14 @@ export async function generateEmbedding(fileId) {
 export async function searchSimilarImages(params) {
   try {
     if (params?.searchText) {
-      try {
-        await setImageSearchModel(config.settings.imageSearch?.model || 0);
-      } catch (error) {
-        if (Number(config.settings.imageSearch?.model || 0) !== 1) {
-          throw error;
-        }
-        console.warn('Falling back to default image search model:', error);
-        config.settings.imageSearch.model = 0;
-        await setImageSearchModel(0);
-      }
+      await setImageSearchModel(config.settings.imageSearch?.model || 0);
     }
     const results = await invoke('search_similar_images', { params });
-    if (results) {
-      return results;
-    }
+    return results || [];
   } catch (error) {
     console.error('searchSimilarImages error:', error);
+    throw error;
   }
-  return [];
 }
 
 // indexing
