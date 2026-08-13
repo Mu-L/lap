@@ -5924,13 +5924,24 @@ impl AFile {
             return 0.0;
         }
 
+        // Ensure embedding dimensionality matches. If not, return 0 to avoid
+        // computing misleading similarity between different embedding spaces.
+        let file_len = blob.len() / 4;
+        if file_len != query.len() {
+            eprintln!(
+                "Embedding dimensionality mismatch: query={} file={} — returning 0.0",
+                query.len(), file_len
+            );
+            return 0.0;
+        }
+
         let mut dot_product = 0.0_f32;
         let mut file_norm_squared = 0.0_f32;
         for (index, chunk) in blob.chunks_exact(4).enumerate() {
             let value = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
-            if let Some(query_value) = query.get(index) {
-                dot_product += query_value * value;
-            }
+            // Safe to index because we've verified lengths match
+            let query_value = query[index];
+            dot_product += query_value * value;
             file_norm_squared += value * value;
         }
 
@@ -5940,6 +5951,39 @@ impl AFile {
         } else {
             dot_product / (query_norm * file_norm)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cosine_mismatch_returns_zero() {
+        // query length 3, blob represents 4 floats -> mismatch -> 0.0
+        let query = vec![1.0_f32, 0.0, 0.0];
+        let query_norm = (query.iter().map(|v| v * v).sum::<f32>()).sqrt();
+        let file_vals: Vec<f32> = vec![1.0, 0.0, 0.0, 0.0];
+        let mut blob: Vec<u8> = Vec::new();
+        for v in file_vals {
+            blob.extend_from_slice(&v.to_le_bytes());
+        }
+        let score = AFile::cosine_similarity_blob(&query, query_norm, &blob);
+        assert_eq!(score, 0.0_f32);
+    }
+
+    #[test]
+    fn cosine_matches_when_lengths_equal() {
+        let query = vec![1.0_f32, 0.0, 0.0];
+        let query_norm = (query.iter().map(|v| v * v).sum::<f32>()).sqrt();
+        let file_vals: Vec<f32> = vec![1.0, 0.0, 0.0];
+        let mut blob: Vec<u8> = Vec::new();
+        for v in file_vals {
+            blob.extend_from_slice(&v.to_le_bytes());
+        }
+        let score = AFile::cosine_similarity_blob(&query, query_norm, &blob);
+        // identical vectors -> cosine = 1.0
+        assert!((score - 1.0_f32).abs() < 1e-6);
     }
 }
 
