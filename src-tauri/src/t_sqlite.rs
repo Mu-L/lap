@@ -5789,6 +5789,8 @@ impl AFile {
 
     /// Update embedding for a file
     pub fn update_embedding(file_id: i64, embedding: Vec<f32>) -> Result<usize, String> {
+        // Log embedding length being saved for diagnostics
+        println!("[DB] Saving embedding for file_id={} length={}", file_id, embedding.len());
         // Convert Vec<f32> to Vec<u8>
         let mut bytes = Vec::with_capacity(embedding.len() * 4);
         for val in embedding {

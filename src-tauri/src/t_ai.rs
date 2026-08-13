@@ -266,7 +266,10 @@ impl AiEngine {
             (&outputs[0], true)
         };
 
-        Self::extract_text_embedding(embedding, first_token_only)
+        let emb = Self::extract_text_embedding(embedding, first_token_only)?;
+        // Log model kind and embedding length for diagnostics
+        println!("[AI] Text embedding generated (model={:?}) length={}", self.text_model_kind, emb.len());
+        Ok(emb)
     }
 
     fn extract_text_embedding(
@@ -409,6 +412,36 @@ impl AiEngine {
         let (_, embedding_data) = embedding
             .try_extract_tensor::<f32>()
             .map_err(|e| format!("Failed to extract tensor: {}", e))?;
+
+        Ok(embedding_data.to_vec())
+    }
+
+    fn run_vision_model(&mut self, image_input: Array4<f32>) -> Result<Vec<f32>, String> {
+        let image_input_value = Value::from_array(image_input).map_err(|e| e.to_string())?;
+
+        let outputs = self
+            .vision_model
+            .as_mut()
+            .unwrap()
+            .run(inputs![
+                "pixel_values" => image_input_value,
+            ])
+            .map_err(|e| format!("Inference error: {}", e))?;
+
+        let embedding = if let Some(vals) = outputs.get("pooler_output") {
+            vals
+        } else if let Some(vals) = outputs.get("image_embeds") {
+            vals
+        } else {
+            &outputs[0]
+        };
+
+        let (_, embedding_data) = embedding
+            .try_extract_tensor::<f32>()
+            .map_err(|e| format!("Failed to extract tensor: {}", e))?;
+
+        // Log vision embedding length for diagnostics
+        println!("[AI] Vision embedding generated length={}", embedding_data.len());
 
         Ok(embedding_data.to_vec())
     }
