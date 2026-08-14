@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "アルバム",
+    "search_folders": "フォルダーを検索",
+    "favorite_folders_only": "お気に入りのフォルダーのみ",
+    "no_folders_found": "フォルダーが見つかりません",
     "smart_album_list": "スマートアルバム",
     "add_smart_album": "スマートアルバムを追加",
     "folder_unavailable": {

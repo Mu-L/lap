@@ -13,6 +13,47 @@
       />
     </div>
 
+    <div v-if="isMainPane" class="mx-1 mb-2 px-1 shrink-0">
+      <div
+        :class="[
+          'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
+          isFolderSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+        ]"
+      >
+        <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isFolderSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
+        <input
+          v-model="folderSearch"
+          type="text"
+          :placeholder="$t('album.search_folders')"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
+          @focus="isFolderSearchFocused = true"
+          @blur="isFolderSearchFocused = false"
+          @keydown.esc.stop="folderSearch = ''"
+        />
+        <span v-if="isFolderSearchLoading" class="loading loading-spinner loading-xs mr-2 text-base-content/30"></span>
+        <button
+          type="button"
+          :title="$t('album.favorite_folders_only')"
+          :aria-pressed="favoriteFoldersOnly"
+          :class="[
+            'p-1 rounded-box',
+            favoriteFoldersOnly ? 'text-primary!' : 'text-base-content/30 hover:text-base-content/70',
+          ]"
+          @click="favoriteFoldersOnly = !favoriteFoldersOnly"
+        >
+          <component :is="favoriteFoldersOnly ? IconHeartFilled : IconHeart" class="w-4 h-4 cursor-pointer" />
+        </button>
+        <button
+          v-if="folderSearch"
+          type="button"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+          @click="folderSearch = ''"
+        >
+          <IconClose class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+
     <ul
       ref="albumListRootRef"
       tabindex="0"
@@ -24,9 +65,9 @@
     >
       <!-- drag to change albums' display order -->
       <VueDraggable
-        v-if="albums.length > 0"
+        v-if="visibleAlbums.length > 0"
         v-model="albums"
-        :disabled="!isMainPane || reorderingAlbumId === null"
+        :disabled="!isMainPane || isFolderFiltering || reorderingAlbumId === null"
         group="album-folder"
         :handle="'.album-drag-handle'"
         :animation="200"
@@ -34,7 +75,7 @@
         @end="onDragEnd"
       >
         <li
-          v-for="album in albums"
+          v-for="album in visibleAlbums"
           :key="album.id"
           :data-album-id="album.id"
           :data-selected-album-folder="
@@ -66,9 +107,11 @@
               v-else
               :class="[
                 'p-1 w-6 h-6 shrink-0 transition-transform hover:text-base-content',
-                album.is_expanded ? 'rotate-90' : '',
+                isFolderFiltering
+                  ? (shouldShowFilteredFolderTree(album.id) ? 'rotate-90 pointer-events-none' : 'opacity-0 pointer-events-none')
+                  : (album.is_expanded ? 'rotate-90' : ''),
               ]"
-              @click.stop="toggleAlbumExpansion(album)"
+              @click.stop="!isFolderFiltering && toggleAlbumExpansion(album)"
               @dblclick.stop
             />
             <div class="w-10 h-10 mr-2 rounded-box shrink-0 overflow-hidden border border-base-content/5 bg-base-content/5" @click.stop>
@@ -158,7 +201,7 @@
             enter-to-class="max-h-96"
           >
             <div
-              v-if="album.is_expanded && getAlbumQueueIndex(album.id, libConfig.index.albumQueue as any[]) === -1"
+              v-if="(isFolderFiltering ? shouldShowFilteredFolderTree(album.id) : album.is_expanded) && getAlbumQueueIndex(album.id, libConfig.index.albumQueue as any[]) === -1"
               class="ml-6 mr-2 my-1 p-1 rounded-box bg-base-300/30 border border-base-content/5 shadow-sm"
             >
               <div
@@ -173,10 +216,14 @@
               </div>
               <AlbumFolder
                 v-else
-                :children="album.children" 
+                :children="isFolderFiltering ? getFilteredFolderTree(album.id) : album.children"
                 :albumId="album.id"
                 :rootPath="album.path"
                 :allowContextMenu="isMainPane"
+                :filterVisiblePaths="isFolderFiltering ? getVisibleFolderPaths(album.id) : undefined"
+                :filterMatchedPaths="isFolderFiltering ? getMatchedFolderPaths(album.id) : undefined"
+                @folder-favorite-changed="refreshFolderSearchFolders"
+                @folder-path-changed="refreshFolderSearchFolders"
                 @root-renamed="handleRootRenamed"
               />
             </div>
@@ -184,7 +231,10 @@
         </li>
       </VueDraggable>
 
-      <li v-else class="sidebar-empty text-sm">
+      <li v-if="!isFolderSearchLoading && visibleAlbums.length === 0 && albums.length > 0" class="sidebar-empty text-sm">
+        <span class="text-center">{{ $t('album.no_folders_found') }}</span>
+      </li>
+      <li v-else-if="albums.length === 0" class="sidebar-empty text-sm">
         <span class="text-center">{{ $t('tooltip.not_found.albums') }}</span>
       </li>
     </ul>
@@ -230,7 +280,7 @@ import {
   openFolderDialog,
 } from '@/common/utils';
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { getAllAlbums, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
+import { getAllAlbums, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
          getAlbum, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
@@ -255,6 +305,10 @@ import {
   IconOrder,
   IconFolders,
   IconFolderError,
+  IconSearch,
+  IconClose,
+  IconHeart,
+  IconHeartFilled,
 } from '@/common/icons';
 
 const props = withDefaults(defineProps<{
@@ -297,6 +351,12 @@ const showRemoveAlbumMsgbox = ref(false);   // show remove album
 
 const albums = ref<Album[]>([]);
 const albumCovers = ref<Record<number, string>>({});
+const folderSearch = ref('');
+const favoriteFoldersOnly = ref(false);
+const isFolderSearchFocused = ref(false);
+const isFolderSearchLoading = ref(false);
+const folderSearchFolders = ref<AlbumFolderRecord[]>([]);
+let folderSearchRequest = 0;
 const isNewAlbum = ref(false);
 const newAlbumFolderPath = ref('');
 const editingAlbumId = ref(0);
@@ -304,6 +364,186 @@ const isLoading = ref(true);    // loading albums
 const isDragging = ref(false);  // dragging albums
 const reorderingAlbumId = ref<number | null>(null);
 const albumCoverErrors = ref<Record<number, boolean>>({});
+
+interface FilteredAlbumResult {
+  album: Album;
+  rootFolderMatches: boolean;
+  hasMatches: boolean;
+  visibleFolderPaths: string[];
+  matchedFolderPaths: string[];
+  folderTree: Folder[];
+}
+
+interface AlbumFolderRecord extends Folder {
+  album_id: number;
+}
+
+const normalizedFolderSearch = computed(() => folderSearch.value.trim().toLocaleLowerCase());
+const isFolderFiltering = computed(() =>
+  isMainPane.value && (normalizedFolderSearch.value.length > 0 || favoriteFoldersOnly.value)
+);
+const folderSearchFoldersByAlbum = computed(() => {
+  const foldersByAlbum = new Map<number, AlbumFolderRecord[]>();
+  for (const folder of folderSearchFolders.value) {
+    const albumId = Number(folder.album_id);
+    const folders = foldersByAlbum.get(albumId) || [];
+    folders.push(folder);
+    foldersByAlbum.set(albumId, folders);
+  }
+  return foldersByAlbum;
+});
+const folderSearchCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
+function getRelativeFolderPath(folderPath: string, rootPath: string) {
+  if (!folderPath.startsWith(rootPath)) return folderPath;
+  return folderPath.slice(rootPath.length).replace(/^[\\/]+/, '');
+}
+
+function getFolderName(folderPath: string) {
+  return folderPath.replace(/[\\/]+$/, '').split(/[\\/]/).filter(Boolean).pop() || folderPath;
+}
+
+function getFolderSearchPaths(folders: AlbumFolderRecord[], rootPath: string, query: string) {
+  const visiblePaths = new Set<string>();
+  const matchedPaths = new Set<string>();
+  const hasQuery = query.length > 0;
+
+  for (const folder of folders) {
+    const relativePath = getRelativeFolderPath(folder.path, rootPath);
+    const isMatch = !hasQuery || folder.name.toLocaleLowerCase().includes(query)
+      || (/[\\/]/.test(query) && relativePath.toLocaleLowerCase().includes(query));
+    if (isMatch) {
+      matchedPaths.add(folder.path);
+      let ancestorPath = folder.path;
+      while (ancestorPath.startsWith(rootPath) && ancestorPath !== rootPath) {
+        visiblePaths.add(ancestorPath);
+        const separatorIndex = Math.max(ancestorPath.lastIndexOf('/'), ancestorPath.lastIndexOf('\\'));
+        ancestorPath = separatorIndex >= 0 ? ancestorPath.slice(0, separatorIndex) : rootPath;
+      }
+    }
+  }
+
+  return {
+    visibleFolderPaths: Array.from(visiblePaths),
+    matchedFolderPaths: Array.from(matchedPaths),
+    hasMatches: visiblePaths.size > 0,
+  };
+}
+
+function buildFilteredFolderTree(folders: AlbumFolderRecord[], visiblePaths: string[]) {
+  const visible = new Set(visiblePaths);
+  const nodes = new Map<string, Folder>();
+  const roots: Folder[] = [];
+
+  for (const folder of folders) {
+    if (visible.has(folder.path)) nodes.set(folder.path, { ...folder, is_expanded: false, children: [] });
+  }
+  for (const folder of nodes.values()) {
+    const separatorIndex = Math.max(folder.path.lastIndexOf('/'), folder.path.lastIndexOf('\\'));
+    const parentPath = separatorIndex >= 0 ? folder.path.slice(0, separatorIndex) : '';
+    const parent = nodes.get(parentPath);
+    if (parent) parent.children?.push(folder);
+    else roots.push(folder);
+  }
+  const compareFolders = (a: Folder, b: Folder) => {
+    const aTime = a.modified_at || a.created_at || 0;
+    const bTime = b.modified_at || b.created_at || 0;
+    switch (Number(config.settings.folderSort)) {
+      case 1: return folderSearchCollator.compare(b.name, a.name);
+      case 2: return aTime - bTime;
+      case 3: return bTime - aTime;
+      default: return folderSearchCollator.compare(a.name, b.name);
+    }
+  };
+  const sortTree = (children: Folder[]) => {
+    children.sort(compareFolders);
+    for (const child of children) sortTree(child.children || []);
+  };
+  sortTree(roots);
+  return roots;
+}
+
+const filteredAlbumResults = computed<FilteredAlbumResult[]>(() => {
+  const query = normalizedFolderSearch.value;
+  if (!query && !favoriteFoldersOnly.value) {
+    return albums.value.map(album => ({
+      album,
+      rootFolderMatches: false,
+      visibleFolderPaths: [],
+      matchedFolderPaths: [],
+      hasMatches: false,
+      folderTree: [],
+    }));
+  }
+
+  return albums.value.flatMap((album) => {
+    const albumFolders = folderSearchFoldersByAlbum.value.get(Number(album.id)) || [];
+    const rootFolder = albumFolders.find(folder => folder.path === album.path) || {
+      id: -Number(album.id),
+      album_id: Number(album.id),
+      name: getFolderName(album.path),
+      path: album.path,
+    };
+    const rootFolderMatches = query.length > 0
+      && (!favoriteFoldersOnly.value || rootFolder.is_favorite)
+      && getFolderName(album.path).toLocaleLowerCase().includes(query);
+    const rootFolderVisible = rootFolderMatches
+      || (!query && favoriteFoldersOnly.value && rootFolder.is_favorite);
+    const folders = albumFolders.filter(folder => folder.path !== album.path);
+    const matchingFolders = favoriteFoldersOnly.value
+      ? folders.filter(folder => folder.is_favorite)
+      : folders;
+    const folderPaths = getFolderSearchPaths(matchingFolders, album.path, query);
+    const visibleFolderPaths = rootFolderVisible || folderPaths.hasMatches
+      ? [rootFolder.path, ...folderPaths.visibleFolderPaths]
+      : [];
+    const matchedFolderPaths = rootFolderMatches
+      ? [rootFolder.path, ...folderPaths.matchedFolderPaths]
+      : folderPaths.matchedFolderPaths;
+    return rootFolderVisible || folderPaths.hasMatches
+      ? [{
+        album,
+        rootFolderMatches,
+        ...folderPaths,
+        hasMatches: rootFolderVisible || folderPaths.hasMatches,
+        visibleFolderPaths,
+        matchedFolderPaths,
+        folderTree: buildFilteredFolderTree([rootFolder, ...folders], visibleFolderPaths),
+      }]
+      : [];
+  });
+});
+
+const visibleAlbums = computed(() => filteredAlbumResults.value.map(result => result.album));
+const getFilteredAlbumResult = (albumId: number) =>
+  filteredAlbumResults.value.find(result => Number(result.album.id) === Number(albumId));
+const getVisibleFolderPaths = (albumId: number) => getFilteredAlbumResult(albumId)?.visibleFolderPaths || [];
+const getMatchedFolderPaths = (albumId: number) => getFilteredAlbumResult(albumId)?.matchedFolderPaths || [];
+const getFilteredFolderTree = (albumId: number) => getFilteredAlbumResult(albumId)?.folderTree || [];
+const shouldShowFilteredFolderTree = (albumId: number) => {
+  const result = getFilteredAlbumResult(albumId);
+  return isFolderFiltering.value && Boolean(result?.hasMatches);
+};
+
+async function loadFolderSearchFolders() {
+  const request = ++folderSearchRequest;
+  isFolderSearchLoading.value = true;
+  try {
+    const folders = await getAllAlbumFolders();
+    if (request === folderSearchRequest && isFolderFiltering.value) {
+      folderSearchFolders.value = folders || [];
+    }
+  } finally {
+    if (request === folderSearchRequest) isFolderSearchLoading.value = false;
+  }
+}
+
+function refreshFolderSearchFolders() {
+  folderSearchFolders.value = [];
+  folderSearchRequest += 1;
+  isFolderSearchLoading.value = false;
+  if (isFolderFiltering.value) void loadFolderSearchFolders();
+}
 
 const updateFolderPath = (folders: Folder[] | undefined, oldPath: string, newPath: string) => {
   if (!folders) return;
@@ -529,6 +769,7 @@ onMounted( async () => {
         selection.folderPath.value = newPath;
       }
     }
+    refreshFolderSearchFolders();
   });
 
   // listen for index progress
@@ -569,6 +810,7 @@ onMounted( async () => {
         }
       }
     }
+    refreshFolderSearchFolders();
   });
 
   unlistenAlbumsRefreshed = await listen('albums-refreshed', async (event: any) => {
@@ -609,6 +851,7 @@ onMounted( async () => {
         }
       }
     }
+    refreshFolderSearchFolders();
   });
 
 });
@@ -627,6 +870,15 @@ watch(() => config.settings.folderSort, async () => {
   if (shouldRestoreFolderSelection && selectedAlbumId > 0) {
     await clickFinalSubFolder(selectedAlbumId, selectedFolderPath);
   }
+});
+
+watch(isFolderFiltering, (filtering) => {
+  if (!filtering) {
+    refreshFolderSearchFolders();
+    return;
+  }
+  reorderingAlbumId.value = null;
+  void loadFolderSearchFolders();
 });
 
 onBeforeUnmount(() => {
@@ -655,6 +907,7 @@ const refreshAlbums = async () => {
   isLoading.value = true;
   try {
     albums.value = await getAllAlbums();
+    refreshFolderSearchFolders();
   } catch (error) {
     console.error('Failed to refresh albums:', error);
   } finally {

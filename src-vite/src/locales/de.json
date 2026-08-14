@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "Alben",
+    "search_folders": "Ordner suchen",
+    "favorite_folders_only": "Nur Lieblingsordner",
+    "no_folders_found": "Keine Ordner gefunden",
     "smart_album_list": "Smart-Alben",
     "add_smart_album": "Smart-Album hinzufügen",
     "folder_unavailable": {

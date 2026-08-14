@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "Álbuns",
+    "search_folders": "Pesquisar pastas",
+    "favorite_folders_only": "Apenas pastas favoritas",
+    "no_folders_found": "Nenhuma pasta encontrada",
     "smart_album_list": "Álbuns inteligentes",
     "add_smart_album": "Adicionar álbum inteligente",
     "folder_unavailable": {

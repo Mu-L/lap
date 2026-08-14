@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "Álbumes",
+    "search_folders": "Buscar carpetas",
+    "favorite_folders_only": "Solo carpetas favoritas",
+    "no_folders_found": "No se encontraron carpetas",
     "smart_album_list": "Álbumes inteligentes",
     "add_smart_album": "Añadir álbum inteligente",
     "folder_unavailable": {

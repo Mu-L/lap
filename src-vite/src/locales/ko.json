@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "앨범",
+    "search_folders": "폴더 검색",
+    "favorite_folders_only": "즐겨찾는 폴더만",
+    "no_folders_found": "폴더를 찾을 수 없습니다",
     "smart_album_list": "스마트 앨범",
     "add_smart_album": "스마트 앨범 추가",
     "folder_unavailable": {

@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "Альбомы",
+    "search_folders": "Поиск папок",
+    "favorite_folders_only": "Только избранные папки",
+    "no_folders_found": "Папки не найдены",
     "smart_album_list": "Смарт-альбомы",
     "add_smart_album": "Добавить смарт-альбом",
     "folder_unavailable": {

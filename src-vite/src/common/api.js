@@ -333,6 +333,15 @@ export async function getAllAlbums() {
   return null;
 };
 
+export async function getAllAlbumFolders() {
+  try {
+    return await invoke('get_all_album_folders');
+  } catch (error) {
+    console.error('Failed to get album folders:', error);
+  }
+  return [];
+}
+
 export async function listAlbums() {
   try {
     return await invoke('get_all_albums');

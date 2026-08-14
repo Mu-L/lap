@@ -156,12 +156,12 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
     ],
   },
   {
-  id: 'app.search',
-  contexts: ['global'],
-  defaultBindings: [
+    id: 'app.search',
+    contexts: ['global'],
+    defaultBindings: [
       { code: 'Slash', modifiers: ['cmdOrCtrl'], label: { mac: '⌘/', windows: 'Ctrl+/', linux: 'Ctrl+/' } },
-  ],
-},
+    ],
+  },
   {
     id: 'file.openNewWindow',
     contexts: ['content'],

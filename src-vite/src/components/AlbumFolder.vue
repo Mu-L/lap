@@ -8,7 +8,7 @@
     @keydown="handleLocalTreeKeyDown"
     @mousedown.capture="focusTreeRoot"
   >
-    <li v-for="child in (children as Folder[])"
+    <li v-for="child in visibleChildren"
       :key="child.id" 
       :id="'folder-' + child.id" 
       :class="{ 'pl-4': child.path !== rootPath }"
@@ -16,13 +16,9 @@
       <div v-if="child.id != 0 || selection.folderPath.value == rootPath"
         :data-file-drop-path="child.path"
         :data-file-drop-album-id="albumId"
-        :class="[
-          'p-1 h-8 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2',
-          !selection.selected.value && selection.folderPath.value === child.path && !isRenamingFolder ? `${isMainSourceActive ? 'text-primary' : 'text-base-content/70 bg-base-100/30 hover:bg-base-100/30'} bg-base-100 hover:bg-base-100 border-transparent` : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
-          child.is_excluded_from_search ? 'text-base-content/30! hover:text-base-content/30!' : '',
-        ]"
+        :class="folderClass(child)"
         @click="clickFolder(albumId, child)"
-        @dblclick="expandFolder(child)"
+        @dblclick="!isFolderFiltering && expandFolder(child)"
         @contextmenu.prevent.stop="(e: MouseEvent) => handleFolderContextMenu(child, e)"
         @mouseenter="hoveredFolderPath = child.path"
         @mouseleave="hoveredFolderPath === child.path && (hoveredFolderPath = '')"
@@ -30,10 +26,12 @@
         <IconRight
           :class="[
             'p-1 w-6 h-6 shrink-0 transition-transform',
-            child.has_subfolders && !child.is_excluded_from_search ? '' : 'opacity-0 pointer-events-none',
-            child.is_expanded ? 'rotate-90' : ''
+            isFolderFiltering
+              ? (shouldShowFilteredChildren(child) ? 'rotate-90 pointer-events-none' : 'opacity-0 pointer-events-none')
+              : (child.has_subfolders && !child.is_excluded_from_search ? '' : 'opacity-0 pointer-events-none'),
+            !isFolderFiltering && child.is_expanded ? 'rotate-90' : ''
           ]"
-          @click.stop="expandFolder(child)"
+          @click.stop="!isFolderFiltering && expandFolder(child)"
         />
         <component :is="child.is_excluded_from_search ? IconFolderOff : IconFolder" class="p-1 w-6 h-6 shrink-0" />
 
@@ -55,7 +53,7 @@
             {{ child.name }}
           </div>
           <div class="ml-auto flex flex-row items-center text-base-content/30">
-            <IconHeartFilled v-if="child.is_favorite" class="mr-1 w-4 h-4 shrink-0 text-error/70" />
+            <IconHeartFilled v-if="child.is_favorite" class="mr-1 w-4 h-4 shrink-0 text-primary/70" />
             <span
               v-if="allowContextMenu && getFolderFileCount(child.path) > 0"
               v-show="!shouldShowFolderMenu(child)"
@@ -73,13 +71,17 @@
           </div>
         </template>
       </div>
-      <AlbumFolder v-if="child.is_expanded && child.id != 0 && !child.is_excluded_from_search"
+      <AlbumFolder v-if="shouldRenderChildren(child)"
         :key="child.id"
         :children="child.children" 
         :albumId="albumId"
         :rootPath="rootPath"
         :allowContextMenu="allowContextMenu"
         :treeRoot="false"
+        :filterVisiblePaths="filterVisiblePaths"
+        :filterMatchedPaths="filterMatchedPaths"
+        @folder-favorite-changed="emit('folderFavoriteChanged')"
+        @folder-path-changed="emit('folderPathChanged')"
       />
     </li>
   </ul>
@@ -192,12 +194,16 @@ const props = withDefaults(defineProps<{
   rootPath: string;         // root folder path (album path)
   allowContextMenu?: boolean; // whether to show context menu
   treeRoot?: boolean;       // only root tree listens to keyboard
+  filterVisiblePaths?: string[];
+  filterMatchedPaths?: string[];
 }>(), {
   treeRoot: true,
 });
 
 const emit = defineEmits<{
   rootRenamed: [payload: { albumId: number; newPath: string }];
+  folderFavoriteChanged: [];
+  folderPathChanged: [];
 }>();
 
 // Inject selection context from AlbumList
@@ -222,7 +228,32 @@ const getFolderByPath = (children: Folder[] | undefined, path: string): Folder |
 };
 
 const selectedFolder = computed(() => getFolderByPath(props.children, selection.folderPath.value));
-const isMainSourceActive = computed(() => libConfig.activePane !== 'collection');
+const isFolderFiltering = computed(() => Array.isArray(props.filterVisiblePaths));
+const visibleFolderPaths = computed(() => new Set(props.filterVisiblePaths || []));
+const matchedFolderPaths = computed(() => new Set(props.filterMatchedPaths || []));
+const visibleChildren = computed(() => (props.children || []).filter(folder =>
+  !isFolderFiltering.value || visibleFolderPaths.value.has(folder.path)
+));
+
+const isSelectedFolder = (folder: Folder) => !selection.selected.value && selection.folderPath.value === folder.path && !isRenamingFolder.value;
+const folderClass = (folder: Folder) => {
+  const selected = isSelectedFolder(folder);
+  const matched = isFolderFiltering.value && matchedFolderPaths.value.has(folder.path);
+  return [
+    'p-1 h-8 flex items-center rounded-box whitespace-nowrap cursor-pointer group border-2',
+    selected
+      ? 'text-primary! bg-base-100 hover:bg-base-100 border-transparent'
+      : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
+    folder.is_excluded_from_search ? 'text-base-content/30! hover:text-base-content/30!' : '',
+    matched ? 'text-primary/70' : isFolderFiltering.value && !selected ? 'text-base-content/60' : '',
+  ];
+};
+const shouldShowFilteredChildren = (folder: Folder) =>
+  Boolean(folder.children?.some(child => visibleFolderPaths.value.has(child.path)));
+const shouldRenderChildren = (folder: Folder) => {
+  if (folder.id === 0 || folder.is_excluded_from_search) return false;
+  return isFolderFiltering.value ? shouldShowFilteredChildren(folder) : Boolean(folder.is_expanded);
+};
 
 const trashFolderDialogTitle = computed(() =>
   deletePermanently.value
@@ -419,6 +450,7 @@ const toggleFolderFavorite = async (folder: Folder) => {
   const result = await setFolderFavorite(folderId, nextValue);
   if (result !== null) {
     folder.is_favorite = nextValue;
+    emit('folderFavoriteChanged');
   }
 };
 
@@ -473,6 +505,7 @@ const getFirstChildFolder = (folder: Folder | null): Folder | null => {
 
 const shouldHandleTreeNavigation = (key: string) => {
   if (!props.treeRoot) return false;
+  if (isFolderFiltering.value) return false;
   if (selection.albumId.value !== props.albumId || selection.selected.value) return false;
   if (uiStore.inputStack.length > 0) return false;
   if (props.allowContextMenu && uiStore.activePane !== 'left-sidebar') return false;
@@ -614,6 +647,7 @@ const clickRenameFolder = async (newFolderName: string) => {
           newPath: newFolderPath_,
         });
       }
+      emit('folderPathChanged');
 
       isRenamingFolder.value = false;
       uiStore.removeInputHandler('AlbumFolder-rename');

@@ -233,6 +233,7 @@ async fn main() {
             t_cmds::get_current_library_state,
             // album
             t_cmds::get_all_albums,
+            t_cmds::get_all_album_folders,
             t_cmds::generate_directory_thumbnails,
             t_cmds::get_album,
             t_cmds::recount_album,

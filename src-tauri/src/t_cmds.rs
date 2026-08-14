@@ -344,6 +344,12 @@ pub fn get_all_albums() -> Result<Vec<Album>, String> {
     Album::get_all_albums().map_err(|e| format!("Error while getting all albums: {}", e))
 }
 
+/// Get the indexed folder records used by the album sidebar search.
+#[tauri::command]
+pub fn get_all_album_folders() -> Result<Vec<AFolder>, String> {
+    AFolder::get_all().map_err(|e| format!("Error while getting album folders: {}", e))
+}
+
 /// batch-generate thumbnails for a directory into an output folder
 #[tauri::command]
 pub fn generate_directory_thumbnails(

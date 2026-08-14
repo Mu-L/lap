@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "相册",
+    "search_folders": "搜索文件夹",
+    "favorite_folders_only": "仅收藏文件夹",
+    "no_folders_found": "未找到文件夹",
     "smart_album_list": "智能相册",
     "add_smart_album": "添加智能相册",
     "folder_unavailable": {

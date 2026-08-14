@@ -50,6 +50,9 @@
   },
   "album": {
     "album_list": "Albums",
+    "search_folders": "Rechercher des dossiers",
+    "favorite_folders_only": "Dossiers favoris uniquement",
+    "no_folders_found": "Aucun dossier trouvé",
     "smart_album_list": "Albums intelligents",
     "add_smart_album": "Ajouter un album intelligent",
     "folder_unavailable": {
