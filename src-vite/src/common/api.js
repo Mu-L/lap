@@ -1970,9 +1970,9 @@ export async function getPersons(sort = 0) {
   return null;
 }
 
-export async function getPersonsPage(sort = 0, offset = 0, limit = 100) {
+export async function getPersonsPage(sort = 0, offset = 0, limit = 100, search = '') {
   try {
-    return await invoke('get_persons_page', { sort, offset, limit });
+    return await invoke('get_persons_page', { sort, offset, limit, search });
   } catch (error) {
     console.error('Failed to get persons page:', error);
   }

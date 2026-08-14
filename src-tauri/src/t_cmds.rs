@@ -2631,8 +2631,8 @@ pub fn get_persons(sort: i64) -> Result<Vec<Person>, String> {
 
 /// Get a page of persons with face counts.
 #[tauri::command]
-pub fn get_persons_page(sort: i64, offset: usize, limit: usize) -> Result<PersonPage, String> {
-    Person::get_page(sort, offset, limit)
+pub fn get_persons_page(sort: i64, offset: usize, limit: usize, search: String) -> Result<PersonPage, String> {
+    Person::get_page(sort, offset, limit, &search)
         .map_err(|e| format!("Error while getting persons page: {}", e))
 }
 

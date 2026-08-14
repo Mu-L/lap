@@ -54,6 +54,8 @@
     "favorite_folders_only": "仅收藏文件夹",
     "no_folders_found": "未找到文件夹",
     "smart_album_list": "智能相册",
+    "search_smart_albums": "搜索智能相册",
+    "no_smart_albums_found": "未找到智能相册",
     "add_smart_album": "添加智能相册",
     "folder_unavailable": {
       "title": "文件夹无法访问",
@@ -647,6 +649,7 @@
       "index_faces": "索引人脸",
       "reset_index": "重置索引",
       "unnamed": "未命名人物",
+      "search": "搜索人物",
       "show_more": "显示更多（{loaded}/{total}）"
     },
     "tag": {

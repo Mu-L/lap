@@ -54,6 +54,8 @@
     "favorite_folders_only": "Favorite folders only",
     "no_folders_found": "No folders found",
     "smart_album_list": "Smart albums",
+    "search_smart_albums": "Search smart albums",
+    "no_smart_albums_found": "No smart albums found",
     "add_smart_album": "Add smart album",
     "folder_unavailable": {
       "title": "Folder unavailable",
@@ -647,6 +649,7 @@
       "index_faces": "Index faces",
       "reset_index": "Reset index",
       "unnamed": "Unnamed person",
+      "search": "Search people",
       "show_more": "Show more ({loaded}/{total})"
     },
     "tag": {

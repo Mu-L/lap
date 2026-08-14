@@ -40,13 +40,43 @@
 
     <div class="sidebar-panel-header">
       <span class="sidebar-panel-header-title flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-        {{ titlebar }}<template v-if="totalPersons > 0"> ({{ totalPersons.toLocaleString() }})</template>
+        {{ titlebar }}<template v-if="allPersonCount > 0"> ({{ allPersonCount.toLocaleString() }})</template>
       </span>
       <span class="px-1.5 h-5 inline-flex items-center rounded-box text-[10px] font-semibold tracking-[0.08em] text-warning border border-warning/30 bg-warning/10 cursor-default">
         BETA
       </span>
 
       <ContextMenu :menuItems="personPanelMenuItems" :iconMenu="IconMore" :smallIcon="true" />
+    </div>
+
+    <div class="mx-1 mb-2 px-1 shrink-0">
+      <div
+        :class="[
+          'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
+          isPersonSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+          !isLoadingPersons && allPersonCount === 0 ? 'opacity-50' : '',
+        ]"
+      >
+        <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isPersonSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
+        <input
+          v-model="personSearch"
+          type="text"
+          :disabled="!isLoadingPersons && allPersonCount === 0"
+          :placeholder="$t('menu.person.search')"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none disabled:opacity-50"
+          @focus="isPersonSearchFocused = true"
+          @blur="isPersonSearchFocused = false"
+        />
+        <button
+          v-if="personSearch"
+          type="button"
+          :disabled="!isLoadingPersons && allPersonCount === 0"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70 disabled:opacity-30"
+          @click="personSearch = ''"
+        >
+          <IconClose class="w-4 h-4" />
+        </button>
+      </div>
     </div>
 
     <!-- Person List -->
@@ -127,6 +157,10 @@
       <span class="text-sm text-center">{{ $t('tooltip.loading') }}</span>
     </div>
 
+    <div v-else-if="personSearch" class="sidebar-empty text-sm">
+      <span class="text-center">{{ $t('tooltip.not_found.person') }}</span>
+    </div>
+
     <!-- No Persons Found Message -->
     <div v-else-if="!isIndexing && incompleteCount > 0" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
       <span class="text-sm text-center">{{ $t('face_index.incomplete', { count: incompleteCount.toLocaleString() }) }}</span>
@@ -192,6 +226,7 @@ import {
   IconTrash,
   IconUpdate,
   IconClose,
+  IconSearch,
 } from '@/common/icons';
 
 import ContextMenu from '@/components/ContextMenu.vue';
@@ -234,8 +269,12 @@ const isLoadingPersons = ref(true);
 const isLoadingMorePersons = ref(false);
 const hasMorePersons = ref(false);
 const totalPersons = ref(0);
+const allPersonCount = ref(0);
+const personSearch = ref('');
+const isPersonSearchFocused = ref(false);
 const PERSON_PAGE_SIZE = 100;
 let personLoadRequest = 0;
+let personSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handlePersonContextMenu(person: any, event: MouseEvent) {
   selectPerson(person);
@@ -357,7 +396,22 @@ watch(() => config.settings.categorySort, () => {
   loadPersons();
 });
 
+watch(personSearch, () => {
+  if (personSearchTimer) clearTimeout(personSearchTimer);
+  personLoadRequest++;
+  allPersons.value = [];
+  hasMorePersons.value = false;
+  totalPersons.value = 0;
+  isLoadingPersons.value = true;
+  isLoadingMorePersons.value = false;
+  personSearchTimer = setTimeout(() => {
+    personSearchTimer = null;
+    void loadPersons();
+  }, 200);
+});
+
 onUnmounted(() => {
+  if (personSearchTimer) clearTimeout(personSearchTimer);
   if (unlistenProgress) unlistenProgress();
   if (unlistenFinished) unlistenFinished();
   if (unlistenCluster) unlistenCluster();
@@ -367,6 +421,7 @@ async function loadPersons(reset = true) {
   if (!reset && (!hasMorePersons.value || isLoadingMorePersons.value || isLoadingPersons.value)) return;
 
   const requestId = reset ? ++personLoadRequest : personLoadRequest;
+  const search = personSearch.value.trim();
   if (reset) {
     isLoadingPersons.value = true;
     allPersons.value = [];
@@ -381,6 +436,7 @@ async function loadPersons(reset = true) {
       config.settings.categorySort,
       reset ? 0 : allPersons.value.length,
       PERSON_PAGE_SIZE,
+      search,
     );
     if (requestId !== personLoadRequest) return;
 
@@ -390,6 +446,7 @@ async function loadPersons(reset = true) {
         : [...allPersons.value, ...page.persons];
       hasMorePersons.value = page.has_more;
       totalPersons.value = page.total;
+      if (!search) allPersonCount.value = page.total;
       if (allPersons.value.length > 0 && !selectedPerson.value) {
         const index = allPersons.value.findIndex(p => p.id === libConfig.person?.id);
         selectPerson(allPersons.value[index >= 0 ? index : 0]);
@@ -453,6 +510,8 @@ async function clickDeletePerson() {
     if (result) {
       const index = allPersons.value.findIndex(p => p.id === selectedPerson.value.id);
       allPersons.value = allPersons.value.filter(p => p.id !== selectedPerson.value.id);
+      totalPersons.value = Math.max(0, totalPersons.value - 1);
+      allPersonCount.value = Math.max(0, allPersonCount.value - 1);
       if (index > 0) {
         selectPerson(allPersons.value[index - 1]);
       } else if (index === 0) {
@@ -519,6 +578,13 @@ async function onResetFacesConfirm() {
   }
 
   await resetFaces();
+  if (personSearch.value) {
+    personSearch.value = '';
+    await nextTick();
+    if (personSearchTimer) clearTimeout(personSearchTimer);
+    personSearchTimer = null;
+  }
+  allPersonCount.value = 0;
   await loadPersons();
   checkFaceStats();
 }

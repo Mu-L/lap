@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+    <div v-else-if="!isLoading" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
       <!-- <IconCalendar class="w-8 h-8 mb-2" /> -->
       <!-- <span class="text-sm text-center">{{ $t('tooltip.not_found.calendar') }}</span> -->
       <span class="text-sm text-center">{{ $t('tooltip.not_found.calendar_hint') }}</span>
@@ -91,6 +91,7 @@ const calendarToggleTooltip = computed(() =>
 const scrollable = ref<HTMLDivElement | null>(null); // Ref for the scrollable element
 type CalendarDates = Record<number, Record<number, { date: number; count: number }[]>>;
 const calendar_dates = ref<CalendarDates>({});
+const isLoading = ref(true);
 
 function buildHeatmapThresholds(values: number[]): number[] | null {
   const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
@@ -225,9 +226,14 @@ function toggleCalendarView() {
 
 /// fetch calendar dates
 async function getCalendarDates() {
-  const taken_dates = await getTakenDates(config.settings.calendarSort);
-  if(taken_dates) {
-    calendar_dates.value = transformArray(taken_dates);
+  isLoading.value = true;
+  try {
+    const taken_dates = await getTakenDates(config.settings.calendarSort);
+    if (taken_dates) {
+      calendar_dates.value = transformArray(taken_dates);
+    }
+  } finally {
+    isLoading.value = false;
   }
 }
 

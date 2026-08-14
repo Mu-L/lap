@@ -7320,11 +7320,23 @@ impl Person {
         Ok(persons)
     }
 
-    pub fn get_page(sort: i64, offset: usize, limit: usize) -> Result<PersonPage, String> {
+    pub fn get_page(sort: i64, offset: usize, limit: usize, search: &str) -> Result<PersonPage, String> {
         let conn = open_conn()?;
         let limit = limit.clamp(1, 100);
+        let search = search.trim();
+        let search_pattern = format!(
+            "%{}%",
+            search
+                .replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_")
+        );
         let total: i64 = conn
-            .query_row("SELECT COUNT(*) FROM persons", [], |row| row.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM persons WHERE ?1 = '' OR COALESCE(name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE",
+                params![search, search_pattern],
+                |row| row.get(0),
+            )
             .map_err(|e| e.to_string())?;
         let name_asc = "rtrim(COALESCE(p.name, ''), '0123456789') COLLATE NOCASE ASC, CAST(substr(COALESCE(p.name, ''), length(rtrim(COALESCE(p.name, ''), '0123456789')) + 1) AS INTEGER) ASC, p.name ASC, p.id ASC";
         let name_desc = "rtrim(COALESCE(p.name, ''), '0123456789') COLLATE NOCASE DESC, CAST(substr(COALESCE(p.name, ''), length(rtrim(COALESCE(p.name, ''), '0123456789')) + 1) AS INTEGER) DESC, p.name DESC, p.id ASC";
@@ -7338,13 +7350,14 @@ impl Person {
             "SELECT p.id, p.name, COUNT(f.id) as count, p.thumbnail
              FROM persons p
              LEFT JOIN faces f ON f.person_id = p.id
+             WHERE ?1 = '' OR COALESCE(p.name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE
              GROUP BY p.id
              ORDER BY {order_clause}
-             LIMIT ?1 OFFSET ?2"
+             LIMIT ?3 OFFSET ?4"
         );
         let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
         let persons_iter = stmt
-            .query_map(params![(limit + 1) as i64, offset as i64], |row| {
+            .query_map(params![search, search_pattern, (limit + 1) as i64, offset as i64], |row| {
                 let thumb_data: Option<Vec<u8>> = row.get(3)?;
                 Ok(Self {
                     id: row.get(0)?,

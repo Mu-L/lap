@@ -54,6 +54,8 @@
     "favorite_folders_only": "お気に入りのフォルダーのみ",
     "no_folders_found": "フォルダーが見つかりません",
     "smart_album_list": "スマートアルバム",
+    "search_smart_albums": "スマートアルバムを検索",
+    "no_smart_albums_found": "スマートアルバムが見つかりません",
     "add_smart_album": "スマートアルバムを追加",
     "folder_unavailable": {
       "title": "フォルダーを利用できません",
@@ -647,6 +649,7 @@
       "index_faces": "顔をインデックス",
       "reset_index": "インデックスをリセット",
       "unnamed": "名前のない人物",
+      "search": "人物を検索",
       "show_more": "さらに表示（{loaded}/{total}）"
     },
     "tag": {

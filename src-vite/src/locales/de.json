@@ -54,6 +54,8 @@
     "favorite_folders_only": "Nur Lieblingsordner",
     "no_folders_found": "Keine Ordner gefunden",
     "smart_album_list": "Smart-Alben",
+    "search_smart_albums": "Smart-Alben suchen",
+    "no_smart_albums_found": "Keine Smart-Alben gefunden",
     "add_smart_album": "Smart-Album hinzufügen",
     "folder_unavailable": {
       "title": "Ordner nicht verfügbar",
@@ -647,6 +649,7 @@
       "index_faces": "Gesichter indexieren",
       "reset_index": "Index zurücksetzen",
       "unnamed": "Unbenannte Person",
+      "search": "Personen suchen",
       "show_more": "Mehr anzeigen ({loaded}/{total})"
     },
     "tag": {

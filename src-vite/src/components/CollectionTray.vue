@@ -132,7 +132,7 @@
           <span class="text-center">{{ $t('collection.not_found') }}</span>
         </div>
         <div
-          v-if="collections.length === 0 && !renamingId"
+          v-if="!isLoadingCollections && collections.length === 0 && !renamingId"
           class="mt-2 px-3 py-3 flex flex-col items-center gap-1 text-center text-base-content/30"
         >
           <span class="text-sm">{{ $t('collection.empty_content') }}</span>
@@ -195,6 +195,7 @@ type Collection = {
 };
 
 const collections = ref<Collection[]>([]);
+const isLoadingCollections = ref(true);
 const maxCollectionCount = computed(() => Math.max(1, Number(config.main.maxCollectionCount) || 100));
 const searchQuery = ref('');
 const isSearchFocused = ref(false);
@@ -221,7 +222,11 @@ let unlistenLibrarySwitched: (() => void) | null = null;
 
 onMounted(async () => {
   document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
-  await loadCollections();
+  try {
+    await loadCollections();
+  } finally {
+    isLoadingCollections.value = false;
+  }
   unlistenCollectionFilesDropped = await listen('collection-files-dropped', async () => {
     await loadCollections();
   });

@@ -20,21 +20,24 @@
         :class="[
           'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
           isTagSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+          !isLoadingTags && allTags.length === 0 ? 'opacity-50' : '',
         ]"
       >
         <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isTagSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
         <input
           type="text"
           v-model="tagSearch"
+          :disabled="!isLoadingTags && allTags.length === 0"
           :placeholder="$t('tag.search_tags')"
-          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none disabled:opacity-50"
           @focus="isTagSearchFocused = true"
           @blur="isTagSearchFocused = false"
         />
         <button
           v-if="tagSearch"
           type="button"
-          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+          :disabled="!isLoadingTags && allTags.length === 0"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70 disabled:opacity-30"
           @click="tagSearch = ''"
         >
           <IconClose class="w-4 h-4" />
@@ -85,7 +88,7 @@
         <span class="text-center">{{ $t('tag.not_found') }}</span>
       </div>
 
-      <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+      <div v-else-if="!isLoadingTags" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
         <!-- <IconTag class="w-8 h-8 mb-2" /> -->
         <span class="text-sm text-center">{{ $t('tooltip.not_found.tag_hint') }}</span>
       </div>
@@ -159,6 +162,7 @@ const originalTagName = ref('');
 const tagInputRef = ref<HTMLInputElement[]>([]);
 const tagSearch = ref('');
 const isTagSearchFocused = ref(false);
+const isLoadingTags = ref(true);
 
 const sortedTags = computed(() => allTags.value);
 const filteredTags = computed(() => {
@@ -211,21 +215,25 @@ watch(() => config.settings.categorySort, () => {
 });
 
 async function loadTags() {
-  const tags = await getAllTags(config.settings.categorySort);
-  if (tags) {
-    allTags.value = tags;
-    if (allTags.value.length > 0) {
-      const index = allTags.value.findIndex(tag => tag.id === libConfig.tag.id);
-      if (index >= 0) {
-        selectedTag.value = allTags.value[index];
-      } else if (!selectedTag.value) {
-        selectedTag.value = allTags.value[0];
-        libConfig.tag.id = selectedTag.value.id;
+  try {
+    const tags = await getAllTags(config.settings.categorySort);
+    if (tags) {
+      allTags.value = tags;
+      if (allTags.value.length > 0) {
+        const index = allTags.value.findIndex(tag => tag.id === libConfig.tag.id);
+        if (index >= 0) {
+          selectedTag.value = allTags.value[index];
+        } else if (!selectedTag.value) {
+          selectedTag.value = allTags.value[0];
+          libConfig.tag.id = selectedTag.value.id;
+        }
       }
+    } else {
+      libConfig.tag.id = null;
+      selectedTag.value = null;
     }
-  } else {
-    libConfig.tag.id = null;
-    selectedTag.value = null;
+  } finally {
+    isLoadingTags.value = false;
   }
 }
 

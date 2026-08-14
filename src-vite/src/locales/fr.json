@@ -54,6 +54,8 @@
     "favorite_folders_only": "Dossiers favoris uniquement",
     "no_folders_found": "Aucun dossier trouvé",
     "smart_album_list": "Albums intelligents",
+    "search_smart_albums": "Rechercher des albums intelligents",
+    "no_smart_albums_found": "Aucun album intelligent trouvé",
     "add_smart_album": "Ajouter un album intelligent",
     "folder_unavailable": {
       "title": "Dossier indisponible",
@@ -647,6 +649,7 @@
       "index_faces": "Indexer visages",
       "reset_index": "Réinitialiser index",
       "unnamed": "Personne sans nom",
+      "search": "Rechercher des personnes",
       "show_more": "Afficher plus ({loaded}/{total})"
     },
     "tag": {

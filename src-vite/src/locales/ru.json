@@ -54,6 +54,8 @@
     "favorite_folders_only": "Только избранные папки",
     "no_folders_found": "Папки не найдены",
     "smart_album_list": "Смарт-альбомы",
+    "search_smart_albums": "Поиск смарт-альбомов",
+    "no_smart_albums_found": "Смарт-альбомы не найдены",
     "add_smart_album": "Добавить смарт-альбом",
     "folder_unavailable": {
       "title": "Папка недоступна",
@@ -647,6 +649,7 @@
       "index_faces": "Индексировать лица",
       "reset_index": "Сбросить индекс",
       "unnamed": "Безымянный человек",
+      "search": "Поиск людей",
       "show_more": "Показать ещё ({loaded}/{total})"
     },
     "tag": {

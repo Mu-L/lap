@@ -60,7 +60,7 @@
     </div>
 
     <!-- Display message if no data are found -->
-    <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+    <div v-else-if="!isLoadingCameraInfo" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
       <!-- <IconCamera class="w-8 h-8 mb-2" /> -->
       <span class="text-sm text-center">{{ $t('tooltip.not_found.camera_hint') }}</span>
     </div>
@@ -99,6 +99,7 @@ const cameraToggleTooltip = computed(() =>
 
 const cameras = ref<any[]>([]);
 const lenses = ref<any[]>([]);
+const isLoadingCameraInfo = ref(true);
 
 const activeTab = computed(() => {
   return config.camera.isCamera ? 'camera' : 'lens';
@@ -111,9 +112,7 @@ const activeItems = computed(() => {
 const sortedItems = computed(() => activeItems.value);
 
 onMounted(async () => {
-  if (cameras.value.length === 0 || lenses.value.length === 0) {
-    await Promise.all([getCameras(), getLenses()]);
-  }
+  await loadCameraInfo();
 
   validateSelections();
   expandSelectedItem(cameras.value, (libConfig.camera as any).make, (libConfig.camera as any).model);
@@ -121,8 +120,17 @@ onMounted(async () => {
 });
 
 watch(() => config.settings.categorySort, async () => {
-  await Promise.all([getCameras(), getLenses()]);
+  await loadCameraInfo();
 });
+
+async function loadCameraInfo() {
+  isLoadingCameraInfo.value = true;
+  try {
+    await Promise.all([getCameras(), getLenses()]);
+  } finally {
+    isLoadingCameraInfo.value = false;
+  }
+}
 
 function restoreExpandedItem(items: any[], selectedMake: string | null, selectedModel: string | null) {
   if (!selectedMake) return;

@@ -6,6 +6,7 @@
         {{ $t('album.album_list') }}<template v-if="albums.length > 0"> ({{ albums.length.toLocaleString() }})</template>
       </span>
       <TButton
+        v-if="albums.length > 0"
         :icon="IconAdd"
         :buttonSize="'small'"
         :tooltip="$t('menu.album.add')"
@@ -18,14 +19,16 @@
         :class="[
           'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
           isFolderSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+          !isLoading && albums.length === 0 ? 'opacity-50' : '',
         ]"
       >
         <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isFolderSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
         <input
           v-model="folderSearch"
           type="text"
+          :disabled="!isLoading && albums.length === 0"
           :placeholder="$t('album.search_folders')"
-          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none disabled:opacity-50"
           @focus="isFolderSearchFocused = true"
           @blur="isFolderSearchFocused = false"
           @keydown.esc.stop="folderSearch = ''"
@@ -36,9 +39,10 @@
           :title="$t('album.favorite_folders_only')"
           :aria-pressed="favoriteFoldersOnly"
           :class="[
-            'p-1 rounded-box',
+            'p-1 rounded-box disabled:opacity-30',
             favoriteFoldersOnly ? 'text-primary!' : 'text-base-content/30 hover:text-base-content/70',
           ]"
+          :disabled="!isLoading && albums.length === 0"
           @click="favoriteFoldersOnly = !favoriteFoldersOnly"
         >
           <component :is="favoriteFoldersOnly ? IconHeartFilled : IconHeart" class="w-4 h-4 cursor-pointer" />
@@ -46,7 +50,8 @@
         <button
           v-if="folderSearch"
           type="button"
-          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
+          :disabled="!isLoading && albums.length === 0"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70 disabled:opacity-30"
           @click="folderSearch = ''"
         >
           <IconClose class="w-4 h-4" />
@@ -234,7 +239,7 @@
       <li v-if="!isFolderSearchLoading && visibleAlbums.length === 0 && albums.length > 0" class="sidebar-empty text-sm">
         <span class="text-center">{{ $t('album.no_folders_found') }}</span>
       </li>
-      <li v-else-if="albums.length === 0" class="sidebar-empty text-sm">
+      <li v-else-if="!isLoading && albums.length === 0" class="sidebar-empty text-sm">
         <span class="text-center">{{ $t('tooltip.not_found.albums') }}</span>
       </li>
     </ul>

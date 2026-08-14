@@ -12,11 +12,41 @@
       />
     </div>
 
+    <div class="mx-1 mb-2 px-1 shrink-0">
+      <div
+        :class="[
+          'h-8 flex items-center rounded-box transition-colors bg-base-100/40',
+          isSmartAlbumSearchFocused ? 'border-2 border-primary' : 'border border-base-content/10 hover:border-base-content/30',
+          customSmartAlbums.length === 0 ? 'opacity-50' : '',
+        ]"
+      >
+        <IconSearch class="ml-2 w-4 h-4 shrink-0" :class="isSmartAlbumSearchFocused ? 'text-primary/70' : 'text-base-content/30'" />
+        <input
+          v-model="smartAlbumSearch"
+          type="text"
+          :disabled="customSmartAlbums.length === 0"
+          :placeholder="$t('album.search_smart_albums')"
+          class="w-full min-w-0 bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none disabled:opacity-50"
+          @focus="isSmartAlbumSearchFocused = true"
+          @blur="isSmartAlbumSearchFocused = false"
+        />
+        <button
+          v-if="smartAlbumSearch"
+          type="button"
+          :disabled="customSmartAlbums.length === 0"
+          class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70 disabled:opacity-30"
+          @click="smartAlbumSearch = ''"
+        >
+          <IconClose class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+
     <VueDraggable
-      v-if="customSmartAlbums.length > 0"
+      v-if="filteredSmartAlbums.length > 0"
       v-model="customSmartAlbums"
       tag="ul"
-      :disabled="reorderingSmartAlbumId === null"
+      :disabled="reorderingSmartAlbumId === null || Boolean(smartAlbumSearch.trim())"
       :handle="'.smart-album-drag-handle'"
       :animation="200"
       @start="onDragStart"
@@ -24,7 +54,7 @@
       @drop.stop
       class="flex-1 overflow-x-hidden overflow-y-auto rounded-box select-none"
     >
-      <li v-for="smartAlbum in customSmartAlbums" :key="smartAlbum.id">
+      <li v-for="smartAlbum in filteredSmartAlbums" :key="smartAlbum.id">
         <div
           :data-reordering-smart-album="isReorderingSmartAlbum(smartAlbum) ? 'true' : undefined"
           :class="[
@@ -71,6 +101,9 @@
         </div>
       </li>
     </VueDraggable>
+    <div v-else-if="customSmartAlbums.length > 0" class="sidebar-empty text-sm">
+      <span class="text-center">{{ $t('album.no_smart_albums_found') }}</span>
+    </div>
     <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
       <span class="text-sm text-center">{{ $t('album.no_smart_albums.description') }}</span>
     </div>
@@ -95,14 +128,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { VueDraggable } from 'vue-draggable-plus';
 import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import { getThumbUrl, getThumbnailDataUrl, getThumbnailDataUrlInflight, isWin, setThumbnailDataUrlInflight } from '@/common/utils';
 import { getFileThumbById } from '@/common/api';
-import { IconAdd, IconDragHandle, IconEdit, IconMore, IconFolderCog, IconOrder, IconTrash } from '@/common/icons';
+import { IconAdd, IconClose, IconDragHandle, IconEdit, IconMore, IconFolderCog, IconOrder, IconSearch, IconTrash } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import SmartAlbumEdit from '@/components/SmartAlbumEdit.vue';
@@ -119,11 +152,23 @@ const smartAlbumContextMenus = ref<Record<string, any>>({});
 const smartAlbumCoverErrors = ref<Record<string, number>>({});
 const smartAlbumCoverUrls = ref<Record<string, string>>({});
 const reorderingSmartAlbumId = ref<string | null>(null);
+const smartAlbumSearch = ref('');
+const isSmartAlbumSearchFocused = ref(false);
 let smartAlbumCoverLoadToken = 0;
+
+const filteredSmartAlbums = computed(() => {
+  const query = smartAlbumSearch.value.trim().toLowerCase();
+  if (!query) return customSmartAlbums.value;
+  return customSmartAlbums.value.filter(smartAlbum => smartAlbum.name.toLowerCase().includes(query));
+});
 
 watch(() => libConfig.smartAlbums, (albums) => {
   customSmartAlbums.value = Array.isArray(albums) ? [...albums] : [];
 }, { immediate: true });
+
+watch(smartAlbumSearch, () => {
+  reorderingSmartAlbumId.value = null;
+});
 
 const getSmartAlbumCoverSrc = (smartAlbum: any) => {
   const coverFileId = Number(smartAlbum?.coverFileId || 0);

@@ -54,6 +54,8 @@
     "favorite_folders_only": "즐겨찾는 폴더만",
     "no_folders_found": "폴더를 찾을 수 없습니다",
     "smart_album_list": "스마트 앨범",
+    "search_smart_albums": "스마트 앨범 검색",
+    "no_smart_albums_found": "스마트 앨범을 찾을 수 없습니다",
     "add_smart_album": "스마트 앨범 추가",
     "folder_unavailable": {
       "title": "폴더를 사용할 수 없음",
@@ -647,6 +649,7 @@
       "index_faces": "얼굴 인덱싱",
       "reset_index": "인덱스 초기화",
       "unnamed": "이름 없는 인물",
+      "search": "인물 검색",
       "show_more": "더 보기 ({loaded}/{total})"
     },
     "tag": {

@@ -54,6 +54,8 @@
     "favorite_folders_only": "Apenas pastas favoritas",
     "no_folders_found": "Nenhuma pasta encontrada",
     "smart_album_list": "Álbuns inteligentes",
+    "search_smart_albums": "Pesquisar álbuns inteligentes",
+    "no_smart_albums_found": "Nenhum álbum inteligente encontrado",
     "add_smart_album": "Adicionar álbum inteligente",
     "folder_unavailable": {
       "title": "Pasta indisponível",
@@ -647,6 +649,7 @@
       "index_faces": "Indexar rostos",
       "reset_index": "Redefinir índice",
       "unnamed": "Pessoa sem nome",
+      "search": "Pesquisar pessoas",
       "show_more": "Mostrar mais ({loaded}/{total})"
     },
     "tag": {

@@ -48,7 +48,7 @@
     </div>
 
     <!-- Display message if no data are found -->
-    <div v-else class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
+    <div v-else-if="!isLoadingLocations" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
         <!-- <IconLocation class="w-8 h-8 mb-2" /> -->
         <span class="text-sm text-center">{{ $t('tooltip.not_found.location_hint') }}</span>
     </div>
@@ -76,6 +76,7 @@ const { locale, messages } = useI18n(); // get locale for country name translati
 const localeMsg = computed(() => messages.value[locale.value] as any);
 
 const locations = ref<any[]>([]);
+const isLoadingLocations = ref(true);
 
 const sortedLocations = computed(() => locations.value);
 
@@ -150,13 +151,18 @@ function clickLocationName(location: any, name: string) {
 
 /// get locations from db
 async function getLocations() {
-  const fetchedLocations = await getLocationInfo(config.settings.categorySort);
-  if (fetchedLocations) {
-    locations.value = fetchedLocations.map((location: any) => ({
-      ...location, 
-      is_expanded: false,
-    }));
-    restoreLocationSelection();
+  isLoadingLocations.value = true;
+  try {
+    const fetchedLocations = await getLocationInfo(config.settings.categorySort);
+    if (fetchedLocations) {
+      locations.value = fetchedLocations.map((location: any) => ({
+        ...location,
+        is_expanded: false,
+      }));
+      restoreLocationSelection();
+    }
+  } finally {
+    isLoadingLocations.value = false;
   }
 };
 
