@@ -646,6 +646,23 @@ function loadPlaceholderResource(src?: string) {
   });
 }
 
+function getCompatibleLayout(
+  naturalWidth: number,
+  naturalHeight: number,
+  preferredWidth: number,
+  preferredHeight: number,
+) {
+  if (!preferredWidth || !preferredHeight || !naturalWidth || !naturalHeight) {
+    return { width: naturalWidth, height: naturalHeight };
+  }
+
+  const naturalRatio = naturalWidth / naturalHeight;
+  const preferredRatio = preferredWidth / preferredHeight;
+  return Math.abs(naturalRatio - preferredRatio) / naturalRatio <= 0.01
+    ? { width: preferredWidth, height: preferredHeight }
+    : { width: naturalWidth, height: naturalHeight };
+}
+
 function setImageSlot(
   slotIndex: number,
   filePath: string,
@@ -1247,14 +1264,20 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
     if (firstResult.kind === 'thumbnail' && firstResult.placeholder) {
       if (loadingId !== currentLoadingId.value) return;
       const nextImageIndex = activeImage.value ^ 1;
+      const layout = getCompatibleLayout(
+        firstResult.placeholder.naturalWidth,
+        firstResult.placeholder.naturalHeight,
+        props.imageWidth,
+        props.imageHeight,
+      );
       setImageSlot(
         nextImageIndex,
         newFilePath,
         firstResult.placeholder.src,
         firstResult.placeholder.naturalWidth,
         firstResult.placeholder.naturalHeight,
-        props.imageWidth || firstResult.placeholder.naturalWidth,
-        props.imageHeight || firstResult.placeholder.naturalHeight,
+        layout.width,
+        layout.height,
       );
       onImageReady(nextImageIndex, true);
       hasPreviewPlaceholder = true;
@@ -1284,7 +1307,12 @@ watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newF
         // Reuse the placeholder layout so replacing source pixels does not
         // change the displayed geometry. In particular, RAW thumbnails use
         // the complete image dimensions, preserving their scale on replacement.
-        const placeholderLayout = { ...imageSize.value[activeIndex] };
+        const placeholderLayout = getCompatibleLayout(
+          loaded.naturalWidth,
+          loaded.naturalHeight,
+          imageSize.value[activeIndex].width,
+          imageSize.value[activeIndex].height,
+        );
         setImageSlot(
           activeIndex,
           newFilePath,
@@ -1359,6 +1387,12 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
 
   try {
     const placeholder = await loadPlaceholderResource(newThumbSrc);
+    const layout = getCompatibleLayout(
+      placeholder.naturalWidth,
+      placeholder.naturalHeight,
+      props.imageWidth,
+      props.imageHeight,
+    );
     // Check if we haven't switched files since we started loading the placeholder
     if (props.filePath === currentFilePath) {
       // If we are currently showing a placeholder for this file, just update it in place
@@ -1370,8 +1404,8 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
           placeholder.src,
           placeholder.naturalWidth,
           placeholder.naturalHeight,
-          props.imageWidth || placeholder.naturalWidth,
-          props.imageHeight || placeholder.naturalHeight,
+          layout.width,
+          layout.height,
         );
         // Important: update layout after size change
         if (isZoomFit.value) {
@@ -1391,8 +1425,8 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
             placeholder.src,
             placeholder.naturalWidth,
             placeholder.naturalHeight,
-            props.imageWidth || placeholder.naturalWidth,
-            props.imageHeight || placeholder.naturalHeight,
+            layout.width,
+            layout.height,
           );
         }
       }
