@@ -123,7 +123,7 @@
               :icon="IconTrash"
               :buttonSize="'small'"
               :disabled="lib.id === 'default' || showAddInput || isRenaming"
-              :tooltip="$t('msgbox.manage_libraries.delete')"
+              :tooltip="$t('msgbox.manage_libraries.remove')"
               @click.stop="confirmDelete(lib)"
             />
           </div>

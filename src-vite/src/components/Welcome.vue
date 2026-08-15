@@ -15,7 +15,7 @@
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
         <div class="rounded-box border border-base-content/5 bg-base-100/60 p-4">
-          <IconFolder class="w-5 h-5 mb-3" />
+          <IconFolders class="w-5 h-5 mb-3" />
           <h3 class="text-sm font-medium text-base-content/70">{{ $t('welcome.add_album_title') }}</h3>
           <p class="mt-2 text-xs leading-5 text-base-content/30">{{ $t('welcome.add_album_description') }}</p>
           <button class="mt-4 btn btn-primary btn-sm rounded-box" @click="requestAddAlbum">
@@ -24,14 +24,14 @@
           </button>
         </div>
         <div class="rounded-box border border-base-content/5 bg-base-100/60 p-4">
-          <IconSearch class="w-5 h-5 mb-3" />
-          <h3 class="text-sm font-medium text-base-content/70">{{ $t('welcome.search_title') }}</h3>
-          <p class="mt-2 text-xs leading-5 text-base-content/30">{{ $t('welcome.search_description') }}</p>
+          <IconFolderCog class="w-5 h-5 mb-3" />
+          <h3 class="text-sm font-medium text-base-content/70">{{ $t('welcome.smart_album_title') }}</h3>
+          <p class="mt-2 text-xs leading-5 text-base-content/30">{{ $t('welcome.smart_album_description') }}</p>
         </div>
         <div class="rounded-box border border-base-content/5 bg-base-100/60 p-4">
-          <IconDragDrop class="w-5 h-5 mb-3" />
-          <h3 class="text-sm font-medium text-base-content/70">{{ $t('welcome.drag_title') }}</h3>
-          <p class="mt-2 text-xs leading-5 text-base-content/30">{{ $t('welcome.drag_description') }}</p>
+          <IconBookmark class="w-5 h-5 mb-3" />
+          <h3 class="text-sm font-medium text-base-content/70">{{ $t('welcome.collection_title') }}</h3>
+          <p class="mt-2 text-xs leading-5 text-base-content/30">{{ $t('welcome.collection_description') }}</p>
         </div>
       </div>
     </div>
@@ -40,7 +40,7 @@
 
 <script setup lang="ts">
 import { emit as tauriEmit } from '@tauri-apps/api/event';
-import { IconAdd, IconFolder, IconSearch, IconDragDrop } from '@/common/icons';
+import { IconAdd, IconBookmark, IconFolderCog, IconFolders } from '@/common/icons';
 import iconLogo from '@/assets/images/icon.png';
 
 const requestAddAlbum = () => {
