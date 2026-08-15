@@ -119,7 +119,7 @@
               >
                 {{ isAllSimilarItemsSelected(activeSimilarGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
               </PanelActionButton>
-              <PanelActionButton :icon="selectedSimilarCount >= 2 ? IconSplitOn4 : IconSplitOn" :disabled="selectedSimilarCount === 0" @click="compareSelectedSimilarPhotos">
+              <PanelActionButton :icon="selectedSimilarCount >= 2 ? IconSplitOn4 : IconSplitOn" :disabled="selectedSimilarCount === 0 || !hasSimilarKeep" @click="compareSelectedSimilarPhotos">
                 {{ $t('info_panel.dedup.compare') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
@@ -551,6 +551,7 @@ const activeGroup = computed(() => {
   return duplicateGroups.value.find(group => group.id === selectedGroupId.value) || null;
 });
 const activeSimilarGroup = computed(() => similarGroups.value.find(group => Number(group.id) === selectedSimilarGroupId.value && Array.isArray(group.items)) || null);
+const hasSimilarKeep = computed(() => activeSimilarGroup.value?.items?.some((item: any) => item.is_keep === 1) || false);
 const similarProgressLabel = computed(() => ({
   preparing: t('info_panel.dedup.similar.preparing'),
   finding_matches: t('info_panel.dedup.similar.finding_matches'),
@@ -677,7 +678,8 @@ function compareSelectedSimilarPhotos() {
   if (!activeSimilarGroup.value) return;
   const selected = getSimilarSelectedSet(activeSimilarGroup.value.id);
   const keepItem = activeSimilarGroup.value.items.find((item: any) => item.is_keep === 1);
-  const files = [keepItem?.file]
+  if (!keepItem?.file) return;
+  const files = [keepItem.file]
     .concat(activeSimilarGroup.value.items
     .filter((item: any) => item.is_keep !== 1 && selected.has(Number(item.file_id)))
       .map((item: any) => item.file)
