@@ -496,6 +496,7 @@
         "oldest_modified": "오래된 수정일 우선"
       },
       "keep_label": "유지",
+      "unkeep_label": "유지 안 함",
       "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
       "set_keep": "유지",
       "duplicate_files_summary": "중복 {count}개 ({size})"

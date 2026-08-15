@@ -496,6 +496,7 @@
         "oldest_modified": "Preferir más antiguo (modificación)"
       },
       "keep_label": "Conservar",
+      "unkeep_label": "No conservar",
       "move_selected_to_trash": "Mover a papelera ({count} seleccionados · {size})",
       "set_keep": "Conservar",
       "duplicate_files_summary": "{count} duplicados ({size})"

@@ -496,6 +496,7 @@
         "oldest_modified": "优先最早修改"
       },
       "keep_label": "保留",
+      "unkeep_label": "取消保留",
       "move_selected_to_trash": "移到废纸篓（已选 {count} 项 · {size}）",
       "set_keep": "保留",
       "duplicate_files_summary": "{count} 个重复项（{size}）"

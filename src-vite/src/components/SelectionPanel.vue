@@ -23,7 +23,7 @@
             {{ $t('info_panel.select_title') }}
           </span>
           <span
-            class="ml-auto min-w-0 truncate text-right text-[11px] font-semibold text-base-content/70"
+            class="ml-auto min-w-0 truncate text-right text-[10px] font-semibold text-base-content/30"
           >
             {{ selectionSummaryText }}
           </span>

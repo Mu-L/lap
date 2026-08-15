@@ -496,6 +496,7 @@
         "oldest_modified": "修正日が最も古いものを優先"
       },
       "keep_label": "保持",
+      "unkeep_label": "保持しない",
       "move_selected_to_trash": "ゴミ箱に入れる（{count}件を選択 · {size}）",
       "set_keep": "保持",
       "duplicate_files_summary": "重複 {count} 件（{size}）"

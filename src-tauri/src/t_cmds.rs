@@ -2562,6 +2562,12 @@ pub fn similar_list_groups(scope_key: String, limit: i64, offset: i64) -> Result
 pub fn similar_get_group(group_id: i64, scope_key: String) -> Result<serde_json::Value, String> {
     t_similar::get_group(group_id, &scope_key)
 }
+
+#[tauri::command]
+pub fn similar_set_keep(group_id: i64, file_id: i64, scope_key: String) -> Result<(), String> {
+    t_similar::set_keep(group_id, file_id, &scope_key)
+}
+
 #[tauri::command]
 pub fn similar_has_scan(scope_key: String) -> Result<bool, String> {
     t_similar::has_scan(&scope_key)

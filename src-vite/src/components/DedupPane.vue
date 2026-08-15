@@ -108,7 +108,7 @@
               <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
                 {{ $t('info_panel.dedup.actions_title') }}
               </span>
-              <span v-if="selectedSimilarCount > 0" class="ml-auto text-[11px] font-semibold text-base-content/50">
+              <span v-if="selectedSimilarCount > 0" class="ml-auto text-[10px] font-semibold text-base-content/30">
                 {{ $t('toolbar.filter.select_count', { count: selectedSimilarCount.toLocaleString() }) }} · {{ formatFileSize(selectedSimilarBytes) }}
               </span>
             </div>
@@ -119,36 +119,41 @@
               >
                 {{ isAllSimilarItemsSelected(activeSimilarGroup.id) ? $t('menu.select.none') : $t('menu.select.all') }}
               </PanelActionButton>
-              <PanelActionButton :icon="selectedSimilarCount >= 3 ? IconSplitOn4 : IconSplitOn" :disabled="selectedSimilarCount < 2" @click="compareSelectedSimilarPhotos">
+              <PanelActionButton :icon="selectedSimilarCount >= 2 ? IconSplitOn4 : IconSplitOn" :disabled="selectedSimilarCount === 0" @click="compareSelectedSimilarPhotos">
                 {{ $t('info_panel.dedup.compare') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
                 {{ $t('menu.file.move_to_trash') }}
               </PanelActionButton>
             </div>
-            <div class="space-y-2.5">
+            <TransitionGroup
+              tag="div"
+              name="dedup-item"
+              move-class="transition-transform duration-200 ease-out"
+              class="space-y-2.5"
+            >
               <div
                 v-for="item in activeSimilarGroup.items"
                 :key="item.file_id"
                 role="button"
                 tabindex="0"
                 class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
-                :class="getDedupItemClass(item.file_id, isSimilarSelected(activeSimilarGroup.id, item.file_id))"
+                :class="getDedupItemClass(item.file_id, item.is_keep !== 1 && isSimilarSelected(activeSimilarGroup.id, item.file_id))"
                 @click="handleSimilarSelection(item.file_id)"
                 @dblclick="handleSimilarSelection(item.file_id, true)"
                 @keydown.enter.self="handleSimilarSelection(item.file_id)"
                 @keydown.space.self.prevent="handleSimilarSelection(item.file_id)"
               >
                 <div class="flex items-center gap-2">
-                  <label class="flex items-center cursor-pointer shrink-0" @click.stop @dblclick.stop>
+                  <label v-if="item.is_keep !== 1" class="flex items-center cursor-pointer shrink-0" @click.stop @dblclick.stop>
                     <input
                       type="checkbox"
-                      class="checkbox checkbox-xs"
-                      :class="isSimilarSelected(activeSimilarGroup.id, item.file_id) ? 'checkbox-error' : 'hover:checkbox-error'"
+                      class="checkbox checkbox-xs checkbox-primary opacity-70"
                       :checked="isSimilarSelected(activeSimilarGroup.id, item.file_id)"
                       @change="toggleSimilarSelected(activeSimilarGroup.id, item.file_id)"
                     />
                   </label>
+                  <div v-else class="w-4 shrink-0"></div>
                   <div class="w-10 h-10 rounded-box overflow-hidden shrink-0">
                     <img v-if="item.file?.thumbnail" :src="item.file.thumbnail" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full skeleton"></div>
@@ -167,9 +172,16 @@
                     </div>
                   </div>
                   <div class="shrink-0 w-16 min-h-10 flex flex-col items-center justify-center gap-0.5">
-                    <span class="text-[11px] leading-none text-base-content/30">
-                      {{ Math.round((item.score || 0) * 100) }}%
-                    </span>
+                    <button
+                      class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
+                      :class="item.is_keep === 1 ? 'text-primary' : 'text-base-content/30 hover:text-primary/70'"
+                      :title="$t(item.is_keep === 1 ? 'info_panel.dedup.keep_label' : 'info_panel.dedup.unkeep_label')"
+                      :aria-label="$t(item.is_keep === 1 ? 'info_panel.dedup.keep_label' : 'info_panel.dedup.unkeep_label')"
+                      :aria-current="item.is_keep === 1 ? 'true' : undefined"
+                      @click.stop="item.is_keep !== 1 && setSimilarKeep(activeSimilarGroup.id, item.file_id)"
+                    >
+                      <component :is="item.is_keep === 1 ? IconLock : IconUnlock" class="w-3.5 h-3.5" />
+                    </button>
                     <div class="flex items-center gap-0.5" @click.stop>
                       <button
                         class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
@@ -202,7 +214,7 @@
                   </div>
                 </div>
               </div>
-            </div>
+            </TransitionGroup>
           </div>
         </div>
       </template>
@@ -299,7 +311,7 @@
             <span class="text-[10px] uppercase tracking-widest font-bold text-base-content/30">
               {{ $t('info_panel.dedup.actions_title') }}
             </span>
-            <span v-if="selectedDeleteCount > 0" class="ml-auto text-[11px] font-semibold text-base-content/50">
+            <span v-if="selectedDeleteCount > 0" class="ml-auto text-[10px] font-semibold text-base-content/30">
               {{ $t('toolbar.filter.select_count', { count: selectedDeleteCount.toLocaleString() }) }} · {{ formatFileSize(selectedDeleteBytes) }}
             </span>
           </div>
@@ -320,7 +332,12 @@
               {{ $t('menu.file.move_to_trash') }}
             </PanelActionButton>
           </div>
-          <div class="space-y-2.5">
+          <TransitionGroup
+            tag="div"
+            name="dedup-item"
+            move-class="transition-transform duration-200 ease-out"
+            class="space-y-2.5"
+          >
             <div
               v-for="item in activeGroup.items"
               :key="item.file_id"
@@ -337,10 +354,7 @@
                 <label v-if="item.is_keep !== 1" class="flex items-center cursor-pointer shrink-0" @click.stop @dblclick.stop>
                   <input
                     type="checkbox"
-                    class="checkbox checkbox-xs"
-                    :class="isDupSelected(activeGroup.id, item.file_id)
-                      ? 'checkbox-error'
-                      : 'hover:checkbox-error'"
+                    class="checkbox checkbox-xs checkbox-primary opacity-70"
                     :checked="isDupSelected(activeGroup.id, item.file_id)"
                     @change="toggleDupSelected(activeGroup.id, item.file_id)"
                   />
@@ -366,18 +380,18 @@
                   <button
                     type="button"
                     class="btn btn-ghost btn-xs min-h-0 h-5 w-5 p-0"
-                    :class="item.is_keep === 1 ? 'text-primary' : 'text-base-content/30 hover:text-primary'"
-                    :title="$t('info_panel.dedup.keep_label')"
-                    :aria-label="$t('info_panel.dedup.keep_label')"
+                    :class="item.is_keep === 1 ? 'text-primary' : 'text-base-content/30 hover:text-primary/70'"
+                    :title="$t(item.is_keep === 1 ? 'info_panel.dedup.keep_label' : 'info_panel.dedup.unkeep_label')"
+                    :aria-label="$t(item.is_keep === 1 ? 'info_panel.dedup.keep_label' : 'info_panel.dedup.unkeep_label')"
                     :aria-current="item.is_keep === 1 ? 'true' : undefined"
                     @click.stop="item.is_keep !== 1 && setKeep(activeGroup.id, item.file_id)"
                   >
-                    <IconLock class="w-3.5 h-3.5" />
+                    <component :is="item.is_keep === 1 ? IconLock : IconUnlock" class="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+          </TransitionGroup>
         </div>
       </div>
       </template>
@@ -410,7 +424,7 @@ import {
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import { IconChecked, IconUnChecked, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash } from '@/common/icons';
+import { IconChecked, IconUnChecked, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash, IconUnlock } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
@@ -427,6 +441,7 @@ import {
   similarGetEligibleCount,
   similarListGroups,
   similarGetGroup,
+  similarSetKeep,
   similarHasScan,
   listenSimilarScanProgress,
   setFileCullingFlag,
@@ -518,10 +533,12 @@ const isLoadingMoreDuplicateThumbnails = ref(false);
 
 const duplicateGroups = computed(() =>
   rawGroups.value.map((group: any) => {
-    const keepItem = (group.items || []).find((i: any) => i.is_keep === 1) || null;
-    const duplicateItems = (group.items || []).filter((i: any) => i.is_keep === 0);
+    const sourceItems = group.items || [];
+    const keepItem = sourceItems.find((item: any) => item.is_keep === 1) || null;
+    const duplicateItems = sourceItems.filter((item: any) => item.is_keep === 0);
     return {
       ...group,
+      items: keepItem ? [keepItem, ...duplicateItems] : sourceItems,
       keepItem,
       duplicateItems,
       reclaimableBytes: Math.max(0, Number(group.total_size || 0) - Number(group.file_size || 0)),
@@ -567,14 +584,14 @@ const selectedDeleteBytes = computed(() => {
 const selectedSimilarCount = computed(() => {
   if (!activeSimilarGroup.value) return 0;
   return activeSimilarGroup.value.items.filter((item: any) =>
-    isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
+    item.is_keep !== 1 && isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
   ).length;
 });
 
 const selectedSimilarBytes = computed(() => {
   if (!activeSimilarGroup.value) return 0;
   return activeSimilarGroup.value.items.reduce((sum: number, item: any) =>
-    isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
+    item.is_keep !== 1 && isSimilarSelected(activeSimilarGroup.value.id, item.file_id)
       ? sum + Number(item.file?.size || 0)
       : sum, 0);
 });
@@ -636,8 +653,10 @@ function toggleSimilarSelected(groupId: number, fileId: number) {
 
 function isAllSimilarItemsSelected(groupId: number) {
   if (!activeSimilarGroup.value?.items?.length || activeSimilarGroup.value.id !== groupId) return false;
+  const unkeptItems = activeSimilarGroup.value.items.filter((item: any) => item.is_keep !== 1);
+  if (unkeptItems.length === 0) return false;
   const selected = getSimilarSelectedSet(groupId);
-  return activeSimilarGroup.value.items.every((item: any) => selected.has(Number(item.file_id)));
+  return unkeptItems.every((item: any) => selected.has(Number(item.file_id)));
 }
 
 function selectAllSimilarItems(group: any) {
@@ -649,34 +668,44 @@ function selectAllSimilarItems(group: any) {
     return;
   }
   selected.clear();
-  for (const item of group.items || []) selected.add(Number(item.file_id));
+  for (const item of group.items || []) {
+    if (item.is_keep !== 1) selected.add(Number(item.file_id));
+  }
 }
 
 function compareSelectedSimilarPhotos() {
   if (!activeSimilarGroup.value) return;
   const selected = getSimilarSelectedSet(activeSimilarGroup.value.id);
-  const files = activeSimilarGroup.value.items
-    .filter((item: any) => selected.has(Number(item.file_id)))
-    .map((item: any) => item.file)
+  const keepItem = activeSimilarGroup.value.items.find((item: any) => item.is_keep === 1);
+  const files = [keepItem?.file]
+    .concat(activeSimilarGroup.value.items
+    .filter((item: any) => item.is_keep !== 1 && selected.has(Number(item.file_id)))
+      .map((item: any) => item.file)
+    )
     .filter(Boolean);
   if (files.length >= 2) emit('compare-selected-photos', files);
 }
 
 function trashSelectedSimilar(groupId: number, reclaimableBytes: number) {
-  const fileIds = Array.from(getSimilarSelectedSet(groupId));
+  const keptIds = new Set(
+    (activeSimilarGroup.value?.items || [])
+      .filter((item: any) => item.is_keep === 1)
+      .map((item: any) => Number(item.file_id)),
+  );
+  const fileIds = Array.from(getSimilarSelectedSet(groupId)).filter(fileId => !keptIds.has(fileId));
   if (fileIds.length > 0) emit('trash-selected-similar', String(groupId), fileIds, reclaimableBytes);
 }
 
 function getDedupItemClass(fileId: number, isDuplicateSelected = false) {
   const isActive = Number(props.selectedFileId) === Number(fileId);
-  if (isDuplicateSelected) {
-    return isActive
-      ? 'border-error/70 bg-error/10'
-      : 'border-error/30 hover:border-error/30 hover:bg-error/10';
-  }
+  // if (isDuplicateSelected) {
+  //   return isActive
+  //     ? 'border-error/70 bg-error/10'
+  //     : 'border-error/30 hover:bg-error/5';
+  // }
   return isActive
     ? 'border-primary/70 bg-primary/10'
-    : 'border-base-content/10 hover:border-primary/30 hover:bg-primary/10';
+    : 'border-base-content/10 hover:bg-primary/5';
 }
 
 function toggleDupSelected(groupId: number, fileId: number) {
@@ -914,6 +943,25 @@ async function setKeep(groupId: number, fileId: number) {
 
   const selectedIds = getDupSelectedSet(groupId);
   selectedIds.delete(fileId);
+  emit('select-file', fileId);
+}
+
+async function setSimilarKeep(groupId: number, fileId: number) {
+  await similarSetKeep(groupId, fileId, props.dedupScanKey);
+  const groupIndex = similarGroups.value.findIndex((group: any) => Number(group.id) === groupId);
+  if (groupIndex < 0) return;
+
+  const group = similarGroups.value[groupIndex];
+  const items = (group.items || []).map((item: any) => ({
+    ...item,
+    is_keep: Number(item.file_id) === fileId ? 1 : 0,
+  }));
+  similarGroups.value[groupIndex] = {
+    ...group,
+    representative: items.find((item: any) => item.is_keep === 1)?.file || group.representative,
+    items: items.sort((a: any, b: any) => Number(b.is_keep) - Number(a.is_keep)),
+  };
+  getSimilarSelectedSet(groupId).delete(fileId);
   emit('select-file', fileId);
 }
 

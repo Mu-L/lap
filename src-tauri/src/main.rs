@@ -396,6 +396,7 @@ async fn main() {
             t_cmds::similar_get_eligible_count,
             t_cmds::similar_list_groups,
             t_cmds::similar_get_group,
+            t_cmds::similar_set_keep,
             t_cmds::similar_has_scan,
             // video
             t_video::prepare_video,

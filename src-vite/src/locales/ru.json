@@ -496,6 +496,7 @@
         "oldest_modified": "Самые старые по изменению"
       },
       "keep_label": "Оставить",
+      "unkeep_label": "Не сохранять",
       "move_selected_to_trash": "Удалить в Корзину ({count} выбрано · {size})",
       "set_keep": "Оставить",
       "duplicate_files_summary": "Дубликатов: {count} ({size})"

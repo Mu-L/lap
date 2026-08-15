@@ -422,8 +422,8 @@ fn scan(
         let group_id = tx.last_insert_rowid();
         for (index, score) in member_scores {
             tx.execute(
-                "INSERT INTO similarity_group_items(group_id,file_id,score) VALUES(?1,?2,?3)",
-                params![group_id, vectors[index].id, score],
+                "INSERT INTO similarity_group_items(group_id,file_id,score,is_keep) VALUES(?1,?2,?3,?4)",
+                params![group_id, vectors[index].id, score, i64::from(index == representative)],
             )
             .map_err(|e| e.to_string())?;
         }
@@ -481,12 +481,43 @@ pub fn get_group(group_id: i64, scope_key: &str) -> Result<serde_json::Value, St
     }
     let mut stmt = conn
         .prepare(
-            "SELECT file_id, score FROM similarity_group_items WHERE group_id=?1 ORDER BY score DESC, file_id ASC",
+            "SELECT file_id, score, is_keep FROM similarity_group_items WHERE group_id=?1 ORDER BY is_keep DESC, score DESC, file_id ASC",
         )
         .map_err(|e| e.to_string())?;
-    let items = stmt.query_map(params![group_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, f32>(1)?))).map_err(|e| e.to_string())?
-        .map(|item| { let (file_id, score) = item.map_err(|e| e.to_string())?; Ok(serde_json::json!({"file_id": file_id, "score": score, "file": AFile::get_file_info(file_id)?})) }).collect::<Result<Vec<_>, String>>()?;
+    let items = stmt.query_map(params![group_id], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, f32>(1)?, row.get::<_, i64>(2)?))).map_err(|e| e.to_string())?
+        .map(|item| { let (file_id, score, is_keep) = item.map_err(|e| e.to_string())?; Ok(serde_json::json!({"file_id": file_id, "score": score, "is_keep": is_keep, "file": AFile::get_file_info(file_id)?})) }).collect::<Result<Vec<_>, String>>()?;
     Ok(serde_json::json!({"id": group_id, "items": items}))
+}
+
+pub fn set_keep(group_id: i64, file_id: i64, scope_key: &str) -> Result<(), String> {
+    let mut conn = get_db_conn()?;
+    let tx = conn.transaction().map_err(|e| e.to_string())?;
+    let exists: bool = tx
+        .query_row(
+            "SELECT EXISTS(SELECT 1 FROM similarity_group_items i JOIN similarity_groups g ON g.id=i.group_id JOIN similarity_scans s ON s.id=g.scan_id WHERE i.group_id=?1 AND i.file_id=?2 AND s.scope_key=?3)",
+            params![group_id, file_id, scope_key],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+    if !exists {
+        return Err("Similar item is not available in this scope.".into());
+    }
+    tx.execute(
+        "UPDATE similarity_group_items SET is_keep=0 WHERE group_id=?1",
+        params![group_id],
+    )
+    .map_err(|e| e.to_string())?;
+    tx.execute(
+        "UPDATE similarity_group_items SET is_keep=1 WHERE group_id=?1 AND file_id=?2",
+        params![group_id, file_id],
+    )
+    .map_err(|e| e.to_string())?;
+    tx.execute(
+        "UPDATE similarity_groups SET representative_file_id=?2 WHERE id=?1",
+        params![group_id, file_id],
+    )
+    .map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())
 }
 
 pub fn has_scan(scope_key: &str) -> Result<bool, String> {
