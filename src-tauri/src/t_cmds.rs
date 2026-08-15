@@ -597,6 +597,12 @@ pub fn move_folder(
     new_folder_path: &str,
     conflict_policy: &str,
 ) -> Result<String, String> {
+    let old_album_id = AFolder::fetch(folder_path)?.map(|folder| folder.album_id);
+    let moved_thumb_keys = if old_album_id.is_some_and(|album_id| album_id != new_album_id) {
+        AThumb::get_thumb_keys_in_subtree(folder_path)?
+    } else {
+        Vec::new()
+    };
     let transfer = t_utils::move_folder_with_policy(
         folder_path,
         new_folder_path,
@@ -617,6 +623,9 @@ pub fn move_folder(
             ),
             None => format!("Error while moving folder in DB: {}", error),
         });
+    }
+    if let Some(old_album_id) = old_album_id {
+        AThumb::relocate_for_thumb_keys(&moved_thumb_keys, old_album_id, new_album_id);
     }
     transfer.finalize()
 }

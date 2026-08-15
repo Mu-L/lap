@@ -35,6 +35,17 @@ use tauri::{Emitter, State};
 static THUMB_GENERATION_LOCKS: OnceLock<ThumbGenerationLocks> = OnceLock::new();
 static THUMB_BACKGROUND_TASKS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
+fn subtree_like_pattern(path: &str) -> String {
+    let separator = std::path::MAIN_SEPARATOR;
+    let prefix = path.trim_end_matches(separator);
+    let prefix = if prefix.is_empty() {
+        separator.to_string()
+    } else {
+        format!("{}{}", prefix, separator)
+    };
+    format!("{}%", prefix.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"))
+}
+
 struct ThumbGenerationLocks {
     active: Mutex<HashSet<String>>,
     available: Condvar,
@@ -365,9 +376,10 @@ impl Album {
 
         tx.execute(
             "UPDATE afolders
-            SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1)), name = ?3
-            WHERE path LIKE ?1 || '%'",
-            params![old_path, new_path, new_name],
+            SET path = CONCAT(?2, SUBSTRING(path, LENGTH(?1) + 1)),
+                name = CASE WHEN path = ?1 THEN ?3 ELSE name END
+            WHERE path = ?1 OR path LIKE ?4 ESCAPE '\\'",
+            params![old_path, new_path, new_name, subtree_like_pattern(old_path)],
         )
         .map_err(|e| e.to_string())?;
 
@@ -962,19 +974,19 @@ impl AFolder {
         Ok(deleted_count)
     }
 
-    /// move a folder (update path and album_id)
+    /// Move a folder subtree by updating its paths and album ID.
     pub fn move_folder(old_path: &str, new_album_id: i64, new_path: &str) -> Result<usize, String> {
         let conn = open_conn()?;
         let result = conn
             .execute(
                 "UPDATE afolders
                 SET path = CONCAT(?3, SUBSTRING(path, LENGTH(?1) + 1)), album_id = ?2
-                WHERE path = ?1 OR path LIKE ?1 || ?4",
+                WHERE path = ?1 OR path LIKE ?4 ESCAPE '\\'",
                 params![
                     old_path,
                     new_album_id,
                     new_path,
-                    format!("{}%", std::path::MAIN_SEPARATOR)
+                    subtree_like_pattern(old_path),
                 ],
             )
             .map_err(|e| e.to_string())?;
@@ -990,11 +1002,11 @@ impl AFolder {
     ) -> Result<usize, String> {
         let mut conn = open_conn()?;
         let tx = conn.transaction().map_err(|e| e.to_string())?;
-        let destination_pattern = format!("{}{}%", new_path, std::path::MAIN_SEPARATOR);
+        let destination_pattern = subtree_like_pattern(new_path);
 
         let destination_folder_ids: Vec<i64> = {
             let mut stmt = tx
-                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2")
+                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'")
                 .map_err(|e| e.to_string())?;
             let rows = stmt
                 .query_map(params![new_path, destination_pattern], |row| row.get(0))
@@ -1010,7 +1022,7 @@ impl AFolder {
             .map_err(|e| e.to_string())?;
         }
         tx.execute(
-            "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2",
+            "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'",
             params![new_path, destination_pattern],
         )
         .map_err(|e| e.to_string())?;
@@ -1019,12 +1031,12 @@ impl AFolder {
             .execute(
                 "UPDATE afolders
                 SET path = CONCAT(?3, SUBSTRING(path, LENGTH(?1) + 1)), album_id = ?2
-                WHERE path = ?1 OR path LIKE ?1 || ?4",
+                WHERE path = ?1 OR path LIKE ?4 ESCAPE '\\'",
                 params![
                     old_path,
                     new_album_id,
                     new_path,
-                    format!("{}%", std::path::MAIN_SEPARATOR)
+                    subtree_like_pattern(old_path),
                 ],
             )
             .map_err(|e| e.to_string())?;
@@ -1036,11 +1048,11 @@ impl AFolder {
         let folder = Self::new(album_id, folder_path)?;
         let mut conn = open_conn()?;
         let tx = conn.transaction().map_err(|e| e.to_string())?;
-        let destination_pattern = format!("{}{}%", folder_path, std::path::MAIN_SEPARATOR);
+        let destination_pattern = subtree_like_pattern(folder_path);
 
         let destination_folder_ids: Vec<i64> = {
             let mut stmt = tx
-                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2")
+                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'")
                 .map_err(|e| e.to_string())?;
             let rows = stmt
                 .query_map(params![folder_path, destination_pattern], |row| row.get(0))
@@ -1055,7 +1067,7 @@ impl AFolder {
             .map_err(|e| e.to_string())?;
         }
         tx.execute(
-            "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2",
+            "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'",
             params![folder_path, destination_pattern],
         )
         .map_err(|e| e.to_string())?;
@@ -1087,10 +1099,10 @@ impl AFolder {
         // First, get all folder IDs that will be deleted (the folder itself and all children)
         let folder_ids: Vec<i64> = {
             let mut stmt = tx
-                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2")
+                .prepare("SELECT id FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'")
                 .map_err(|e| e.to_string())?;
 
-            let path_pattern = format!("{}{}%", folder_path, std::path::MAIN_SEPARATOR);
+            let path_pattern = subtree_like_pattern(folder_path);
             let rows = stmt
                 .query_map(params![folder_path, path_pattern], |row| row.get(0))
                 .map_err(|e| e.to_string())?;
@@ -1108,10 +1120,10 @@ impl AFolder {
         }
 
         // Delete the folders (the folder and all its children)
-        let path_pattern = format!("{}{}%", folder_path, std::path::MAIN_SEPARATOR);
+        let path_pattern = subtree_like_pattern(folder_path);
         let result = tx
             .execute(
-                "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2",
+                "DELETE FROM afolders WHERE path = ?1 OR path LIKE ?2 ESCAPE '\\'",
                 params![folder_path, path_pattern],
             )
             .map_err(|e| e.to_string())?;
@@ -4075,13 +4087,9 @@ impl AFile {
 
         if !params.search_all_subfolders.is_empty() {
             // Match path that starts with search_folder followed by '/' or end of string
-            conditions.push("(b.path = ? OR b.path LIKE ?)".to_string());
+            conditions.push("(b.path = ? OR b.path LIKE ? ESCAPE '\\')".to_string());
             sql_params.push(Box::new(params.search_all_subfolders.clone()));
-            sql_params.push(Box::new(format!(
-                "{}{}%",
-                params.search_all_subfolders,
-                std::path::MAIN_SEPARATOR
-            )));
+            sql_params.push(Box::new(subtree_like_pattern(&params.search_all_subfolders)));
         }
 
         if !params.search_folder.is_empty() {
@@ -6201,6 +6209,73 @@ impl AThumb {
         }
     }
 
+    fn relocate_thumb_cache_for_key(
+        library_id: &str,
+        thumb_key: &str,
+        old_album_id: i64,
+        new_album_id: i64,
+    ) -> Result<(), String> {
+        for extension in Self::CACHE_EXTENSIONS {
+            let old_path = Self::get_thumb_cache_path_for_key(
+                library_id,
+                old_album_id,
+                thumb_key,
+                extension,
+            )?;
+            if !old_path.exists() {
+                continue;
+            }
+
+            let new_path = Self::get_thumb_cache_path_for_key(
+                library_id,
+                new_album_id,
+                thumb_key,
+                extension,
+            )?;
+            if let Some(parent) = new_path.parent() {
+                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+
+            if fs::rename(&old_path, &new_path).is_err() {
+                fs::copy(&old_path, &new_path).map_err(|e| e.to_string())?;
+                let _ = fs::remove_file(old_path);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn get_thumb_keys_in_subtree(folder_path: &str) -> Result<Vec<String>, String> {
+        let conn = open_conn()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT t.thumb_key FROM athumbs t
+                 JOIN afiles a ON t.file_id = a.id
+                 JOIN afolders b ON a.folder_id = b.id
+                 WHERE t.thumb_key IS NOT NULL AND (b.path = ?1 OR b.path LIKE ?2 ESCAPE '\\')",
+            )
+            .map_err(|e| e.to_string())?;
+        let pattern = subtree_like_pattern(folder_path);
+        let rows = stmt
+            .query_map(params![folder_path, pattern], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        rows.map(|row| row.map_err(|e| e.to_string())).collect()
+    }
+
+    pub fn relocate_for_thumb_keys(thumb_keys: &[String], old_album_id: i64, new_album_id: i64) {
+        if old_album_id == new_album_id {
+            return;
+        }
+
+        let library_id = Self::get_current_library_id();
+        for thumb_key in thumb_keys {
+            if let Err(error) =
+                Self::relocate_thumb_cache_for_key(&library_id, thumb_key, old_album_id, new_album_id)
+            {
+                eprintln!("Error while relocating folder thumbnail cache: {}", error);
+            }
+        }
+    }
+
     pub fn relocate_for_file(
         file_id: i64,
         old_album_id: i64,
@@ -6214,33 +6289,7 @@ impl AThumb {
             return Ok(());
         };
         let library_id = Self::get_current_library_id();
-        for extension in Self::CACHE_EXTENSIONS {
-            let old_path = Self::get_thumb_cache_path_for_key(
-                &library_id,
-                old_album_id,
-                &thumb_key,
-                extension,
-            )?;
-            if !old_path.exists() {
-                continue;
-            }
-
-            let new_path = Self::get_thumb_cache_path_for_key(
-                &library_id,
-                new_album_id,
-                &thumb_key,
-                extension,
-            )?;
-            if let Some(parent) = new_path.parent() {
-                fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-            }
-
-            if fs::rename(&old_path, &new_path).is_err() {
-                fs::copy(&old_path, &new_path).map_err(|e| e.to_string())?;
-                let _ = fs::remove_file(old_path);
-            }
-        }
-        Ok(())
+        Self::relocate_thumb_cache_for_key(&library_id, &thumb_key, old_album_id, new_album_id)
     }
 
     /// Create a new thumbnail struct

@@ -852,6 +852,14 @@ const clickCopyToFolder = async () => {
     if (destinationAlbum) {
       const album = await recountAlbum(destinationAlbum.id);
       if (album) await tauriEmit('albums-refreshed', { albums: [album] });
+      const destinationAlbumId = Number(destinationAlbum.id);
+      if (!(libConfig.index.albumQueue as any[]).some(id => Number(id) === destinationAlbumId)) {
+        libConfig.index.albumQueue.push(destinationAlbumId);
+      }
+      libConfig.index.pausedAlbumIds = (libConfig.index.pausedAlbumIds as any[]).filter(
+        id => Number(id) !== destinationAlbumId,
+      );
+      libConfig.index.status = 1;
       await tauriEmit('refresh-content');
     }
   } else {
