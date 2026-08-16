@@ -139,6 +139,7 @@
                 @view-background-change="setViewerBackground"
                 @media-dblclick="toggleZoomFit(pane)"
                 @viewport-change="handleViewportChange($event, pane)"
+                @activate="setActivePane(pane)"
                 @toggle-full-screen="toggleNativeFullScreen"
                 @close="closeWindow"
                 @slideshow-next="handleSlideshowNext"

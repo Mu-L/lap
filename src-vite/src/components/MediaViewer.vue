@@ -334,8 +334,6 @@
           :viewportState="livePhotoViewport"
           :showControls="false"
           :showPlayOverlay="false"
-          @scale="(e) => $emit('scale', e)"
-          @viewport-change="(e) => $emit('viewport-change', e)"
           @message-from-video-viewer="handleMessageFromImageViewer"
           @slideshow-next="emit('slideshow-next')"
           @context-menu="handleContextMenu"
@@ -596,6 +594,7 @@ const isLivePhoto = computed(() => props.file?.media_subtype === 'live_photo' &&
 const livePhotoViewport = ref<Record<string, number | boolean> | null>(null);
 
 function startLivePhotoPreview() {
+  emit('activate');
   const viewport = mediaRef.value?.getViewportState?.();
   // Preserve the still image's visible region for the Live Photo preview.
   // Video.applyViewportState() remaps that normalized viewport to the video's
@@ -628,6 +627,7 @@ const emit = defineEmits([
   'media-dblclick', 
   'viewport-change',
   'view-background-change',
+  'activate',
 ]);
 
 const { locale, messages, t } = useI18n();
