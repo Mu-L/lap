@@ -469,7 +469,7 @@
       "similar_title": "Las fotos similares llegarán a continuación",
       "similar_desc": "Esta pestaña se usará para fotos visualmente similares cuando se amplíe el flujo de trabajo de duplicados exactos.",
       "similar": {
-        "description": "Encuentra fotos visualmente similares en los resultados actuales.",
+        "description": "Encuentra fotos similares en la vista actual.",
         "analyze": "Analizar {count} fotos",
         "large_scan_confirm": "¿Analizar {count} fotos? Puede tardar varios minutos.",
         "cancel": "Cancelar",

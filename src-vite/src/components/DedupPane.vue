@@ -19,6 +19,14 @@
       </div>
       <div class="flex items-center gap-1">
         <TButton
+          v-if="activeTab === 'duplicates'"
+          :icon="IconRefresh"
+          :tooltip="$t('info_panel.dedup.rescan')"
+          :buttonSize="'small'"
+          :disabled="isDedupLoading"
+          @click="triggerBackendDedup(true)"
+        />
+        <TButton
           :icon="IconClose"
           :tooltip="$t('msgbox.close')"
           :buttonSize="'small'"
@@ -54,11 +62,10 @@
         </div>
         <div v-else-if="similarGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
           <div class="text-center text-base-content/30 space-y-3 max-w-65">
-            <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
-            <p v-if="similarHasScanned || (!similarEligibleCountLoading && similarEligibleCount === 0)" class="text-xs font-medium">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
+            <p v-if="similarHasScanned || (!similarEligibleCountLoading && similarEligibleCount === 0)" class="text-sm">{{ $t('info_panel.dedup.similar.empty_title') }}</p>
             <template v-else>
-              <p class="text-xs leading-5 text-base-content/50">{{ $t('info_panel.dedup.similar.description') }}</p>
-              <PanelActionButton primary :disabled="similarEligibleCountLoading || similarEligibleCount === 0 || similarLoading" @click="startSimilar">
+              <p class="text-sm">{{ $t('info_panel.dedup.similar.description') }}</p>
+              <PanelActionButton primary :disabled="isDedupLoading || similarEligibleCountLoading || similarEligibleCount === 0 || similarLoading" @click="startSimilar">
                 {{ similarEligibleCountLoading ? $t('tooltip.loading') : $t('info_panel.dedup.similar.analyze', { count: similarEligibleCount.toLocaleString() }) }}
               </PanelActionButton>
             </template>
@@ -127,6 +134,7 @@
               </PanelActionButton>
             </div>
             <TransitionGroup
+              :key="activeSimilarGroup.id"
               tag="div"
               name="dedup-item"
               move-class="transition-transform duration-200 ease-out"
@@ -243,9 +251,8 @@
 
       <div v-else-if="duplicateGroups.length === 0" class="p-4 flex-1 flex items-center justify-center">
         <div class="text-center text-base-content/30 space-y-3 max-w-65">
-          <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
-          <p class="text-xs font-medium">{{ $t('info_panel.dedup.empty_title') }}</p>
-          <p class="text-xs text-base-content/30">{{ $t('info_panel.dedup.empty_desc') }}</p>
+          <p class="text-sm">{{ $t('info_panel.dedup.empty_title') }}</p>
+          <!-- <p class="text-xs">{{ $t('info_panel.dedup.empty_desc') }}</p> -->
         </div>
       </div>
 
@@ -333,6 +340,7 @@
             </PanelActionButton>
           </div>
           <TransitionGroup
+            :key="activeGroup.id"
             tag="div"
             name="dedup-item"
             move-class="transition-transform duration-200 ease-out"
@@ -424,7 +432,7 @@ import {
 import TButton from '@/components/TButton.vue';
 import PanelActionButton from '@/components/PanelActionButton.vue';
 import MessageBox from '@/components/MessageBox.vue';
-import { IconChecked, IconUnChecked, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSimilar, IconSplitOn, IconSplitOn4, IconTrash, IconUnlock } from '@/common/icons';
+import { IconChecked, IconUnChecked, IconClose, IconFlag, IconFlagFilled, IconFlagOff, IconLock, IconRefresh, IconSplitOn, IconSplitOn4, IconTrash, IconUnlock } from '@/common/icons';
 import {
   dedupStartScan,
   dedupCancelScan,
@@ -462,6 +470,10 @@ const props = defineProps({
     default: -1,
   },
   dedupScanKey: {
+    type: String,
+    default: '',
+  },
+  similarScanKey: {
     type: String,
     default: '',
   },
@@ -751,21 +763,21 @@ async function hydrateSimilarThumbnails(groups: any[], activeGroupId: number | n
 }
 
 async function fetchSimilarGroups(append = false) {
-  const scopeKey = props.dedupScanKey;
+  const scopeKey = props.similarScanKey;
   const offset = append ? similarGroups.value.length : 0;
   let page;
   try { page = await similarListGroups(scopeKey, SIMILAR_SCAN.PAGE_SIZE, offset); }
   catch (error) {
     console.error('fetchSimilarGroups error:', error);
-    if (scopeKey === props.dedupScanKey) similarError.value = true;
+    if (scopeKey === props.similarScanKey) similarError.value = true;
     return;
   }
-  if (scopeKey !== props.dedupScanKey) return;
+  if (scopeKey !== props.similarScanKey) return;
   similarError.value = false;
   const groups = Array.isArray(page?.items) ? page.items : [];
   similarGroups.value = append ? [...similarGroups.value, ...groups] : groups;
   similarTotalGroups.value = Number(page?.total || 0);
-  similarLoadedScope.value = props.dedupScanKey;
+  similarLoadedScope.value = props.similarScanKey;
   if (!append) {
     selectedSimilarGroupId.value = similarGroups.value[0] ? Number(similarGroups.value[0].id) : null;
     const firstGroup = similarGroups.value[0];
@@ -773,7 +785,7 @@ async function fetchSimilarGroups(append = false) {
       let detail;
       try { detail = await similarGetGroup(firstGroup.id, scopeKey); }
       catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
-      if (scopeKey !== props.dedupScanKey) return;
+      if (scopeKey !== props.similarScanKey) return;
       Object.assign(firstGroup, detail);
     }
   }
@@ -792,9 +804,10 @@ async function loadMoreSimilarGroups(event: Event) {
 async function openSimilarTab(forceReload = false) {
   activeTab.value = 'similar';
   config.dedup.activeTab = 'similar';
-  if (!props.dedupScanKey) return;
-  const scopeKey = props.dedupScanKey;
+  if (!props.similarScanKey) return;
+  const scopeKey = props.similarScanKey;
   if (!similarHasScanned.value) similarEligibleCountLoading.value = true;
+  if (isDedupLoading.value) return;
   if (forceReload) similarLoadedScope.value = '';
   similarError.value = false;
   let status;
@@ -805,31 +818,31 @@ async function openSimilarTab(forceReload = false) {
     similarError.value = true;
     return;
   }
-  if (scopeKey !== props.dedupScanKey) return;
-  if (status?.scopeKey === props.dedupScanKey && (status.state === 'running' || status.isScanning)) {
+  if (scopeKey !== props.similarScanKey) return;
+  if (status?.scopeKey === props.similarScanKey && (status.state === 'running' || status.isScanning)) {
     similarStatus.value = status;
     similarLoading.value = true;
     similarEligibleCountLoading.value = false;
     return;
   }
-  if (similarLoadedScope.value !== props.dedupScanKey) await fetchSimilarGroups();
-  if (scopeKey !== props.dedupScanKey) return;
+  if (similarLoadedScope.value !== props.similarScanKey) await fetchSimilarGroups();
+  if (scopeKey !== props.similarScanKey) return;
   if (similarError.value) {
     similarEligibleCountLoading.value = false;
     return;
   }
   const hasCachedGroups = similarGroups.value.length > 0;
   let hasPersistedScan = false;
-  try { hasPersistedScan = await similarHasScan(props.dedupScanKey); }
+  try { hasPersistedScan = await similarHasScan(props.similarScanKey); }
   catch (error) {
     console.error('similarHasScan error:', error);
     similarEligibleCountLoading.value = false;
     similarError.value = true;
     return;
   }
-  if (scopeKey !== props.dedupScanKey) return;
+  if (scopeKey !== props.similarScanKey) return;
   similarHasScanned.value = hasCachedGroups
-    || (status?.scopeKey === props.dedupScanKey && status?.state === 'finished')
+    || (status?.scopeKey === props.similarScanKey && status?.state === 'finished')
     || hasPersistedScan;
   if (similarHasScanned.value) {
     similarEligibleCountLoading.value = false;
@@ -848,9 +861,9 @@ async function openSimilarTab(forceReload = false) {
       similarError.value = true;
       return;
     } finally {
-      if (scopeKey === props.dedupScanKey) similarEligibleCountLoading.value = false;
+      if (scopeKey === props.similarScanKey) similarEligibleCountLoading.value = false;
     }
-    if (scopeKey !== props.dedupScanKey) return;
+    if (scopeKey !== props.similarScanKey) return;
     similarEligibleCount.value = eligibleCount;
   }
 }
@@ -863,7 +876,7 @@ function selectDuplicatesTab() {
 }
 
 async function startSimilar() {
-  if (similarLoading.value) return;
+  if (isDedupLoading.value || similarLoading.value) return;
   if (similarEligibleCount.value > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD) {
     showLargeSimilarScanConfirm.value = true;
     return;
@@ -877,12 +890,12 @@ async function confirmLargeSimilarScan() {
 }
 
 async function runSimilarScan() {
-  if (similarLoading.value) return;
+  if (isDedupLoading.value || similarLoading.value) return;
   similarLoading.value = true;
   try {
-    const sourceVersion = Number(props.dedupScanKey.match(/\|version:(\d+)$/)?.[1] || 0);
+    const sourceVersion = Number(props.similarScanKey.match(/\|similar-view:(\d+)$/)?.[1] || 0);
     await similarStartScan(
-      props.dedupScanKey,
+      props.similarScanKey,
       sourceVersion,
       props.dedupFileIds === null ? (props.dedupQueryParams || null) : null,
       props.dedupFileIds === null ? props.dedupCollectionId : null,
@@ -901,7 +914,7 @@ async function cancelSimilar() {
 }
 async function selectSimilarGroup(group: any) {
   selectedSimilarGroupId.value = Number(group.id);
-  try { Object.assign(group, await similarGetGroup(group.id, props.dedupScanKey)); }
+  try { Object.assign(group, await similarGetGroup(group.id, props.similarScanKey)); }
   catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
   if (group.representative?.id) emit('select-file', group.representative.id);
@@ -949,7 +962,7 @@ async function setKeep(groupId: number, fileId: number) {
 }
 
 async function setSimilarKeep(groupId: number, fileId: number) {
-  await similarSetKeep(groupId, fileId, props.dedupScanKey);
+  await similarSetKeep(groupId, fileId, props.similarScanKey);
   const groupIndex = similarGroups.value.findIndex((group: any) => Number(group.id) === groupId);
   if (groupIndex < 0) return;
 
@@ -1068,6 +1081,7 @@ function applyDeletedSimilarFiles(groupId: number, deletedFileIds: number[]) {
     if (selectedSimilarGroupId.value === groupId) {
       const next = similarGroups.value[index] || similarGroups.value[index - 1];
       selectedSimilarGroupId.value = next ? Number(next.id) : null;
+      if (next) void selectSimilarGroup(next);
     }
     return;
   }
@@ -1307,6 +1321,7 @@ async function handleDedupScanSettled(allowWhileStarting = false) {
   // Only clear the loading flag after results are ready, so the
   // template never shows "no duplicates" before the scan finishes.
   isDedupLoading.value = false;
+  if (activeTab.value === 'similar') await openSimilarTab();
 }
 
 function ensureDedupStatusPolling() {
@@ -1354,6 +1369,7 @@ async function triggerBackendDedup(force = false) {
     } else if (!force && dedupPaneGlobalState.lastScanKey === props.dedupScanKey) {
       await fetchGroups();
       isDedupLoading.value = false;
+      if (activeTab.value === 'similar') await openSimilarTab();
       return;
     }
 
@@ -1389,20 +1405,6 @@ async function triggerBackendDedup(force = false) {
 watch(
   () => props.dedupScanKey,
   (newKey) => {
-    // Similar scans are scoped to the current file list. A refreshed list must
-    // start from a clean state and offer analysis for its new scope.
-    similarGroups.value = [];
-    similarTotalGroups.value = 0;
-    isLoadingMoreSimilarGroups.value = false;
-    selectedSimilarIdsByGroup.value.clear();
-    selectedSimilarGroupId.value = null;
-    similarEligibleCount.value = 0;
-    similarEligibleCountLoading.value = false;
-    similarHasScanned.value = false;
-    similarError.value = false;
-    similarLoadedScope.value = '';
-    similarLoading.value = false;
-    showLargeSimilarScanConfirm.value = false;
     selectedGroupId.value = null;
     if (!newKey) {
       scanGeneration.value++;
@@ -1418,8 +1420,26 @@ watch(
       return;
     }
     triggerBackendDedup();
-    if (activeTab.value === 'similar') void openSimilarTab();
   }
+);
+
+watch(
+  () => props.similarScanKey,
+  (newKey) => {
+    similarGroups.value = [];
+    similarTotalGroups.value = 0;
+    isLoadingMoreSimilarGroups.value = false;
+    selectedSimilarIdsByGroup.value.clear();
+    selectedSimilarGroupId.value = null;
+    similarEligibleCount.value = 0;
+    similarEligibleCountLoading.value = false;
+    similarHasScanned.value = false;
+    similarError.value = false;
+    similarLoadedScope.value = '';
+    similarLoading.value = false;
+    showLargeSimilarScanConfirm.value = false;
+    if (newKey && activeTab.value === 'similar') void openSimilarTab();
+  },
 );
 
 watch(selectedGroupId, async (groupId, prevGroupId) => {
@@ -1457,7 +1477,7 @@ onMounted(async () => {
   });
   unlistenSimilarProgress.value = await listenSimilarScanProgress(async (event: any) => {
     const payload = event?.payload;
-    if (payload?.scopeKey !== props.dedupScanKey) return;
+    if (payload?.scopeKey !== props.similarScanKey) return;
     similarStatus.value = payload || similarStatus.value;
     if (payload?.state === 'running') { similarLoading.value = true; return; }
     if (payload?.state === 'error') {

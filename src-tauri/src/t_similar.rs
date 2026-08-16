@@ -3,7 +3,7 @@ use crate::t_sqlite::{AFile, QueryParams};
 use hnsw_rs::prelude::*;
 use rusqlite::{params, params_from_iter, Connection};
 use serde::Serialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -81,7 +81,11 @@ fn resolve_scope(
 }
 
 fn load_vectors(conn: &Connection, files: Vec<AFile>) -> Result<Vec<VectorFile>, String> {
-    let dates = eligible_dates(files);
+    let duplicate_ids = exact_duplicate_file_ids(conn)?;
+    let dates = eligible_dates(files)
+        .into_iter()
+        .filter(|(id, _)| !duplicate_ids.contains(id))
+        .collect::<HashMap<_, _>>();
     let mut vectors = Vec::new();
     let ids: Vec<i64> = dates.keys().copied().collect();
     for chunk in ids.chunks(SQL_BATCH_SIZE) {
@@ -114,6 +118,20 @@ fn load_vectors(conn: &Connection, files: Vec<AFile>) -> Result<Vec<VectorFile>,
         }
     }
     Ok(filter_dominant_dimension(vectors))
+}
+
+fn exact_duplicate_file_ids(conn: &Connection) -> Result<HashSet<i64>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT DISTINCT i.file_id
+             FROM duplicate_group_items i
+             WHERE (SELECT COUNT(*) FROM duplicate_group_items WHERE group_id = i.group_id) > 1",
+        )
+        .map_err(|e| e.to_string())?;
+    stmt.query_map([], |row| row.get::<_, i64>(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<HashSet<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 fn filter_dominant_dimension(vectors: Vec<VectorFile>) -> Vec<VectorFile> {
@@ -174,7 +192,12 @@ pub fn eligible_count(
     file_ids: Option<Vec<i64>>,
 ) -> Result<u64, String> {
     let conn = get_db_conn()?;
-    count_vectors(&conn, resolve_scope(params, collection_id, file_ids)?)
+    let duplicate_ids = exact_duplicate_file_ids(&conn)?;
+    let files = resolve_scope(params, collection_id, file_ids)?
+        .into_iter()
+        .filter(|file| file.id.is_none_or(|id| !duplicate_ids.contains(&id)))
+        .collect();
+    count_vectors(&conn, files)
 }
 
 pub fn start_scan(
@@ -357,23 +380,9 @@ fn scan(
         .into_iter()
         .filter(|group| group.len() > 1)
         .collect();
-    let scope_prefix = scope_key
-        .rsplit_once("|version:")
-        .map(|(prefix, _)| format!("{prefix}|version:"));
     let tx = conn.transaction().map_err(|e| e.to_string())?;
-    if let Some(prefix) = scope_prefix {
-        tx.execute(
-            "DELETE FROM similarity_scans WHERE substr(scope_key, 1, length(?1)) = ?1",
-            params![prefix],
-        )
+    tx.execute("DELETE FROM similarity_scans", [])
         .map_err(|e| e.to_string())?;
-    } else {
-        tx.execute(
-            "DELETE FROM similarity_scans WHERE scope_key=?1",
-            params![scope_key],
-        )
-        .map_err(|e| e.to_string())?;
-    }
     tx.execute(
         "INSERT INTO similarity_scans(scope_key,source_version,status,file_count,group_count,created_at,completed_at) VALUES(?1,?2,'finished',?3,?4,?5,?5)",
         params![scope_key, source_version, vectors.len() as i64, groups.len() as i64, now],

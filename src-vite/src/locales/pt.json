@@ -469,7 +469,7 @@
       "similar_title": "As fotos semelhantes vêm em seguida",
       "similar_desc": "Esta aba será usada para fotos visualmente semelhantes quando o fluxo de duplicatas exatas for expandido.",
       "similar": {
-        "description": "Encontre fotos visualmente semelhantes nos resultados atuais.",
+        "description": "Encontre fotos semelhantes na visualização atual.",
         "analyze": "Analisar {count} fotos",
         "large_scan_confirm": "Analisar {count} fotos? Isso pode levar alguns minutos.",
         "cancel": "Cancelar",

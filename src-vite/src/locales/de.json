@@ -469,7 +469,7 @@
       "similar_title": "Ähnliche Fotos folgen als Nächstes",
       "similar_desc": "Dieser Tab wird für visuell ähnliche Fotos verwendet, sobald der Workflow für exakte Duplikate erweitert wurde.",
       "similar": {
-        "description": "Finde visuell ähnliche Fotos in den aktuellen Ergebnissen.",
+        "description": "Finde ähnliche Fotos in der aktuellen Ansicht.",
         "analyze": "{count} Fotos analysieren",
         "large_scan_confirm": "{count} Fotos analysieren? Das kann mehrere Minuten dauern.",
         "cancel": "Abbrechen",

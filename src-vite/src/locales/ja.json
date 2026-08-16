@@ -469,7 +469,7 @@
       "similar_title": "類似写真は次に対応予定です",
       "similar_desc": "完全一致の重複ワークフローを拡張した後、このタブは見た目が似ている写真に使われます。",
       "similar": {
-        "description": "現在の結果から視覚的に類似した写真を見つけます。",
+        "description": "現在の表示から似た写真を探します。",
         "analyze": "{count} 枚の写真を分析",
         "large_scan_confirm": "{count} 枚の写真を分析しますか？数分かかる場合があります。",
         "cancel": "キャンセル",

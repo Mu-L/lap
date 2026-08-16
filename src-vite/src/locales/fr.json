@@ -469,7 +469,7 @@
       "similar_title": "Les photos similaires arrivent ensuite",
       "similar_desc": "Cet onglet sera utilisé pour les photos visuellement similaires lorsque le flux des doublons exacts sera étendu.",
       "similar": {
-        "description": "Trouvez des photos visuellement similaires dans les résultats actuels.",
+        "description": "Trouvez des photos similaires dans la vue actuelle.",
         "analyze": "Analyser {count} photos",
         "large_scan_confirm": "Analyser {count} photos ? Cela peut prendre plusieurs minutes.",
         "cancel": "Annuler",

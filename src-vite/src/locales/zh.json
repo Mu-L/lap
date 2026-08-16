@@ -469,7 +469,7 @@
       "similar_title": "相似照片功能将在下一步提供",
       "similar_desc": "这个标签页将用于视觉上相似的照片分组，当前先保留完全重复的清理流程。",
       "similar": {
-        "description": "在当前结果中查找视觉上相似的照片。",
+        "description": "查找当前视图中的相似照片。",
         "analyze": "分析 {count} 张照片",
         "large_scan_confirm": "要分析 {count} 张照片吗？这可能需要几分钟。",
         "cancel": "取消",

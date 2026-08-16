@@ -407,6 +407,7 @@
             ref="dedupPaneRef"
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
+            :similar-scan-key="similarScanKey"
             :dedup-query-params="dedupQueryParams"
             :dedup-collection-id="dedupCollectionId"
             :dedup-file-ids="dedupFileIds"
@@ -2849,8 +2850,13 @@ const dedupFileIds = computed(() =>
 const dedupScanKey = computed(() => {
   if (dedupSourceVersion.value <= 0) return '';
   if (currentQuerySource.value === 'smart' && dedupFileIds.value === null) return '';
-  return `query:${JSON.stringify(dedupQueryParams.value)}|collection:${dedupCollectionId.value ?? ''}|files:${JSON.stringify(dedupFileIds.value)}|version:${dedupSourceVersion.value}`;
+  return `query:${JSON.stringify(dedupQueryParams.value)}|collection:${dedupCollectionId.value ?? ''}|files:${JSON.stringify(dedupFileIds.value)}`;
 });
+const similarViewVersion = ref(0);
+const similarScanKey = ref('');
+watch(dedupScanKey, (key) => {
+  similarScanKey.value = key ? `${key}|similar-view:${++similarViewVersion.value}` : '';
+}, { immediate: true });
 
 const currentTitleIcon = computed(() => {
   if (libConfig.activePane === 'collection') return IconBookmark;

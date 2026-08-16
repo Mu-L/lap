@@ -469,7 +469,7 @@
       "similar_title": "Similar photos are coming next",
       "similar_desc": "This tab will be used for visually similar photos after the exact-duplicate workflow is expanded.",
       "similar": {
-        "description": "Identify visually similar photos in the current results.",
+        "description": "Find visually similar photos in the current view.",
         "analyze": "Analyze {count} photos",
         "large_scan_confirm": "Analyze {count} photos to find visually similar ones? This may take several minutes.",
         "cancel": "Cancel",
