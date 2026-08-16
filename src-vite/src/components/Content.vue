@@ -408,6 +408,7 @@
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
             :similar-scan-key="similarScanKey"
+            :similarity-threshold="similarPhotoGroupingThreshold"
             :dedup-query-params="dedupQueryParams"
             :dedup-collection-id="dedupCollectionId"
             :dedup-file-ids="dedupFileIds"
@@ -2852,10 +2853,16 @@ const dedupScanKey = computed(() => {
   if (currentQuerySource.value === 'smart' && dedupFileIds.value === null) return '';
   return `query:${JSON.stringify(dedupQueryParams.value)}|collection:${dedupCollectionId.value ?? ''}|files:${JSON.stringify(dedupFileIds.value)}`;
 });
+const similarPhotoGroupingThreshold = computed(() => {
+  const index = config.settings.similarPhotos?.groupingThresholdIndex ?? 1;
+  return config.similarPhotoGroupingThresholds[index] ?? 0.93;
+});
 const similarViewVersion = ref(0);
 const similarScanKey = ref('');
-watch(dedupScanKey, (key) => {
-  similarScanKey.value = key ? `${key}|similar-view:${++similarViewVersion.value}` : '';
+watch([dedupScanKey, similarPhotoGroupingThreshold], ([key, threshold]) => {
+  similarScanKey.value = key
+    ? `${key}|threshold:${threshold}|similar-view:${++similarViewVersion.value}`
+    : '';
 }, { immediate: true });
 
 const currentTitleIcon = computed(() => {

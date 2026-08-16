@@ -27,6 +27,14 @@
           @click="triggerBackendDedup(true)"
         />
         <TButton
+          v-else
+          :icon="IconRefresh"
+          :tooltip="$t('info_panel.dedup.similar.reanalyze')"
+          :buttonSize="'small'"
+          :disabled="isDedupLoading || similarLoading || !similarHasScanned"
+          @click="reanalyzeSimilar"
+        />
+        <TButton
           :icon="IconClose"
           :tooltip="$t('msgbox.close')"
           :buttonSize="'small'"
@@ -412,7 +420,7 @@
     :OkText="$t('info_panel.dedup.similar.analyze_confirm')"
     :cancelText="$t('msgbox.cancel')"
     @ok="confirmLargeSimilarScan"
-    @cancel="showLargeSimilarScanConfirm = false"
+    @cancel="cancelLargeSimilarScan"
   />
 </template>
 
@@ -477,6 +485,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  similarityThreshold: {
+    type: Number,
+    required: true,
+  },
   dedupQueryParams: {
     type: Object as () => Record<string, any> | null,
     default: null,
@@ -520,6 +532,7 @@ const similarHasScanned = ref(false);
 const similarError = ref(false);
 const similarLoadedScope = ref('');
 const showLargeSimilarScanConfirm = ref(false);
+const pendingSimilarReanalyze = ref(false);
 const unlistenSimilarProgress = ref<null | (() => void)>(null);
 const unlistenCullingStatus = ref<null | (() => void)>(null);
 const dedupScanError = ref(false);
@@ -631,6 +644,19 @@ function getSimilarSelectedSet(groupId: number): Set<number> {
 
 function isSimilarSelected(groupId: number, fileId: number) {
   return getSimilarSelectedSet(groupId).has(fileId);
+}
+
+function selectSimilarDuplicatesByDefault(group: any) {
+  const groupId = Number(group?.id || 0);
+  if (!groupId || selectedSimilarIdsByGroup.value.has(groupId)) return;
+  selectedSimilarIdsByGroup.value.set(
+    groupId,
+    new Set(
+      (group.items || [])
+        .filter((item: any) => item.is_keep !== 1)
+        .map((item: any) => Number(item.file_id)),
+    ),
+  );
 }
 
 function getSimilarCullingIconClass(file: any, cullingFlag: number) {
@@ -787,6 +813,7 @@ async function fetchSimilarGroups(append = false) {
       catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
       if (scopeKey !== props.similarScanKey) return;
       Object.assign(firstGroup, detail);
+      selectSimilarDuplicatesByDefault(firstGroup);
     }
   }
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
@@ -884,9 +911,50 @@ async function startSimilar() {
   await runSimilarScan();
 }
 
+function resetSimilarResults() {
+  similarGroups.value = [];
+  similarTotalGroups.value = 0;
+  selectedSimilarIdsByGroup.value.clear();
+  selectedSimilarGroupId.value = null;
+  similarHasScanned.value = false;
+  similarError.value = false;
+  similarLoadedScope.value = '';
+}
+
+async function reanalyzeSimilar() {
+  if (isDedupLoading.value || similarLoading.value) return;
+  let eligibleCount;
+  try {
+    eligibleCount = Number(await similarGetEligibleCount(
+      props.dedupFileIds === null ? (props.dedupQueryParams || null) : null,
+      props.dedupFileIds === null ? props.dedupCollectionId : null,
+      props.dedupFileIds,
+    ));
+  } catch (error) {
+    console.error('getSimilarEligibleCount error:', error);
+    similarError.value = true;
+    return;
+  }
+  similarEligibleCount.value = eligibleCount;
+  if (eligibleCount > SIMILAR_SCAN.LARGE_RESULT_THRESHOLD) {
+    pendingSimilarReanalyze.value = true;
+    showLargeSimilarScanConfirm.value = true;
+    return;
+  }
+  resetSimilarResults();
+  await runSimilarScan();
+}
+
 async function confirmLargeSimilarScan() {
   showLargeSimilarScanConfirm.value = false;
+  if (pendingSimilarReanalyze.value) resetSimilarResults();
+  pendingSimilarReanalyze.value = false;
   await runSimilarScan();
+}
+
+function cancelLargeSimilarScan() {
+  showLargeSimilarScanConfirm.value = false;
+  pendingSimilarReanalyze.value = false;
 }
 
 async function runSimilarScan() {
@@ -897,6 +965,7 @@ async function runSimilarScan() {
     await similarStartScan(
       props.similarScanKey,
       sourceVersion,
+      props.similarityThreshold,
       props.dedupFileIds === null ? (props.dedupQueryParams || null) : null,
       props.dedupFileIds === null ? props.dedupCollectionId : null,
       props.dedupFileIds,
@@ -916,6 +985,7 @@ async function selectSimilarGroup(group: any) {
   selectedSimilarGroupId.value = Number(group.id);
   try { Object.assign(group, await similarGetGroup(group.id, props.similarScanKey)); }
   catch (error) { console.error('getSimilarGroup error:', error); similarError.value = true; return; }
+  selectSimilarDuplicatesByDefault(group);
   await hydrateSimilarThumbnails(similarGroups.value, selectedSimilarGroupId.value);
   if (group.representative?.id) emit('select-file', group.representative.id);
 }

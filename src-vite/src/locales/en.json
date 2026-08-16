@@ -208,7 +208,7 @@
   },
   "search": {
     "title": "Search",
-    "similar_images": "Similar photos",
+    "similar_images": "Related photos",
     "image_search_placeholder": "Search images, filenames, or comments",
     "matches": "Matches",
     "unknown_location": "Unknown location",
@@ -482,7 +482,8 @@
         "load_more": "Load more",
         "error_title": "Unable to load similar photos",
         "empty_title": "No similar photos found",
-        "analyze_confirm": "Analyze"
+        "analyze_confirm": "Analyze",
+        "reanalyze": "Reanalyze"
       },
       "reclaimable_size": "Reclaimable",
       "groups_title": "Duplicate Sets",
@@ -612,8 +613,8 @@
       "compare_selected_images": "Compare",
       "open_selected_videos_in_app": "Open videos in {app}...",
       "open_in_app": "Open in external app...",
-      "find_similar_images": "Find similar photos",
-      "find_person_images": "Find photos of this person",
+      "find_similar_images": "Find related photos",
+      "find_person_images": "Find this person",
       "print": "Print...",
       "rename": "Rename",
       "move_to": "Move to...",
@@ -1304,14 +1305,25 @@
       "downloading_multilingual_model": "Downloading multilingual model",
       "multilingual_model_download_success": "Multilingual search model is ready. Restart Lap to use it.",
       "multilingual_model_download_failed": "Failed to download multilingual search model",
-      "find_similar": "Find similar photos",
-      "similarity": "Photo similarity",
-      "similarity_hint": "Higher = more similar, fewer results. Lower = less similar, more results",
+      "find_similar": "Find related photos",
+      "similarity": "Search similarity",
+      "similarity_hint": "Higher finds closer matches; lower finds more results.",
       "similarity_options": [
         "Very high",
         "High",
         "Medium",
         "Low"
+      ]
+    },
+    "similar_photos": {
+      "title": "Similar photos",
+      "grouping_strictness": "Grouping strictness",
+      "grouping_strictness_hint": "Controls how closely photos must match to appear in the same set.",
+      "grouping_strictness_options": [
+        "Very strict",
+        "Strict",
+        "Moderate",
+        "Relaxed"
       ]
     },
     "shortcuts": {
@@ -1337,7 +1349,7 @@
         "last_image": "Last",
         "quick_preview": "Quick preview",
         "close_viewer": "Close viewer",
-        "search_similar": "Find similar photos",
+        "search_similar": "Find related photos",
         "show_info": "Show info",
         "zoom_in": "Zoom in",
         "zoom_out": "Zoom out",

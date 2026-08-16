@@ -208,7 +208,7 @@
   },
   "search": {
     "title": "検索",
-    "similar_images": "類似写真",
+    "similar_images": "関連写真",
     "image_search_placeholder": "画像、ファイル名、またはコメントを検索",
     "matches": "一致結果",
     "unknown_location": "不明な場所",
@@ -482,7 +482,8 @@
         "load_more": "さらに読み込む",
         "error_title": "類似写真を読み込めません",
         "empty_title": "類似写真が見つかりません",
-        "analyze_confirm": "分析"
+        "analyze_confirm": "分析",
+        "reanalyze": "再分析"
       },
       "reclaimable_size": "削減可能",
       "groups_title": "重複グループ",
@@ -612,8 +613,8 @@
       "compare_selected_images": "比較",
       "open_selected_videos_in_app": "動画を {app} で開く...",
       "open_in_app": "外部アプリで開く...",
-      "find_similar_images": "類似写真を検索",
-      "find_person_images": "この人の写真を検索",
+      "find_similar_images": "関連写真を検索",
+      "find_person_images": "この人を検索",
       "print": "印刷...",
       "rename": "名前を変更",
       "move_to": "移動...",
@@ -1304,14 +1305,25 @@
       "downloading_multilingual_model": "多言語モデルをダウンロード中",
       "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには Lap を再起動してください。",
       "multilingual_model_download_failed": "多言語検索モデルのダウンロードに失敗しました",
-      "find_similar": "類似写真を検索",
-      "similarity": "写真の類似度",
-      "similarity_hint": "高いほど類似度が高く、結果は少なくなります。低いほど類似度が低く、結果は多くなります",
+      "find_similar": "関連写真を検索",
+      "similarity": "検索の類似度",
+      "similarity_hint": "高いほど近い結果に、低いほど結果が増えます。",
       "similarity_options": [
         "非常に高い",
         "高い",
         "中",
         "低い"
+      ]
+    },
+    "similar_photos": {
+      "title": "類似写真",
+      "grouping_strictness": "グループ化の厳密さ",
+      "grouping_strictness_hint": "同じグループに含める写真の一致度を設定します。",
+      "grouping_strictness_options": [
+        "非常に厳密",
+        "厳密",
+        "標準",
+        "緩やか"
       ]
     },
     "shortcuts": {
@@ -1337,7 +1349,7 @@
         "last_image": "最後",
         "quick_preview": "クイックプレビュー",
         "close_viewer": "ビューアを閉じる",
-        "search_similar": "類似写真を検索",
+        "search_similar": "関連写真を検索",
         "show_info": "情報を表示",
         "zoom_in": "拡大",
         "zoom_out": "縮小",

@@ -1858,8 +1858,8 @@ export async function listenDedupScanProgress(callback) {
   return await listen('dedup-scan-progress', callback);
 }
 
-export async function similarStartScan(scopeKey, sourceVersion, params = null, collectionId = null, fileIds = null) {
-  return await invoke('similar_start_scan', { scopeKey, sourceVersion, params, collectionId, fileIds });
+export async function similarStartScan(scopeKey, sourceVersion, similarityThreshold, params = null, collectionId = null, fileIds = null) {
+  return await invoke('similar_start_scan', { scopeKey, sourceVersion, similarityThreshold, params, collectionId, fileIds });
 }
 
 export async function similarGetScanStatus() {

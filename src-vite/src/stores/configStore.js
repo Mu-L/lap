@@ -153,6 +153,11 @@ export const useConfigStore = defineStore('configStore', {
         thresholdIndex: 3,         // image search threshold index (default is Low)
         limit: 1000,               // image search limit
       },
+
+      // similar photos settings
+      similarPhotos: {
+        groupingThresholdIndex: 1, // default: Strict
+      },
       
       // face recognition settings
       face: {
@@ -167,6 +172,10 @@ export const useConfigStore = defineStore('configStore', {
     // Image search threshold values
     // [Very High, High, Medium, Low]
     imageSearchThresholds: () => [0.8, 0.6, 0.4, 0.25],
+
+    // Similar photo grouping thresholds
+    // [Very strict, Strict, Moderate, Relaxed]
+    similarPhotoGroupingThresholds: () => [0.97, 0.93, 0.9, 0.85],
     
     // Cluster threshold values: cosine distance (lower = stricter, higher = looser)
     // [Very High, High, Medium, Low]
@@ -301,6 +310,10 @@ export const useConfigStore = defineStore('configStore', {
     },
     setImageSearchLimit(imageSearchLimit) {
       this.settings.imageSearch.limit = imageSearchLimit;
+    },
+    setSimilarPhotoGroupingThresholdIndex(index) {
+      if (!this.settings.similarPhotos) this.settings.similarPhotos = { groupingThresholdIndex: 1 };
+      this.settings.similarPhotos.groupingThresholdIndex = index;
     },
 
     // face recognition settings

@@ -208,7 +208,7 @@
   },
   "search": {
     "title": "搜索",
-    "similar_images": "相似照片",
+    "similar_images": "相关照片",
     "image_search_placeholder": "搜索图片、文件名或备注",
     "matches": "匹配结果",
     "unknown_location": "未知位置",
@@ -482,7 +482,8 @@
         "load_more": "加载更多",
         "error_title": "无法加载相似照片",
         "empty_title": "未发现相似照片",
-        "analyze_confirm": "分析"
+        "analyze_confirm": "分析",
+        "reanalyze": "重新分析"
       },
       "reclaimable_size": "可回收",
       "groups_title": "重复组",
@@ -612,8 +613,8 @@
       "compare_selected_images": "对比",
       "open_selected_videos_in_app": "在 {app} 中打开视频...",
       "open_in_app": "在外部应用中打开...",
-      "find_similar_images": "查找相似照片",
-      "find_person_images": "查找此人物的照片",
+      "find_similar_images": "查找相关照片",
+      "find_person_images": "查找此人物",
       "print": "打印...",
       "rename": "重命名",
       "move_to": "移动到...",
@@ -1304,14 +1305,25 @@
       "downloading_multilingual_model": "正在下载多语言模型",
       "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
       "multilingual_model_download_failed": "多语言搜索模型下载失败",
-      "find_similar": "查找相似照片",
-      "similarity": "照片相似度",
-      "similarity_hint": "越高越相似，结果越少。越低越不相似，结果越多",
+      "find_similar": "查找相关照片",
+      "similarity": "搜索相似度",
+      "similarity_hint": "越高越相近，越低结果越多。",
       "similarity_options": [
         "极高",
         "高",
         "中",
         "低"
+      ]
+    },
+    "similar_photos": {
+      "title": "相似照片",
+      "grouping_strictness": "分组严格度",
+      "grouping_strictness_hint": "控制照片需多相似才会归入同一个相似组。",
+      "grouping_strictness_options": [
+        "极严格",
+        "严格",
+        "适中",
+        "宽松"
       ]
     },
     "shortcuts": {
@@ -1337,7 +1349,7 @@
         "last_image": "最后一张",
         "quick_preview": "快速预览",
         "close_viewer": "关闭查看器",
-        "search_similar": "查找相似照片",
+        "search_similar": "查找相关照片",
         "show_info": "显示信息",
         "zoom_in": "放大",
         "zoom_out": "缩小",

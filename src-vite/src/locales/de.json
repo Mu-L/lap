@@ -208,7 +208,7 @@
   },
   "search": {
     "title": "Suche",
-    "similar_images": "Ähnliche Fotos",
+    "similar_images": "Verwandte Fotos",
     "image_search_placeholder": "Bilder, Dateinamen oder Kommentare suchen",
     "matches": "Treffer",
     "unknown_location": "Unbekannter Ort",
@@ -482,7 +482,8 @@
         "load_more": "Mehr laden",
         "error_title": "Ähnliche Fotos konnten nicht geladen werden",
         "empty_title": "Keine ähnlichen Fotos gefunden",
-        "analyze_confirm": "Analysieren"
+        "analyze_confirm": "Analysieren",
+        "reanalyze": "Erneut analysieren"
       },
       "reclaimable_size": "Freigebbar",
       "groups_title": "Duplikatgruppen",
@@ -612,8 +613,8 @@
       "compare_selected_images": "Vergleichen",
       "open_selected_videos_in_app": "Videos in {app} öffnen...",
       "open_in_app": "In externer App öffnen...",
-      "find_similar_images": "Ähnliche Fotos finden",
-      "find_person_images": "Fotos dieser Person finden",
+      "find_similar_images": "Verwandte Fotos finden",
+      "find_person_images": "Diese Person finden",
       "print": "Drucken...",
       "rename": "Umbenennen",
       "move_to": "Verschieben nach...",
@@ -1304,14 +1305,25 @@
       "downloading_multilingual_model": "Mehrsprachiges Modell wird heruntergeladen",
       "multilingual_model_download_success": "Das mehrsprachige Suchmodell ist bereit. Starten Sie Lap neu, um es zu verwenden.",
       "multilingual_model_download_failed": "Mehrsprachiges Suchmodell konnte nicht heruntergeladen werden",
-      "find_similar": "Ähnliche Fotos finden",
-      "similarity": "Fotoähnlichkeit",
-      "similarity_hint": "Höher = ähnlicher, weniger Ergebnisse. Niedriger = weniger ähnlich, mehr Ergebnisse",
+      "find_similar": "Verwandte Fotos finden",
+      "similarity": "Suchähnlichkeit",
+      "similarity_hint": "Höher findet genauere Treffer, niedriger mehr Ergebnisse.",
       "similarity_options": [
         "Sehr hoch",
         "Hoch",
         "Mittel",
         "Niedrig"
+      ]
+    },
+    "similar_photos": {
+      "title": "Ähnliche Fotos",
+      "grouping_strictness": "Gruppierungsstrenge",
+      "grouping_strictness_hint": "Legt fest, wie ähnlich Fotos sein müssen, um in derselben Gruppe zu erscheinen.",
+      "grouping_strictness_options": [
+        "Sehr streng",
+        "Streng",
+        "Mittel",
+        "Locker"
       ]
     },
     "shortcuts": {
@@ -1337,7 +1349,7 @@
         "last_image": "Letztes",
         "quick_preview": "Schnellvorschau",
         "close_viewer": "Viewer schließen",
-        "search_similar": "Ähnliche Fotos finden",
+        "search_similar": "Verwandte Fotos finden",
         "show_info": "Info anzeigen",
         "zoom_in": "Vergrößern",
         "zoom_out": "Verkleinern",

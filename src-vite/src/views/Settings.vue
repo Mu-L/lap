@@ -400,6 +400,22 @@
             </div>
           </div>
 
+          <!-- similar photos -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.similar_photos.title') }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.similar_photos.grouping_strictness') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.similar_photos.grouping_strictness_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32 shrink-0" v-model="similarPhotoGroupingThresholdIndex">
+                <option v-for="(option, index) in similarPhotoGroupingOptions" :key="index" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+          </div>
+
           <!-- face recognition -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
@@ -916,6 +932,20 @@ const similarityOptions = computed(() => {
   return values.map((val, i) => ({ label: options[i], value: i }));
 });
 
+const similarPhotoGroupingThresholdIndex = computed({
+  get: () => config.settings.similarPhotos?.groupingThresholdIndex ?? 1,
+  set: (value) => {
+    if (!config.settings.similarPhotos) config.settings.similarPhotos = { groupingThresholdIndex: 1 };
+    config.settings.similarPhotos.groupingThresholdIndex = Number(value);
+  },
+});
+
+const similarPhotoGroupingOptions = computed(() => {
+  const options = localeMsg.value.settings.similar_photos.grouping_strictness_options;
+  const values = config.similarPhotoGroupingThresholds ?? [0.97, 0.93, 0.9, 0.85];
+  return values.map((value, index) => ({ label: options[index], value: index }));
+});
+
 const imageSearchModelOptions = computed(() => {
   const options = localeMsg.value.settings.image_search.search_model_options || ['Default', 'Multilingual model'];
   return options.map((label: string, i: number) => ({ label, value: i }));
@@ -1414,6 +1444,9 @@ watch(() => config.settings.imageSearch.thresholdIndex, (newValue) => {
 });
 watch(() => config.settings.imageSearch.limit, (newValue) => {
   emit('settings-imageSearchLimit-changed', newValue);
+});
+watch(similarPhotoGroupingThresholdIndex, (newValue) => {
+  emit('settings-similarPhotoGroupingThresholdIndex-changed', newValue);
 });
 
 // face settings

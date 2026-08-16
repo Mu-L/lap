@@ -13,7 +13,6 @@ use tauri::Emitter;
 const MAX_GROUP_SIZE: usize = 64;
 const TOP_K: usize = MAX_GROUP_SIZE - 1;
 const SEARCH_EF: usize = 200;
-const MIN_SCORE: f32 = 0.93;
 const SQL_BATCH_SIZE: usize = 900;
 
 #[derive(Clone, Debug, Serialize)]
@@ -205,6 +204,7 @@ pub fn start_scan(
     state: tauri::State<'_, SimilarState>,
     scope_key: String,
     source_version: i64,
+    similarity_threshold: f32,
     params: Option<QueryParams>,
     collection_id: Option<i64>,
     file_ids: Option<Vec<i64>>,
@@ -236,6 +236,7 @@ pub fn start_scan(
             &cancel,
             &scope_key,
             source_version,
+            similarity_threshold.clamp(0.0, 1.0),
             params,
             collection_id,
             file_ids,
@@ -282,6 +283,7 @@ fn scan(
     cancel: &Arc<AtomicBool>,
     scope_key: &str,
     source_version: i64,
+    similarity_threshold: f32,
     params: Option<QueryParams>,
     collection_id: Option<i64>,
     file_ids: Option<Vec<i64>>,
@@ -317,7 +319,7 @@ fn scan(
                     continue;
                 }
                 let score = cosine(&file.vector, &vectors[j].vector);
-                if score >= MIN_SCORE {
+                if score >= similarity_threshold {
                     pair_scores.insert((i.min(j), i.max(j)), score);
                 }
             }
@@ -353,7 +355,7 @@ fn scan(
                     .get(&(x.min(y), x.max(y)))
                     .copied()
                     .unwrap_or(0.0)
-                    >= MIN_SCORE
+                    >= similarity_threshold
             })
         }) {
             let (target, source) = if clusters[ai].len() >= clusters[bi].len() {
