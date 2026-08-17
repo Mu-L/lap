@@ -16,7 +16,7 @@
   "collection": {
     "title": "Sammlungen",
     "add": "Sammlung hinzufügen",
-    "add_to_collection": "Zur Sammlung hinzufügen",
+    "edit_collections": "Sammlungen bearbeiten",
     "recent": "Zuletzt verwendete Sammlungen",
     "search": "Sammlungen suchen",
     "enter_new_collection_name": "Neuer Sammlungsname",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Behalten",
       "unkeep_label": "Nicht behalten",
-      "remove_selected": "Auswahl entfernen",
+      "delete_selected": "Auswahl löschen",
       "move_selected_to_trash": "In Papierkorb ({count} ausgewählt · {size})",
       "set_keep": "Behalten",
       "duplicate_files_summary": "{count} Duplikate ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "In Suche einbeziehen",
       "exclude_from_search": "Vom Suchen ausschließen",
       "remove": "Entfernen",
+      "delete_folder": "Ordner löschen",
       "refresh": "Ordner aktualisieren"
     },
     "file": {
-      "new_folder": "Neuer Ordner...",
+      "new_folder": "Neuer Ordner",
       "view_in_new_window": "In neuem Fenster...",
       "copy": "In die Zwischenablage",
       "paste": "Einfügen",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "Neuer Ordner",
-      "placeholder": "Neuen Ordnernamen eingeben",
-      "ok": "Erstellen",
       "error": "Ordner konnte nicht erstellt werden."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "4 Sterne bewerten",
         "rate_five": "5 Sterne bewerten",
         "edit_tags": "Tags bearbeiten",
-        "add_to_collections": "Zu Sammlungen hinzufügen",
+        "edit_collections": "Sammlungen bearbeiten",
         "edit_comment": "Kommentar bearbeiten",
         "rotate": "Vorschau drehen",
         "thumbnail_increase": "Miniaturansicht vergrößern",

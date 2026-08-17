@@ -36,7 +36,19 @@
         <component :is="child.is_excluded_from_search ? IconFolderOff : IconFolder" class="p-1 w-6 h-6 shrink-0" />
 
         <!-- name -->
-        <input v-if="isRenamingFolder && selection.folderPath.value === child.path"
+        <input v-if="isCreatingFolder && creatingFolderPath === child.path"
+          :data-new-folder-path="child.path"
+          type="text"
+          maxlength="255"
+          class="input px-1 w-full text-base"
+          v-model="newFolderName"
+          @click.stop
+          @mousedown.stop
+          @keydown.enter.prevent="confirmNewFolder"
+          @keydown.esc.stop.prevent="cancelNewFolder"
+          @blur="confirmNewFolder"
+        >
+        <input v-else-if="isRenamingFolder && selection.folderPath.value === child.path"
           ref="folderInputRef"
           type="text"
           maxlength="255"
@@ -61,7 +73,7 @@
             >
               {{ getFolderFileCount(child.path).toLocaleString() }}
             </span>
-            <ContextMenu v-if="allowContextMenu && !isRenamingFolder"
+            <ContextMenu v-if="allowContextMenu && !isRenamingFolder && !isCreatingFolder"
               v-show="shouldShowFolderMenu(child)"
               :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
               :iconMenu="IconMore"
@@ -85,20 +97,6 @@
       />
     </li>
   </ul>
-
-  <!-- new folder -->
-  <MessageBox
-    v-if="showNewFolderMsgbox"
-    :title="$t('msgbox.new_folder.title')"
-    :showInput="true"
-    :inputText="''"
-    :inputPlaceholder="$t('msgbox.new_folder.placeholder')"
-    :needValidateInput="true"
-    :OkText="$t('msgbox.new_folder.ok')"
-    :cancelText="$t('msgbox.cancel')"
-    @ok="clickNewFolder"
-    @cancel="showNewFolderMsgbox = false"
-  />
 
   <!-- trash folder -->
   <MessageBox
@@ -148,7 +146,7 @@
 
 <script setup lang="ts">
 
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, inject, provide } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
@@ -187,6 +185,8 @@ import {
 
 // used for cross-component communication (Content.vue listens for this event)
 import { emit as tauriEmit } from '@tauri-apps/api/event';
+
+const NEW_FOLDER_CONTEXT = 'album-folder-new-folder-context';
 
 const props = withDefaults(defineProps<{
   children?: Folder[];      // subfolders
@@ -275,9 +275,24 @@ const trashFolderDialogMessage = computed(() =>
 const isRenamingFolder = ref(false);
 const folderInputRef = ref<HTMLInputElement[]>([]);     // input text box ref
 const originalFolderName = ref(''); // restore original folder name when cancel renaming(press ESC)
+const inheritedNewFolderContext = inject<any>(NEW_FOLDER_CONTEXT, null);
+const newFolderContext = inheritedNewFolderContext || {
+  isCreatingFolder: ref(false),
+  isCreatingFolderRequest: ref(false),
+  creatingFolderParent: ref<Folder | null>(null),
+  creatingFolderPath: ref(''),
+  newFolderName: ref(''),
+};
+if (!inheritedNewFolderContext) provide(NEW_FOLDER_CONTEXT, newFolderContext);
+const {
+  isCreatingFolder,
+  isCreatingFolderRequest,
+  creatingFolderParent,
+  creatingFolderPath,
+  newFolderName,
+} = newFolderContext;
 
 // message boxes
-const showNewFolderMsgbox = ref(false);
 const showTrashFolderMsgbox = ref(false);
 const showTrashFailedFolderMsgbox = ref(false);
 const showMoveTo = ref(false);
@@ -320,9 +335,7 @@ const getMenuItemsForFolder = async (folder: any) => {
     {
       label: localeMsg.value.menu.file.new_folder,
       icon: IconNewFolder,
-      action: () => {
-        showNewFolderMsgbox.value = true;
-      }
+      action: () => { void startNewFolder(folder); }
     },
     {
       label: localeMsg.value.menu.file.rename,
@@ -332,9 +345,8 @@ const getMenuItemsForFolder = async (folder: any) => {
         originalFolderName.value = folder.name;
         uiStore.pushInputHandler('AlbumFolder-rename');
         nextTick(() => {
-          if (folderInputRef.value) {
-            folderInputRef.value[0].focus();
-          }
+          const input = Array.isArray(folderInputRef.value) ? folderInputRef.value[0] : folderInputRef.value;
+          input?.focus();
         });
       }
     },
@@ -416,7 +428,7 @@ const getMenuItemsForFolder = async (folder: any) => {
       action: null
     },
     {
-      label: localeMsg.value.menu.file.move_to_trash,
+      label: localeMsg.value.menu.album.delete_folder,
       icon: IconTrash,
       disabled: isRoot,
       action: () => {
@@ -594,28 +606,80 @@ const handleLocalTreeKeyDown = (event: KeyboardEvent) => {
   void handleTreeKeyDown({ payload: { key: event.key } });
 };
 
-/// Create new folder
-const clickNewFolder = async (newFolderName: string) => {
-  const newFolderPath = await createFolder(selection.folderPath.value, newFolderName);
-  
-  if (newFolderPath) {
-    showNewFolderMsgbox.value = false;
-    
-    let folder = selectedFolder.value;
-    if (folder) {
-      if (!folder.children) folder.children = [];
-      folder.children.push({ id: 0, name: newFolderName, path: newFolderPath });
+const focusNewFolderInput = async (select = false) => {
+  await nextTick();
+  const input = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-new-folder-path]'))
+    .find(element => element.dataset.newFolderPath === creatingFolderPath.value);
+  input?.focus();
+  if (select) input?.select();
+};
 
-      expandFolder(folder, true).then(() => {
-        const newFolder = folder.children?.find((child: Folder) => child.path === newFolderPath);
-        if (newFolder) {
-          clickFolder(props.albumId, newFolder);
-        }
-      });
-    }
-  } else {
-    toast.error(localeMsg.value.msgbox.new_folder.error);
+const startNewFolder = async (folder: Folder) => {
+  if (isCreatingFolder.value) return;
+  const refreshed = await fetchFolder(folder.path, false, config.settings.folderSort);
+  if (refreshed) {
+    folder.children = refreshed.children || [];
+    folder.has_subfolders = refreshed.has_subfolders;
   }
+  const existingNames = new Set((folder.children || []).map(child => child.name.toLowerCase()));
+  const baseName = t('msgbox.new_folder.title');
+  let index = 0;
+  let name = baseName;
+  while (existingNames.has(name.toLowerCase())) name = `${baseName} ${++index}`;
+
+  const path = getFullPath(folder.path, name);
+  folder.children = [...(folder.children || []), { id: -1, name, path }];
+  folder.is_expanded = true;
+  creatingFolderParent.value = folder;
+  creatingFolderPath.value = path;
+  newFolderName.value = name;
+  isCreatingFolder.value = true;
+  uiStore.pushInputHandler('AlbumFolder-new');
+  await focusNewFolderInput(true);
+};
+
+const cancelNewFolder = () => {
+  const parent = creatingFolderParent.value;
+  if (parent?.children) {
+    parent.children = parent.children.filter(child => child.path !== creatingFolderPath.value);
+  }
+  isCreatingFolder.value = false;
+  isCreatingFolderRequest.value = false;
+  creatingFolderParent.value = null;
+  creatingFolderPath.value = '';
+  newFolderName.value = '';
+  uiStore.removeInputHandler('AlbumFolder-new');
+};
+
+const confirmNewFolder = async () => {
+  if (!isCreatingFolder.value || isCreatingFolderRequest.value) return;
+  const parent = creatingFolderParent.value;
+  const name = newFolderName.value.trim();
+  if (!parent || !name || !isValidFileName(name)) return;
+
+  isCreatingFolderRequest.value = true;
+  const newFolderPath = await createFolder(parent.path, name);
+  if (!newFolderPath) {
+    isCreatingFolderRequest.value = false;
+    toast.error(localeMsg.value.msgbox.new_folder.error);
+    await focusNewFolderInput();
+    return;
+  }
+
+  const refreshed = await fetchFolder(parent.path, false, config.settings.folderSort);
+  if (refreshed) {
+    parent.children = refreshed.children || [];
+    parent.has_subfolders = refreshed.has_subfolders;
+  }
+  parent.is_expanded = true;
+  isCreatingFolder.value = false;
+  isCreatingFolderRequest.value = false;
+  creatingFolderParent.value = null;
+  creatingFolderPath.value = '';
+  newFolderName.value = '';
+  uiStore.removeInputHandler('AlbumFolder-new');
+  const newFolder = parent.children?.find(child => child.path === newFolderPath);
+  if (newFolder) await clickFolder(props.albumId, newFolder);
 };
 
 /// Rename folder

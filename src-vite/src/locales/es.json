@@ -16,7 +16,7 @@
   "collection": {
     "title": "Colecciones",
     "add": "Añadir colección",
-    "add_to_collection": "Añadir a la colección",
+    "edit_collections": "Editar colecciones",
     "recent": "Colecciones recientes",
     "search": "Buscar colecciones",
     "enter_new_collection_name": "Nombre de la nueva colección",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Conservar",
       "unkeep_label": "No conservar",
-      "remove_selected": "Eliminar selección",
+      "delete_selected": "Eliminar seleccionados",
       "move_selected_to_trash": "Mover a papelera ({count} seleccionados · {size})",
       "set_keep": "Conservar",
       "duplicate_files_summary": "{count} duplicados ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "Incluir en búsqueda",
       "exclude_from_search": "Excluir de búsqueda",
       "remove": "Eliminar",
+      "delete_folder": "Eliminar carpeta",
       "refresh": "Actualizar carpeta"
     },
     "file": {
-      "new_folder": "Nueva carpeta...",
+      "new_folder": "Nueva carpeta",
       "view_in_new_window": "Ver en nueva ventana...",
       "copy": "Copiar a portapapeles",
       "paste": "Pegar",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "Nueva carpeta",
-      "placeholder": "Introduce un nuevo nombre de carpeta",
-      "ok": "Crear",
       "error": "No se pudo crear la carpeta."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "Calificar 4 estrellas",
         "rate_five": "Calificar 5 estrellas",
         "edit_tags": "Editar etiquetas",
-        "add_to_collections": "Añadir a colecciones",
+        "edit_collections": "Editar colecciones",
         "edit_comment": "Editar comentario",
         "rotate": "Rotar vista previa",
         "thumbnail_increase": "Aumentar miniaturas",

@@ -16,7 +16,7 @@
   "collection": {
     "title": "컬렉션",
     "add": "컬렉션 추가",
-    "add_to_collection": "컬렉션에 추가",
+    "edit_collections": "컬렉션 편집",
     "recent": "최근 사용한 컬렉션",
     "search": "컬렉션 검색",
     "enter_new_collection_name": "새 컬렉션 이름",
@@ -499,7 +499,7 @@
       },
       "keep_label": "유지",
       "unkeep_label": "유지 안 함",
-      "remove_selected": "선택 항목 제거",
+      "delete_selected": "선택 항목 삭제",
       "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
       "set_keep": "유지",
       "duplicate_files_summary": "중복 {count}개 ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "검색에 포함",
       "exclude_from_search": "검색에서 제외",
       "remove": "제거",
+      "delete_folder": "폴더 삭제",
       "refresh": "폴더 새로고침"
     },
     "file": {
-      "new_folder": "새 폴더...",
+      "new_folder": "새 폴더",
       "view_in_new_window": "새 창에서 보기...",
       "copy": "클립보드에 복사",
       "paste": "붙여넣기",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "새 폴더",
-      "placeholder": "새 폴더 이름을 입력하세요",
-      "ok": "생성",
       "error": "폴더를 만들지 못했습니다."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "별점 4개",
         "rate_five": "별점 5개",
         "edit_tags": "태그 편집",
-        "add_to_collections": "컬렉션에 추가",
+        "edit_collections": "컬렉션 편집",
         "edit_comment": "메모 편집",
         "rotate": "미리보기 회전",
         "thumbnail_increase": "썸네일 확대",

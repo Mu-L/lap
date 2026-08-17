@@ -317,7 +317,7 @@ export const useFileMenuItems = (
       {
         label: options?.isCollectionView?.value
           ? translate('menu.file.remove_from_collection')
-          : localeMsg.value.menu.file.move_to_trash,
+          : localeMsg.value.menu.file.delete,
         icon: markRaw(options?.isCollectionView?.value ? IconBookmarkOff : IconTrash),
         shortcut: shortcut('file.trash'),
         action: createAction(options?.isCollectionView?.value ? 'remove-from-collection' : 'trash')

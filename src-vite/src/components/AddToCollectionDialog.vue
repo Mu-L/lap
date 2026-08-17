@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('collection.add_to_collection')" :width="600" @cancel="close">
+  <ModalDialog :title="$t('collection.edit_collections')" :width="600" @cancel="close">
     <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div class="grow h-8 flex items-center rounded-box overflow-hidden bg-base-100 border border-neutral-content/30 focus-within:border-primary">

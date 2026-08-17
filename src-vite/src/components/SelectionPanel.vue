@@ -171,7 +171,7 @@
             danger
             @click="$emit('trash')"
           >
-            {{ $t('menu.file.move_to_trash') }}
+            {{ $t('menu.file.delete') }}
           </PanelActionButton>
         </div>
 

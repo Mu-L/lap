@@ -16,7 +16,7 @@
   "collection": {
     "title": "Collections",
     "add": "Add collection",
-    "add_to_collection": "Add to Collection",
+    "edit_collections": "Edit collections",
     "recent": "Recent Collections",
     "search": "Search collections",
     "enter_new_collection_name": "New collection name",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Keep",
       "unkeep_label": "Unkeep",
-      "remove_selected": "Remove Selected",
+      "delete_selected": "Delete Selected",
       "move_selected_to_trash": "Move to trash ({count} selected · {size})",
       "set_keep": "Keep",
       "duplicate_files_summary": "{count} duplicates ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "Include in search",
       "exclude_from_search": "Exclude from search",
       "remove": "Remove",
+      "delete_folder": "Delete folder",
       "refresh": "Refresh folder"
     },
     "file": {
-      "new_folder": "New folder...",
+      "new_folder": "New folder",
       "view_in_new_window": "View in new window...",
       "copy": "Copy to clipboard",
       "paste": "Paste",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "New folder",
-      "placeholder": "Enter a new folder name",
-      "ok": "Create",
       "error": "Failed to create folder."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "Rate 4 stars",
         "rate_five": "Rate 5 stars",
         "edit_tags": "Edit tags",
-        "add_to_collections": "Add to collections",
+        "edit_collections": "Edit collections",
         "edit_comment": "Edit comment",
         "rotate": "Rotate preview",
         "thumbnail_increase": "Increase thumbnail size",

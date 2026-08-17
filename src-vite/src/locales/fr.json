@@ -16,7 +16,7 @@
   "collection": {
     "title": "Collections",
     "add": "Ajouter une collection",
-    "add_to_collection": "Ajouter à la collection",
+    "edit_collections": "Modifier les collections",
     "recent": "Collections récentes",
     "search": "Rechercher des collections",
     "enter_new_collection_name": "Nom de la nouvelle collection",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Conserver",
       "unkeep_label": "Ne pas conserver",
-      "remove_selected": "Supprimer la sélection",
+      "delete_selected": "Supprimer les éléments sélectionnés",
       "move_selected_to_trash": "Mettre à la corbeille ({count} sélectionnés · {size})",
       "set_keep": "Conserver",
       "duplicate_files_summary": "{count} doublons ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "Inclure dans recherche",
       "exclude_from_search": "Exclure de recherche",
       "remove": "Supprimer",
+      "delete_folder": "Supprimer le dossier",
       "refresh": "Actualiser le dossier"
     },
     "file": {
-      "new_folder": "Nouveau dossier...",
+      "new_folder": "Nouveau dossier",
       "view_in_new_window": "Détacher fenêtre...",
       "copy": "Copier dans presse-papiers",
       "paste": "Coller",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "Nouveau dossier",
-      "placeholder": "Entrer un nouveau nom de dossier",
-      "ok": "Créer",
       "error": "Impossible de créer le dossier."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "Noter 4 étoiles",
         "rate_five": "Noter 5 étoiles",
         "edit_tags": "Modifier les étiquettes",
-        "add_to_collections": "Ajouter aux collections",
+        "edit_collections": "Modifier les collections",
         "edit_comment": "Modifier le commentaire",
         "rotate": "Pivoter l'aperçu",
         "thumbnail_increase": "Agrandir les miniatures",

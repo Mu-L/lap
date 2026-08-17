@@ -16,7 +16,7 @@
   "collection": {
     "title": "Coleções",
     "add": "Adicionar coleção",
-    "add_to_collection": "Adicionar à coleção",
+    "edit_collections": "Editar coleções",
     "recent": "Coleções recentes",
     "search": "Pesquisar coleções",
     "enter_new_collection_name": "Nome da nova coleção",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Manter",
       "unkeep_label": "Não manter",
-      "remove_selected": "Remover seleção",
+      "delete_selected": "Excluir selecionados",
       "move_selected_to_trash": "Mover para lixeira ({count} selecionados · {size})",
       "set_keep": "Manter",
       "duplicate_files_summary": "{count} duplicados ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "Incluir na pesquisa",
       "exclude_from_search": "Excluir da pesquisa",
       "remove": "Remover",
+      "delete_folder": "Excluir pasta",
       "refresh": "Atualizar pasta"
     },
     "file": {
-      "new_folder": "Nova pasta...",
+      "new_folder": "Nova pasta",
       "view_in_new_window": "Ver em nova janela...",
       "copy": "Copiar para área de transferência",
       "paste": "Colar",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "Nova pasta",
-      "placeholder": "Digite um novo nome de pasta",
-      "ok": "Criar",
       "error": "Falha ao criar a pasta."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "Avaliar 4 estrelas",
         "rate_five": "Avaliar 5 estrelas",
         "edit_tags": "Editar tags",
-        "add_to_collections": "Adicionar às coleções",
+        "edit_collections": "Editar coleções",
         "edit_comment": "Editar comentário",
         "rotate": "Girar pré-visualização",
         "thumbnail_increase": "Aumentar miniaturas",

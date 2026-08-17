@@ -16,7 +16,7 @@
   "collection": {
     "title": "Коллекции",
     "add": "Добавить коллекцию",
-    "add_to_collection": "Добавить в коллекцию",
+    "edit_collections": "Изменить коллекции",
     "recent": "Недавние коллекции",
     "search": "Поиск коллекций",
     "enter_new_collection_name": "Название новой коллекции",
@@ -499,7 +499,7 @@
       },
       "keep_label": "Оставить",
       "unkeep_label": "Не сохранять",
-      "remove_selected": "Удалить выбранное",
+      "delete_selected": "Удалить выбранное",
       "move_selected_to_trash": "Удалить в Корзину ({count} выбрано · {size})",
       "set_keep": "Оставить",
       "duplicate_files_summary": "Дубликатов: {count} ({size})"
@@ -601,10 +601,11 @@
       "include_in_search": "Включить в поиск",
       "exclude_from_search": "Исключить из поиска",
       "remove": "Удалить",
+      "delete_folder": "Удалить папку",
       "refresh": "Обновить папку"
     },
     "file": {
-      "new_folder": "Новая папка...",
+      "new_folder": "Новая папка",
       "view_in_new_window": "В новом окне...",
       "copy": "Скопировать в буфер",
       "paste": "Вставить",
@@ -756,8 +757,6 @@
     },
     "new_folder": {
       "title": "Новая папка",
-      "placeholder": "Введите имя новой папки",
-      "ok": "Создать",
       "error": "Не удалось создать папку."
     },
     "move_to": {
@@ -1388,7 +1387,7 @@
         "rate_four": "Оценить на 4 звезды",
         "rate_five": "Оценить на 5 звёзд",
         "edit_tags": "Редактировать теги",
-        "add_to_collections": "Добавить в коллекции",
+        "edit_collections": "Изменить коллекции",
         "edit_comment": "Редактировать комментарий",
         "rotate": "Повернуть предпросмотр",
         "thumbnail_increase": "Увеличить миниатюры",
