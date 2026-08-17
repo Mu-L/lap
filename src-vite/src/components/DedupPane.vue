@@ -138,7 +138,7 @@
                 {{ $t('info_panel.dedup.compare') }}
               </PanelActionButton>
               <PanelActionButton :icon="IconTrash" :disabled="selectedSimilarCount === 0" danger @click="trashSelectedSimilar(activeSimilarGroup.id, selectedSimilarBytes)">
-                {{ $t('menu.file.move_to_trash') }}
+                {{ $t('info_panel.dedup.remove_selected') }}
               </PanelActionButton>
             </div>
             <TransitionGroup
@@ -344,7 +344,7 @@
               danger
               @click="trashSelectedDuplicates(activeGroup.id, selectedDeleteBytes)"
             >
-              {{ $t('menu.file.move_to_trash') }}
+              {{ $t('info_panel.dedup.remove_selected') }}
             </PanelActionButton>
           </div>
           <TransitionGroup

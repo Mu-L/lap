@@ -1931,7 +1931,7 @@ const isDedupTrash = computed(() => dedupDeleteFileIds.value.length > 0);
 const rawJpegCompanionDeleteCount = computed(() => {
   if (!config.settings.groupRawJpegPairs) return 0;
   const items = isDedupTrash.value
-    ? dedupDeleteFileIds.value.map(id => fileList.value.find(file => Number(file.id) === Number(id))).filter(Boolean)
+    ? dedupDeleteFileIds.value.map(id => fileList.value.find(file => Number(file?.id) === Number(id))).filter(Boolean)
     : selectMode.value
       ? getActionableSelectedItems()
       : [fileList.value[selectedItemIndex.value]].filter(Boolean);
@@ -2005,7 +2005,7 @@ const confirmTrashFailedPermanentDelete = async () => {
 
 const getFileItemsByIds = (ids: number[]) => {
   const targetIdSet = new Set(ids.map(id => Number(id)).filter(id => id > 0));
-  return fileList.value.filter(file => targetIdSet.has(Number(file.id)));
+  return fileList.value.filter(file => targetIdSet.has(Number(file?.id)));
 };
 
 const cancelTrashFailedMsgbox = () => {
@@ -7616,21 +7616,34 @@ const onTrashFile = async (retryItemsOverride: any[] = []) => {
   try {
     if (dedupDeleteFileIds.value.length > 0) {
       const ids = [...dedupDeleteFileIds.value];
-      if (permanently) {
-        const selectedItems = ids
-          .map(id => fileList.value.find(file => Number(file.id) === id))
-          .filter((file): file is any => !!file);
+      if (permanently || isSimilarDedupTrash) {
+        const selectedItems = (await Promise.all(ids.map(async (id) =>
+          fileList.value.find(file => Number(file?.id) === id) || getFileInfo(id)
+        ))).filter((file): file is any => !!file?.id && !!file.file_path);
         const result = await batchDeleteFiles(
           selectedItems.map(item => ({ fileId: item.id, filePath: item.file_path })),
-          true,
+          permanently,
         );
-        if (!result) throw new Error('Failed to permanently delete dedup files');
+        if (!result) throw new Error(`Failed to ${permanently ? 'permanently delete' : 'trash'} dedup files`);
         const deletedIdSet = new Set(result.deletedFileIds.map((id: any) => Number(id)));
         const deletedItems = selectedItems.filter(item => deletedIdSet.has(Number(item.id)));
         failedDeleteCount = Number(result.failedCount || 0) + (ids.length - selectedItems.length);
+        if (!permanently && isSimilarDedupTrash) {
+          const trashFailedIdSet = new Set(
+            Array.isArray(result.trashFailedFileIds)
+              ? result.trashFailedFileIds.map((id: any) => Number(id)).filter((id: number) => id > 0)
+              : [],
+          );
+          if (trashFailedIdSet.size > 0) {
+            pendingTrashFailedDedupGroupKey.value = dedupTrashGroupKey.value;
+            pendingTrashFailedItems.value = selectedItems.filter(item => trashFailedIdSet.has(Number(item.id)));
+            otherFailureCount = Math.max(0, failedDeleteCount - trashFailedIdSet.size);
+            pendingTrashFailedOtherFailureCount.value = otherFailureCount;
+          }
+        }
 
         if (failedDeleteCount > 0 && deletedItems.length === 0) {
-          throw new Error('Failed to permanently delete dedup files');
+          throw new Error(`Failed to ${permanently ? 'permanently delete' : 'trash'} dedup files`);
         }
 
         deletedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
@@ -7649,7 +7662,7 @@ const onTrashFile = async (retryItemsOverride: any[] = []) => {
           deletedFileIds.push(...resultDeletedIds);
           const deletedIdSet = new Set(deletedFileIds);
           fileList.value
-            .filter(file => deletedIdSet.has(file.id))
+            .filter(file => deletedIdSet.has(Number(file?.id)))
             .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
           failedDeleteCount = Number(result?.failedCount || 0);
           if (trashFailedIdSet.size > 0) {
@@ -7671,9 +7684,9 @@ const onTrashFile = async (retryItemsOverride: any[] = []) => {
       }
 
       const deletedIdSet = new Set(deletedFileIds);
-      fileList.value = fileList.value.filter((f) => !deletedIdSet.has(f.id));
+      fileList.value = fileList.value.filter((f) => !deletedIdSet.has(Number(f?.id)));
       totalFileCount.value = fileList.value.length;
-      totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+      totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file?.size || 0), 0);
       selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
     }
     else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode

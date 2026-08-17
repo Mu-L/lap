@@ -451,14 +451,29 @@ pub fn list_groups(scope_key: &str, limit: i64, offset: i64) -> Result<serde_jso
     let conn = get_db_conn()?;
     let total = conn
         .query_row(
-            "SELECT COUNT(*) FROM similarity_groups g JOIN similarity_scans s ON s.id=g.scan_id WHERE s.scope_key=?1",
+            "SELECT COUNT(*) FROM (
+                SELECT g.id
+                FROM similarity_groups g
+                JOIN similarity_scans s ON s.id = g.scan_id
+                JOIN similarity_group_items i ON i.group_id = g.id
+                WHERE s.scope_key = ?1
+                GROUP BY g.id
+                HAVING COUNT(i.file_id) > 1
+            )",
             params![scope_key],
             |row| row.get::<_, i64>(0),
         )
         .map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT g.id,g.file_count,g.representative_file_id FROM similarity_groups g JOIN similarity_scans s ON s.id=g.scan_id WHERE s.scope_key=?1 ORDER BY g.latest_taken_date DESC, g.id DESC LIMIT ?2 OFFSET ?3",
+            "SELECT g.id,COUNT(i.file_id),g.representative_file_id
+             FROM similarity_groups g
+             JOIN similarity_scans s ON s.id = g.scan_id
+             JOIN similarity_group_items i ON i.group_id = g.id
+             WHERE s.scope_key = ?1
+             GROUP BY g.id
+             HAVING COUNT(i.file_id) > 1
+             ORDER BY g.latest_taken_date DESC, g.id DESC LIMIT ?2 OFFSET ?3",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt

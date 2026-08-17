@@ -499,6 +499,7 @@
       },
       "keep_label": "Behalten",
       "unkeep_label": "Nicht behalten",
+      "remove_selected": "Auswahl entfernen",
       "move_selected_to_trash": "In Papierkorb ({count} ausgewählt · {size})",
       "set_keep": "Behalten",
       "duplicate_files_summary": "{count} Duplikate ({size})"

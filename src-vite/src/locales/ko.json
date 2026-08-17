@@ -499,6 +499,7 @@
       },
       "keep_label": "유지",
       "unkeep_label": "유지 안 함",
+      "remove_selected": "선택 항목 제거",
       "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
       "set_keep": "유지",
       "duplicate_files_summary": "중복 {count}개 ({size})"

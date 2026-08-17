@@ -499,6 +499,7 @@
       },
       "keep_label": "Conserver",
       "unkeep_label": "Ne pas conserver",
+      "remove_selected": "Supprimer la sélection",
       "move_selected_to_trash": "Mettre à la corbeille ({count} sélectionnés · {size})",
       "set_keep": "Conserver",
       "duplicate_files_summary": "{count} doublons ({size})"
