@@ -19,6 +19,7 @@
     "add_to_collection": "添加到合集",
     "recent": "最近使用的合集",
     "search": "搜索合集",
+    "enter_new_collection_name": "新合集名称",
     "not_found": "未找到合集",
     "default_name": "合集 {index}",
     "expand": "展开",

@@ -19,6 +19,7 @@
     "add_to_collection": "Add to Collection",
     "recent": "Recent Collections",
     "search": "Search collections",
+    "enter_new_collection_name": "New collection name",
     "not_found": "No collections found",
     "default_name": "Collection {index}",
     "expand": "Expand",

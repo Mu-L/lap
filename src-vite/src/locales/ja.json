@@ -19,6 +19,7 @@
     "add_to_collection": "コレクションに追加",
     "recent": "最近使用したコレクション",
     "search": "コレクションを検索",
+    "enter_new_collection_name": "新しいコレクション名",
     "not_found": "コレクションが見つかりません",
     "default_name": "コレクション {index}",
     "expand": "展開",

@@ -217,6 +217,7 @@ const isItemDragging = ref(false);
 const deleteTarget = ref<Collection | null>(null);
 const clearTarget = ref<Collection | null>(null);
 let unlistenCollectionFilesDropped: (() => void) | null = null;
+let unlistenCollectionsChanged: (() => void) | null = null;
 let unlistenContentItemsDragState: (() => void) | null = null;
 let unlistenLibrarySwitched: (() => void) | null = null;
 
@@ -228,6 +229,9 @@ onMounted(async () => {
     isLoadingCollections.value = false;
   }
   unlistenCollectionFilesDropped = await listen('collection-files-dropped', async () => {
+    await loadCollections();
+  });
+  unlistenCollectionsChanged = await listen('collections-changed', async () => {
     await loadCollections();
   });
   unlistenContentItemsDragState = await listen('content-items-drag-state', (event: any) => {
@@ -248,6 +252,8 @@ onBeforeUnmount(() => {
   uiStore.removeInputHandler('CollectionTrayDrag');
   unlistenCollectionFilesDropped?.();
   unlistenCollectionFilesDropped = null;
+  unlistenCollectionsChanged?.();
+  unlistenCollectionsChanged = null;
   unlistenContentItemsDragState?.();
   unlistenContentItemsDragState = null;
   unlistenLibrarySwitched?.();
