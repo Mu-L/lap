@@ -1531,8 +1531,17 @@ pub fn get_folder_files(
 
     let mut new_count = 0;
     let mut updated_count = 0;
+    let folder = match AFolder::fetch(folder_path) {
+        Ok(Some(folder)) if !album_removal_pending(folder.album_id) => folder,
+        _ => return (Vec::new(), new_count, updated_count),
+    };
+    let album_sync_lock = album_sync_lock(folder.album_id);
+    let _album_sync_guard = match album_sync_lock.lock() {
+        Ok(guard) => guard,
+        Err(_) => return (Vec::new(), new_count, updated_count),
+    };
     let resolved_folder_id = match AFolder::fetch(folder_path) {
-        Ok(Some(folder)) => {
+        Ok(Some(folder)) if !album_removal_pending(folder.album_id) => {
             let database_folder_id = folder.id.unwrap_or(folder_id);
             if database_folder_id != folder_id {
                 eprintln!(
@@ -1542,7 +1551,7 @@ pub fn get_folder_files(
             }
             database_folder_id
         }
-        _ => folder_id,
+        _ => return (Vec::new(), new_count, updated_count),
     };
 
     let mut files: Vec<AFile> = if from_db_only {
@@ -1671,6 +1680,10 @@ fn is_path_not_found(err: &str) -> bool {
 /// starts the previous one is cancelled (its generation is invalidated).
 static FOLDER_SYNC_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static ACTIVE_ALBUM_SCANS: Lazy<Mutex<HashSet<i64>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+static ALBUM_SYNC_LOCKS: Lazy<Mutex<HashMap<i64, Arc<Mutex<()>>>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+static REMOVING_ALBUMS: Lazy<Mutex<HashMap<i64, usize>>> = Lazy::new(|| Mutex::new(HashMap::new()));
 
 struct AlbumScanGuard {
     album_id: i64,
@@ -1678,6 +1691,9 @@ struct AlbumScanGuard {
 
 impl AlbumScanGuard {
     fn acquire(album_id: i64) -> Result<Self, String> {
+        if album_removal_pending(album_id) {
+            return Err(format!("Album {} is being removed", album_id));
+        }
         let mut active = ACTIVE_ALBUM_SCANS.lock().unwrap();
         if !active.insert(album_id) {
             return Err(format!("Album {} is already being scanned", album_id));
@@ -1692,8 +1708,72 @@ impl Drop for AlbumScanGuard {
     }
 }
 
+/// Marks an album as being removed so no new scan can start while it is being
+/// deleted. Cleared automatically on drop.
+pub(crate) struct AlbumRemovalGuard {
+    album_id: i64,
+}
+
+impl AlbumRemovalGuard {
+    pub(crate) fn acquire(album_id: i64) -> Self {
+        *REMOVING_ALBUMS
+            .lock()
+            .unwrap()
+            .entry(album_id)
+            .or_default() += 1;
+        Self { album_id }
+    }
+}
+
+impl Drop for AlbumRemovalGuard {
+    fn drop(&mut self) {
+        let mut removing = REMOVING_ALBUMS.lock().unwrap();
+        if removing.get(&self.album_id).copied().unwrap_or(0) <= 1 {
+            removing.remove(&self.album_id);
+        } else if let Some(count) = removing.get_mut(&self.album_id) {
+            *count -= 1;
+        }
+    }
+}
+
+fn album_removal_pending(album_id: i64) -> bool {
+    REMOVING_ALBUMS.lock().unwrap().contains_key(&album_id)
+}
+
 fn album_scan_active(album_id: i64) -> bool {
     ACTIVE_ALBUM_SCANS.lock().unwrap().contains(&album_id)
+}
+
+pub fn album_sync_lock(album_id: i64) -> Arc<Mutex<()>> {
+    ALBUM_SYNC_LOCKS
+        .lock()
+        .unwrap()
+        .entry(album_id)
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .clone()
+}
+
+/// Drop the per-album sync lock entry after deletion. Any stale queued sync
+/// revalidates the album before writing and exits safely.
+pub fn release_album_sync_lock(album_id: i64) {
+    ALBUM_SYNC_LOCKS.lock().unwrap().remove(&album_id);
+}
+
+pub async fn wait_for_album_scan_end(album_id: i64) -> Result<(), String> {
+    // Bounded wait: the scan honors the cancellation flag, so it should finish
+    // shortly. A deadline prevents `remove_album` from hanging forever if the
+    // scan is stuck.
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while album_scan_active(album_id) {
+        if Instant::now() >= deadline {
+            return Err(format!(
+                "Timed out waiting for album {} scan to finish",
+                album_id
+            ));
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    Ok(())
 }
 
 fn sync_generation_valid(generation: u64) -> bool {
@@ -1797,7 +1877,20 @@ fn sync_dirty_folders_by_mtime(
         if !sync_generation_valid(generation) {
             return Ok((FolderMtimeSyncResult::default(), Vec::new()));
         }
-        if album_scan_active(folder.album_id) {
+        if album_scan_active(folder.album_id) || album_removal_pending(folder.album_id) {
+            continue;
+        }
+        let album_sync_lock = album_sync_lock(folder.album_id);
+        let _album_sync_guard = album_sync_lock
+            .lock()
+            .map_err(|_| format!("Album sync lock poisoned: {}", folder.album_id))?;
+        if !sync_generation_valid(generation)
+            || album_scan_active(folder.album_id)
+            || album_removal_pending(folder.album_id)
+        {
+            continue;
+        }
+        if Album::get_album_by_id(folder.album_id).is_err() {
             continue;
         }
         let folder_id = match folder.id {
@@ -2260,7 +2353,14 @@ pub fn sync_single_folder(
     // A complete album scan owns folder and file reconciliation for this
     // album. Skip foreground refreshes until it finishes to avoid concurrent
     // writes based on different filesystem snapshots.
-    if album_scan_active(album_id) {
+    if album_scan_active(album_id) || album_removal_pending(album_id) {
+        return Ok(FolderMtimeSyncResult::default());
+    }
+    let album_sync_lock = album_sync_lock(album_id);
+    let _album_sync_guard = album_sync_lock
+        .lock()
+        .map_err(|_| format!("Album sync lock poisoned: {}", album_id))?;
+    if album_scan_active(album_id) || album_removal_pending(album_id) {
         return Ok(FolderMtimeSyncResult::default());
     }
 
@@ -2397,11 +2497,23 @@ fn should_process_synced_file(file: &AFile, file_type: i64) -> bool {
 
 fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFileTask) {
     tauri::async_runtime::spawn(async move {
+        if album_removal_pending(task.album_id) {
+            return;
+        }
         let file_path_for_thumb = task.file_path.clone();
         let file_type = task.file_type;
         let orientation = task.orientation;
         let file_id = task.file_id;
+        let album_id = task.album_id;
         let thumb_result = tauri::async_runtime::spawn_blocking(move || {
+            let album_sync_lock = album_sync_lock(album_id);
+            let _album_sync_guard = match album_sync_lock.lock() {
+                Ok(guard) => guard,
+                Err(_) => return Ok(None),
+            };
+            if album_removal_pending(album_id) || Album::get_album_by_id(album_id).is_err() {
+                return Ok(None);
+            }
             AThumb::get_or_create_thumb(
                 file_id,
                 &file_path_for_thumb,
@@ -2415,7 +2527,7 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
         })
         .await;
 
-        if !matches!(thumb_result, Ok(Ok(Some(_)))) {
+        if !matches!(thumb_result, Ok(Ok(Some(_)))) || album_removal_pending(task.album_id) {
             return;
         }
 
@@ -2433,7 +2545,16 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
 
         let app_handle_for_embedding = app_handle.clone();
         let file_path = task.file_path.clone();
+        let album_id = task.album_id;
         let _ = tauri::async_runtime::spawn_blocking(move || {
+            let album_sync_lock = album_sync_lock(album_id);
+            let _album_sync_guard = match album_sync_lock.lock() {
+                Ok(guard) => guard,
+                Err(_) => return,
+            };
+            if album_removal_pending(album_id) || Album::get_album_by_id(album_id).is_err() {
+                return;
+            }
             let ai_state: tauri::State<crate::t_ai::AiState> = app_handle_for_embedding.state();
             if let Err(e) = AFile::generate_embedding(&ai_state, task.file_id) {
                 eprintln!("Failed to generate embedding for {}: {}", file_path, e);

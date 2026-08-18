@@ -398,9 +398,20 @@ pub fn edit_album(id: i64, name: &str, description: &str) -> Result<usize, Strin
 
 /// remove an album
 #[tauri::command]
-pub fn remove_album(id: i64) -> Result<usize, String> {
-    let result = Album::delete_from_db(id)
-        .map_err(|e| format!("Error while removing album with id {}: {}", id, e))?;
+pub async fn remove_album(state: State<'_, IndexCancellation>, id: i64) -> Result<usize, String> {
+    let _removal_guard = t_utils::AlbumRemovalGuard::acquire(id);
+    state.0.lock().unwrap().insert(id, true);
+    t_utils::wait_for_album_scan_end(id).await?;
+
+    let result = {
+        let album_sync_lock = t_utils::album_sync_lock(id);
+        let _album_sync_guard = album_sync_lock
+            .lock()
+            .map_err(|_| format!("Album sync lock poisoned: {}", id))?;
+        Album::delete_from_db(id)
+            .map_err(|e| format!("Error while removing album with id {}: {}", id, e))?
+    };
+    t_utils::release_album_sync_lock(id);
 
     let library_id = crate::t_config::load_app_config()
         .map(|c| c.current_library_id)
