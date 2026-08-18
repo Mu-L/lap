@@ -462,9 +462,9 @@
             @setCulling="setSelectedFileCullingFlag"
             @rotate="clickRotate"
             @quick-edit-tag="clickTag"
+            @quick-edit-collection="clickAddToCollection"
             @quick-edit-comment="openCommentEditor"
             @navigate-folder="handleInfoNavigateFolder"
-            @navigate-collection="handleInfoNavigateCollection"
           />
         </div>
       </div>
@@ -8492,13 +8492,6 @@ const handleInfoNavigateFolder = (folderPath: string) => {
   const targetFile = fileList.value[selectedItemIndex.value];
   if (!folderPath || !targetFile?.album_id) return;
   enterAlbumPreviewMode(targetFile, folderPath);
-};
-
-const handleInfoNavigateCollection = (collectionId: number) => {
-  const id = Number(collectionId);
-  if (!Number.isFinite(id) || id <= 0) return;
-  libConfig.activePane = 'collection';
-  libConfig.collection.selectedId = id;
 };
 
 const FILE_TYPE_IMAGE = 1;

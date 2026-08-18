@@ -270,6 +270,31 @@
               </div>
             </div>
 
+            <!-- Collections -->
+            <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('collection.title') }}</div>
+            <div class="group/field flex items-center min-h-6 gap-1">
+              <TButton
+                v-if="fileCollections.length === 0"
+                :icon="IconEdit"
+                :tooltip="$t('settings.shortcuts.actions.edit_collections')"
+                :buttonSize="'small'"
+                class="shrink-0"
+                @click.stop="emit('quickEditCollection')"
+              />
+              <div class="flex items-center min-h-6 gap-x-3 gap-y-1 flex-wrap flex-1 min-w-0">
+                <button
+                  v-for="collection in fileCollections"
+                  :key="collection.id"
+                  type="button"
+                  class="inline-flex items-center gap-1 text-[12px] font-medium text-base-content/70 transition-colors hover:text-base-content cursor-pointer"
+                  @click.stop="emit('quickEditCollection')"
+                >
+                  <IconBookmark class="h-3.5 w-3.5 shrink-0" />
+                  {{ collection.name }}
+                </button>
+              </div>
+            </div>
+
             <!-- Comment -->
             <div class="flex items-start text-[11px] text-base-content/45 py-1.5">{{ $t('file_info.comment') }}</div>
             <div class="group/field flex items-start gap-1">
@@ -283,23 +308,6 @@
               />
               <div class="text-[12px] leading-5 text-base-content/75 wrap-break-words whitespace-pre-wrap flex-1 min-w-0 cursor-pointer" @click.stop="fileInfo?.comments && emit('quickEditComment')">{{ fileInfo?.comments }}</div>
             </div>
-
-            <!-- Collections -->
-            <template v-if="fileCollections.length > 0">
-              <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('collection.title') }}</div>
-              <div class="flex items-center min-h-6 gap-x-3 gap-y-1 flex-wrap">
-                <button
-                  v-for="collection in fileCollections"
-                  :key="collection.id"
-                  type="button"
-                  class="inline-flex items-center gap-1 text-[12px] font-medium text-base-content/70 transition-colors hover:text-base-content cursor-pointer"
-                  @click.stop="emit('navigateCollection', collection.id)"
-                >
-                  <IconBookmark class="h-3.5 w-3.5 shrink-0" />
-                  {{ collection.name }}
-                </button>
-              </div>
-            </template>
 
             <!-- Rotate Display -->
             <template v-if="fileInfo?.rotate && fileInfo?.rotate !== 0">
@@ -488,9 +496,9 @@ const emit = defineEmits([
   'setCulling',
   'rotate',
   'quickEditTag',
+  'quickEditCollection',
   'quickEditComment',
   'navigateFolder',
-  'navigateCollection',
 ]);
 
 const toast = useToast();
