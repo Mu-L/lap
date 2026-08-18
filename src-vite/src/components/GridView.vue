@@ -72,6 +72,7 @@
       <div
         v-else
         class="w-full h-full flex items-center justify-center overflow-hidden"
+        :class="{ 'opacity-50': draggedFileIds.has(Number(getFileItem(item)?.id)) }"
         @pointerdown="onItemPointerDown($event, getFileIndex(item, index), getFileItem(item))"
       >
         <Thumbnail
@@ -159,6 +160,7 @@ const props = withDefaults(defineProps<{
   folderGroupRoots?: Array<{ path: string; name?: string }>;
   querySource?: string;
   dedupStatuses?: Record<number, 'keep' | 'dup'>;
+  draggedFileIds?: Set<number>;
 }>(), {
   selectedItemIndex: -1,
   timelineData: () => [],
@@ -174,6 +176,7 @@ const props = withDefaults(defineProps<{
   folderGroupRoots: () => [],
   querySource: '',
   dedupStatuses: () => ({}),
+  draggedFileIds: () => new Set<number>(),
 });
 
 const emit = defineEmits([

@@ -205,6 +205,7 @@
                 :folder-group-roots="folderGroupRoots"
                 :query-source="currentQuerySource"
                 :dedup-statuses="dedupStatuses"
+                :dragged-file-ids="draggedFileIds"
                 @item-clicked="handleItemClicked"
                 @item-dblclicked="handleItemDblClicked"
                 @item-select-toggled="handleItemSelectToggled"
@@ -2156,6 +2157,7 @@ const isDragOver = ref(false);
 const dragOverCount = ref(0);
 const showDropWarning = ref(false);
 const isContentInternalDrag = ref(false);
+const draggedFileIds = ref(new Set<number>());
 const isPastingClipboard = ref(false);
 const acceptDrops = computed(() =>
   tempViewMode.value === 'none'
@@ -2431,6 +2433,7 @@ function createDragGhost(
   ghost.style.width = `${width + (fileCount > 1 ? 12 : 0)}px`;
   ghost.style.height = `${height + (fileCount > 1 ? 12 : 0)}px`;
   ghost.style.pointerEvents = 'none';
+  ghost.style.opacity = '0.5';
   ghost.style.zIndex = '2147483647';
   ghost.style.willChange = 'transform';
 
@@ -2560,6 +2563,7 @@ function markContentInternalDrag({
   const selected = getActionableSelectedItems();
   pointerDragUsesSelection = Boolean(draggedFile.isSelected && selectedCount.value > 0);
   const files = pointerDragUsesSelection && selected.length > 0 ? selected : [draggedFile];
+  draggedFileIds.value = new Set(files.map((file: any) => Number(file.id)).filter(id => id > 0));
 
   pointerDragFiles = files.map((f: any) => ({
     id: f.id,
@@ -2588,6 +2592,7 @@ async function clearContentInternalDrag(event?: PointerEvent) {
   const copy = event ? isCopyDragModifier(event) : false;
   const shouldDrop = event?.type !== 'pointercancel';
   isContentInternalDrag.value = false;
+  draggedFileIds.value = new Set();
   pointerDragUsesSelection = false;
   pointerDragFiles = null;
   removeDragGhost();
