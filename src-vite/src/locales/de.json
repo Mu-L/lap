@@ -149,8 +149,8 @@
         "location": "Ort"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "RAW-Paar"
+        "raw_jpeg_pair": "RAW-Paar",
+        "live_motion_photos": "Live- & Motion-Fotos"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "LIVE",
+    "motion": "MOTION",
     "title": "Bildanzeige",
     "loading": "Lade...",
     "loading_original": "Originalfoto wird geladen...",

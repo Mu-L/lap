@@ -142,11 +142,11 @@
         class="pointer-events-none absolute left-0.5 bottom-0.5 z-10 flex items-center gap-0.5"
       >
         <div
-          v-if="isLivePhoto"
+          v-if="isLivePhoto || isMotionPhoto"
           class="thumb-badge thumb-badge-muted"
         >
           <IconLivePhoto class="h-3.5 w-3.5 shrink-0" />
-          <span class="leading-none">LIVE</span>
+          <span class="leading-none">{{ isLivePhoto ? t('image_viewer.live') : t('image_viewer.motion') }}</span>
         </div>
         <div
           v-if="isRawJpegPair"
@@ -301,6 +301,7 @@ const showAnimatedImagePreview = ref(false);
 const isAnimatedImagePreviewReady = ref(false);
 const isVideoFile = computed(() => props.file?.file_type === 2);
 const isLivePhoto = computed(() => props.file?.media_subtype === 'live_photo' && !!props.file?.live_photo_video_path);
+const isMotionPhoto = computed(() => props.file?.media_subtype === 'motion_photo');
 const isRawJpegPair = computed(() => props.file?.media_subtype === 'raw_jpeg_pair');
 const rawJpegPairBadge = computed(() => {
   const extension = getFileExtension(props.file?.live_photo_video_path || '').toLowerCase();
@@ -662,7 +663,7 @@ const thumbnailBadge = computed(() => {
 });
 
 const hasBottomMediaBadges = computed(() => (
-  isLivePhoto.value || isRawJpegPair.value || Boolean(videoDurationBadge.value) || Boolean(props.dedupStatus)
+  isLivePhoto.value || isMotionPhoto.value || isRawJpegPair.value || Boolean(videoDurationBadge.value) || Boolean(props.dedupStatus)
 ));
 
 const statusBadges = computed<ThumbnailBadge[]>(() => {

@@ -1196,6 +1196,11 @@ export async function getFileInfo(fileId) {
   return null;
 }
 
+// extract the embedded MP4 of an Android Motion Photo and return its cache path
+export async function getMotionPhotoVideoPath(fileId) {
+  return invoke('prepare_motion_photo_video', { fileId });
+}
+
 // update file info
 export async function updateFileInfo(fileId, filePath) {
   try {

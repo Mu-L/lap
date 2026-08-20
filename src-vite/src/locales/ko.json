@@ -149,8 +149,8 @@
         "location": "위치"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "RAW 쌍"
+        "raw_jpeg_pair": "RAW 쌍",
+        "live_motion_photos": "라이브 포토 및 모션 포토"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "라이브",
+    "motion": "모션",
     "title": "이미지 뷰어",
     "loading": "로딩 중...",
     "loading_original": "원본 사진을 불러오는 중...",

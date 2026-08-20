@@ -2192,6 +2192,132 @@ pub fn get_file_info(file_id: i64) -> Result<Option<AFile>, String> {
     AFile::get_file_info(file_id).map_err(|e| format!("Error while getting file info: {}", e))
 }
 
+/// Extract the embedded MP4 from an Android Motion Photo into the cache and
+/// return its path so the frontend can play it through the normal video
+/// pipeline (`prepare_video`). Cached by file size + mtime so an edited file
+/// invalidates its extracted copy.
+#[tauri::command]
+pub fn prepare_motion_photo_video(file_id: i64) -> Result<String, String> {
+    let file = AFile::get_file_info(file_id)
+        .map_err(|e| format!("Error while looking up file: {}", e))?
+        .ok_or_else(|| "File not found in catalog".to_string())?;
+    let file_path = file
+        .file_path
+        .as_deref()
+        .filter(|p| !p.is_empty())
+        .ok_or_else(|| "File has no cataloged path".to_string())?;
+    let stored_offset = file
+        .motion_photo_offset
+        .filter(|o| *o > 0)
+        .ok_or_else(|| "File is not a Motion Photo".to_string())?;
+
+    let metadata = fs::metadata(file_path).map_err(|e| format!("Failed to stat file: {}", e))?;
+    let mtime_secs = metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let library_id = t_config::load_app_config()?.current_library_id;
+    let cache_dir = t_config::get_app_cache_dir()?
+        .join(library_id)
+        .join("motion");
+    fs::create_dir_all(&cache_dir).map_err(|e| format!("Failed to create cache dir: {}", e))?;
+
+    let version_prefix = format!("{}-{}-{}-", file_id, metadata.len(), mtime_secs);
+    // Fast path: if the stored offset's cache entry already exists, return it
+    // without re-detecting (which would read the whole file).
+    let stored_cache = cache_dir.join(format!("{}{}.mp4", version_prefix, stored_offset));
+    if stored_cache.exists() {
+        return Ok(stored_cache.to_string_lossy().into_owned());
+    }
+
+    // Cache miss: re-evaluate at playback time so files indexed before an
+    // improved detector use the authoritative XMP offset without a rescan.
+    let offset = crate::t_motion_photo::detect_motion_photo(Path::new(file_path))
+        .map(|offset| offset as i64)
+        .unwrap_or(stored_offset);
+    let offset_u64 = offset as u64;
+    // Validate the offset still points at an MP4 box. An edited/replaced file is
+    // no longer a motion photo, and extracting from a stale offset would produce
+    // a bogus video.
+    if offset_u64 >= metadata.len()
+        || !crate::t_motion_photo::is_mp4_at_offset(Path::new(file_path), offset_u64)
+    {
+        return Err("File is not a Motion Photo".to_string());
+    }
+    if offset != stored_offset {
+        AFile::update_column(file_id, "motion_photo_offset", &offset)
+            .map_err(|e| format!("Failed to update Motion Photo offset: {}", e))?;
+    }
+
+    let cache_path = cache_dir.join(format!("{}{}.mp4", version_prefix, offset));
+    if cache_path.exists() {
+        return Ok(cache_path.to_string_lossy().into_owned());
+    }
+    extract_embedded_mp4(file_path, offset_u64, &cache_path)?;
+    evict_stale_motion_videos(&cache_dir, file_id, &cache_path);
+    Ok(cache_path.to_string_lossy().into_owned())
+}
+
+/// Drop cache entries superseded by `keep` (an updated offset or an earlier
+/// version of the same file) so the cache does not grow unbounded.
+fn evict_stale_motion_videos(cache_dir: &Path, file_id: i64, keep: &Path) {
+    let file_prefix = format!("{}-", file_id);
+    let Ok(entries) = fs::read_dir(cache_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let stale = path != keep
+            && path.file_name().is_some_and(|n| {
+                let n = n.to_string_lossy();
+                // Never touch in-progress `.part` temp files of concurrent
+                // extractions.
+                n.starts_with(&file_prefix) && n.ends_with(".mp4")
+            });
+        if stale {
+            let _ = fs::remove_file(path);
+        }
+    }
+}
+
+fn extract_embedded_mp4(source: &str, offset: u64, dest: &Path) -> Result<(), String> {
+    use std::io::{Read, Seek, SeekFrom, Write};
+    let mut src = fs::File::open(source).map_err(|e| format!("Failed to open source: {}", e))?;
+    src.seek(SeekFrom::Start(offset))
+        .map_err(|e| format!("Failed to seek to video offset: {}", e))?;
+    let temp_path = dest.with_extension(format!("mp4-{}.part", uuid::Uuid::new_v4()));
+    let result = (|| {
+        let mut dst = fs::File::create(&temp_path)
+            .map_err(|e| format!("Failed to create cache file: {}", e))?;
+        let mut buf = vec![0u8; 1024 * 1024];
+        loop {
+            let n = src.read(&mut buf).map_err(|e| format!("Failed to read source: {}", e))?;
+            if n == 0 {
+                break;
+            }
+            dst.write_all(&buf[..n])
+                .map_err(|e| format!("Failed to write cache file: {}", e))?;
+        }
+        dst.sync_all()
+            .map_err(|e| format!("Failed to finalize cache file: {}", e))?;
+        match fs::rename(&temp_path, dest) {
+            Ok(()) => Ok(()),
+            // Another request may have completed the same cache entry first.
+            Err(_) if dest.exists() => {
+                let _ = fs::remove_file(&temp_path);
+                Ok(())
+            }
+            Err(e) => Err(format!("Failed to publish cache file: {}", e)),
+        }
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&temp_path);
+    }
+    result
+}
+
 /// update a file's info
 #[tauri::command]
 pub fn update_file_info(file_id: i64, file_path: &str) -> Result<Option<AFile>, String> {

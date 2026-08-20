@@ -317,7 +317,7 @@
       </button>
 
       <div
-        v-if="isLivePhoto"
+        v-if="isLivePhotoLike"
         :class="[
           'absolute inset-0 z-10 transition-opacity duration-150',
           isLivePhotoPlaying ? 'opacity-100' : 'pointer-events-none opacity-0',
@@ -325,7 +325,7 @@
       >
         <Video
           class="h-full w-full"
-          :filePath="file?.live_photo_video_path"
+          :filePath="livePhotoVideoPath"
           :rotate="file?.rotate ?? 0"
           :isZoomFit="isZoomFit"
           :isSlideShow="isSlideShow"
@@ -346,10 +346,10 @@
       <div
         v-if="file?.file_type === 1 || file?.file_type === 3"
         :class="[
-          isLivePhoto
+          isLivePhotoLike
             ? 'absolute inset-0 z-20 transition-opacity duration-150'
             : 'contents',
-          isLivePhoto && (isLivePhotoPlaying ? 'pointer-events-none opacity-0' : 'opacity-100'),
+          isLivePhotoLike && (isLivePhotoPlaying ? 'pointer-events-none opacity-0' : 'opacity-100'),
         ]"
       >
         <Image
@@ -380,7 +380,7 @@
       </div>
 
       <button
-        v-if="isLivePhoto"
+        v-if="isLivePhotoLike"
         class="absolute left-4 bottom-4 z-60 inline-flex h-10 items-center gap-2 rounded-box bg-base-100/70 px-3 text-sm font-medium text-base-content/70 shadow hover:bg-base-100 hover:text-base-content cursor-pointer"
         @mouseenter="startLivePhotoPreview"
         @mouseleave="isLivePhotoPlaying = false"
@@ -388,7 +388,7 @@
         @dblclick.stop
       >
         <IconLivePhoto class="h-4 w-4" />
-        <span>LIVE</span>
+        <span class="text-xs font-semibold uppercase tracking-wider leading-none">{{ isLivePhoto ? t('image_viewer.live') : t('image_viewer.motion') }}</span>
       </button>
 
       <div
@@ -436,6 +436,7 @@ import { config, libConfig } from '@/common/config';
 import { useToast } from '@/common/toast';
 import { isWin, isMac, isLinux, getSlideShowInterval } from '@/common/utils';
 import { getShortcutLabel, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
+import { getMotionPhotoVideoPath } from '@/common/api';
 
 import Image from '@/components/Image.vue';
 import TButton from '@/components/TButton.vue';
@@ -591,9 +592,19 @@ const props = defineProps({
 
 const isLivePhotoPlaying = ref(false);
 const isLivePhoto = computed(() => props.file?.media_subtype === 'live_photo' && !!props.file?.live_photo_video_path);
+const isMotionPhoto = computed(() => props.file?.media_subtype === 'motion_photo');
+// Both Apple Live Photos and Android Motion Photos play a short video layered
+// over the still image, so they share the same UI/playback path.
+const isLivePhotoLike = computed(() => isLivePhoto.value || isMotionPhoto.value);
+const motionPhotoVideoPath = ref<string | null>(null);
+const livePhotoVideoPath = computed(() =>
+  isLivePhoto.value ? props.file?.live_photo_video_path : motionPhotoVideoPath.value,
+);
 const livePhotoViewport = ref<Record<string, number | boolean> | null>(null);
+let motionPhotoVideoRequestSeq = 0;
 
 function startLivePhotoPreview() {
+  if (!livePhotoVideoPath.value) return;
   emit('activate');
   const viewport = mediaRef.value?.getViewportState?.();
   // Preserve the still image's visible region for the Live Photo preview.
@@ -606,11 +617,28 @@ function startLivePhotoPreview() {
 }
 
 watch(
-  () => [props.file?.id, props.file?.live_photo_video_path],
-  () => {
+  () => [props.file?.id, props.file?.media_subtype, props.file?.modified_at],
+  async ([fileId, mediaSubtype]) => {
+    const requestSeq = ++motionPhotoVideoRequestSeq;
     isLivePhotoPlaying.value = false;
     livePhotoViewport.value = null;
+    motionPhotoVideoPath.value = null;
+    // For Motion Photos the embedded MP4 has to be extracted (cached) before
+    // the generic video pipeline can play it.
+    if (mediaSubtype === 'motion_photo' && fileId != null) {
+      try {
+        const path = await getMotionPhotoVideoPath(fileId);
+        if (requestSeq === motionPhotoVideoRequestSeq) {
+          motionPhotoVideoPath.value = path;
+        }
+      } catch (error) {
+        if (requestSeq === motionPhotoVideoRequestSeq) {
+          console.error('Failed to prepare motion photo video:', error);
+        }
+      }
+    }
   },
+  { immediate: true },
 );
 
 const emit = defineEmits([

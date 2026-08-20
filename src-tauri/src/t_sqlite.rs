@@ -1377,6 +1377,7 @@ pub struct AFile {
     pub media_subtype: Option<String>,      // live_photo, motion_photo, raw_jpeg_pair, ...
     pub live_photo_video_id: Option<i64>,   // paired Live Photo MOV file id
     pub live_photo_video_path: Option<String>, // paired Live Photo MOV path
+    pub motion_photo_offset: Option<i64>,   // byte offset of embedded MP4 (Android Motion Photo)
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -1951,6 +1952,8 @@ impl AFile {
         let mut gps_longitude: Option<f64> = None;
         let mut gps_altitude: Option<f64> = None;
         let mut content_identifier: Option<String> = None;
+        let mut media_subtype: Option<String> = None;
+        let mut motion_photo_offset: Option<i64> = None;
 
         // Pre-read file header once for images (saves 3-4 redundant File::open per file).
         let file_header: Option<Vec<u8>> = if file_type == 1 || file_type == 3 {
@@ -1980,6 +1983,18 @@ impl AFile {
         {
             content_identifier = file_header_deref
                 .and_then(crate::t_apple_sidecar::apple_content_identifier_from_bytes);
+        }
+
+        // Android Motion Photo: JPEG with an embedded MP4 appended after EOI.
+        if file_type == 1 && t_image::is_jpeg_path(file_path) {
+            // Zero records that this JPEG has been checked and is not a Motion Photo.
+            // NULL is reserved for JPEGs indexed before Motion Photo support, so a
+            // later rescan can detect them once.
+            motion_photo_offset = Some(0);
+            if let Some(offset) = crate::t_motion_photo::detect_motion_photo(Path::new(file_path)) {
+                media_subtype = Some("motion_photo".to_string());
+                motion_photo_offset = Some(offset as i64);
+            }
         }
 
         match file_type {
@@ -2339,9 +2354,10 @@ impl AFile {
             has_embedding: None,
             last_scan_time: Some(0),
             content_identifier,
-            media_subtype: None,
+            media_subtype,
             live_photo_video_id: None,
             live_photo_video_path: None,
+            motion_photo_offset,
         };
 
         Ok(file)
@@ -2550,9 +2566,9 @@ impl AFile {
                 is_favorite, rating, rotate, comments, has_tags,
                 e_make, e_model, e_date_time, e_software, e_artist, e_copyright, e_description, e_lens_make, e_lens_model, e_exposure_bias, e_exposure_time, e_f_number, e_focal_length, e_iso_speed, e_flash, e_orientation,
                 gps_latitude, gps_longitude, gps_altitude, geo_name, geo_admin1, geo_admin2, geo_cc,
-                last_scan_time, content_identifier
+                last_scan_time, content_identifier, media_subtype, motion_photo_offset
             )
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41, ?42, ?43)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41, ?42, ?43, ?44, ?45)
             ON CONFLICT(folder_id, name) DO NOTHING",
             params![
                 self.folder_id,
@@ -2604,6 +2620,8 @@ impl AFile {
                 self.geo_cc,
                 self.last_scan_time,
                 self.content_identifier,
+                self.media_subtype,
+                self.motion_photo_offset,
             ]
         ).map_err(|e| e.to_string())?;
         Ok(result)
@@ -2620,8 +2638,8 @@ impl AFile {
                 rating = ?13,
                 e_make = ?14, e_model = ?15, e_date_time = ?16, e_software = ?17, e_artist = ?18, e_copyright = ?19, e_description = ?20, e_lens_make = ?21, e_lens_model = ?22, e_exposure_bias = ?23, e_exposure_time = ?24, e_f_number = ?25, e_focal_length = ?26, e_iso_speed = ?27, e_flash = ?28, e_orientation = ?29,
                 gps_latitude = ?30, gps_longitude = ?31, gps_altitude = ?32, geo_name = ?33, geo_admin1 = ?34, geo_admin2 = ?35, geo_cc = ?36,
-                last_scan_time = ?37, content_identifier = ?38
-            WHERE id = ?39",
+                last_scan_time = ?37, content_identifier = ?38, media_subtype = ?39, motion_photo_offset = ?40
+            WHERE id = ?41",
             params![
                 file.name,
                 file.name_pinyin,
@@ -2665,6 +2683,8 @@ impl AFile {
                 file.geo_cc,
                 file.last_scan_time,
                 file.content_identifier,
+                file.media_subtype,
+                file.motion_photo_offset,
                 file_id,
             ]
         ).map_err(|e| e.to_string())?;
@@ -2824,8 +2844,9 @@ impl AFile {
                     WHEN lpv.id IS NOT NULL AND lpf.path IS NOT NULL
                     THEN lpf.path || '/' || lpv.name
                     ELSE NULL
-                END AS live_photo_video_path
-            FROM afiles a 
+                END AS live_photo_video_path,
+                a.motion_photo_offset
+            FROM afiles a
             LEFT JOIN afolders b ON a.folder_id = b.id
             LEFT JOIN albums c ON b.album_id = c.id
             LEFT JOIN afiles lpv ON a.live_photo_video_id = lpv.id
@@ -2901,6 +2922,7 @@ impl AFile {
             media_subtype: row.get(52)?,
             live_photo_video_id: row.get(53)?,
             live_photo_video_path: row.get(54)?,
+            motion_photo_offset: row.get(55)?,
         })
     }
 
@@ -3248,6 +3270,20 @@ impl AFile {
                 && t_image::get_image_dimensions(file_path).is_ok_and(|(width, height)| {
                     file.width != Some(width) || file.height != Some(height)
                 });
+            // JPEGs indexed before Motion Photo support have no detection marker.
+            // Recheck those files once on their next album scan.
+            let needs_motion_photo_detection = file_type == 1
+                && t_image::is_jpeg_path(file_path)
+                && file.motion_photo_offset.is_none();
+
+            if needs_motion_photo_detection
+                && !modified
+                && !missing_thumb
+                && !needs_tiff_dimension_refresh
+            {
+                Self::refresh_motion_photo_detection(&mut file, file_path, last_scan_time)?;
+                return Ok((file, 2));
+            }
 
             if modified || missing_thumb || needs_tiff_dimension_refresh {
                 if let Some(file_id) = file.id {
@@ -3390,12 +3426,65 @@ impl AFile {
         new_file_info.has_tags = old_file_info.has_tags;
         new_file_info.has_thumbnail = old_file_info.has_thumbnail;
         new_file_info.has_embedding = old_file_info.has_embedding;
+        // Live Photo / RAW+JPEG pairing is derived from the scan-time pairing
+        // pass, not from re-extracting metadata, so retain it when this refresh
+        // does not identify an embedded Motion Photo.
+        if new_file_info.media_subtype.is_none()
+            && matches!(
+                old_file_info.media_subtype.as_deref(),
+                Some("live_photo" | "raw_jpeg_pair")
+            )
+        {
+            new_file_info.media_subtype = old_file_info.media_subtype.clone();
+            new_file_info.live_photo_video_id = old_file_info.live_photo_video_id;
+        }
         new_file_info.last_scan_time = Some(last_scan_time);
 
         // update the file info
         Self::update(file_id, &new_file_info)?;
 
         Self::get_file_info(file_id)
+    }
+
+    /// Backfill Motion Photo metadata without re-extracting all file metadata.
+    fn refresh_motion_photo_detection(
+        file: &mut Self,
+        file_path: &str,
+        last_scan_time: i64,
+    ) -> Result<(), String> {
+        let file_id = file
+            .id
+            .ok_or_else(|| "File is missing an id".to_string())?;
+        if let Some(offset) = crate::t_motion_photo::detect_motion_photo(Path::new(file_path)) {
+            file.media_subtype = Some("motion_photo".to_string());
+            file.motion_photo_offset = Some(offset as i64);
+        } else {
+            // Preserve sidecar-derived pairings; they are maintained by the
+            // dedicated Live Photo / RAW+JPEG pairing pass.
+            if !matches!(
+                file.media_subtype.as_deref(),
+                Some("live_photo" | "raw_jpeg_pair")
+            ) {
+                file.media_subtype = None;
+            }
+            file.motion_photo_offset = Some(0);
+        }
+        file.last_scan_time = Some(last_scan_time);
+
+        open_conn()?
+            .execute(
+                "UPDATE afiles
+                 SET media_subtype = ?1, motion_photo_offset = ?2, last_scan_time = ?3
+                 WHERE id = ?4",
+                params![
+                    file.media_subtype,
+                    file.motion_photo_offset,
+                    file.last_scan_time,
+                    file_id,
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     /// update a file column value
@@ -4909,19 +4998,25 @@ impl AFile {
             "media_subtype" => {
                 let subtype = Self::smart_rule_string(value)
                     .ok_or_else(|| "Media subtype value required".to_string())?;
-                if !matches!(subtype.as_str(), "live_photo" | "raw_jpeg_pair") {
-                    return Err(format!("Unsupported media subtype: {}", subtype));
-                }
+                // "motion_photo" is the unified "dynamic photo" bucket that
+                // covers both Apple Live Photos and Android Motion Photos;
+                // "live_photo" maps to the same condition for backward
+                // compatibility with previously saved rules.
+                let (positive, negative) = match subtype.as_str() {
+                    "live_photo" | "motion_photo" => (
+                        "a.media_subtype IN ('live_photo', 'motion_photo')",
+                        "(a.media_subtype IS NULL OR a.media_subtype NOT IN ('live_photo', 'motion_photo'))",
+                    ),
+                    "raw_jpeg_pair" => (
+                        "a.media_subtype = 'raw_jpeg_pair'",
+                        "(a.media_subtype IS NULL OR a.media_subtype != 'raw_jpeg_pair')",
+                    ),
+                    other => return Err(format!("Unsupported media subtype: {}", other)),
+                };
                 if matches!(operator, "is_not" | "neq" | "not_in") {
-                    Ok(format!(
-                        "(a.media_subtype IS NULL OR a.media_subtype != '{}' OR a.live_photo_video_id IS NULL)",
-                        subtype
-                    ))
+                    Ok(negative.to_string())
                 } else if matches!(operator, "is" | "eq" | "in") {
-                    Ok(format!(
-                        "(a.media_subtype = '{}' AND a.live_photo_video_id IS NOT NULL)",
-                        subtype
-                    ))
+                    Ok(positive.to_string())
                 } else {
                     Err(format!("Unsupported media subtype operator: {}", operator))
                 }
@@ -8533,6 +8628,7 @@ fn create_db_internal() -> Result<(), String> {
             content_identifier TEXT,
             media_subtype TEXT,
             live_photo_video_id INTEGER,
+            motion_photo_offset INTEGER,
             FOREIGN KEY (folder_id) REFERENCES afolders(id) ON DELETE CASCADE
         )",
         [],

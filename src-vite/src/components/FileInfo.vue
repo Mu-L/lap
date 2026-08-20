@@ -438,7 +438,7 @@ import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { isWebViewVideoPlaybackDisabled } from '@/common/video';
-import { renameFile, editImage, getAlbum, getFileCollections, getFileInfo, revealPath } from '@/common/api';
+import { renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath } from '@/common/api';
 import { 
   extractFileName, 
   getFileExtension,
@@ -483,7 +483,7 @@ const props = defineProps({
   },
 });
 
-const { locale, messages } = useI18n();
+const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const uiStore = useUIStore();
 
@@ -518,6 +518,7 @@ const isVideoFile = computed(() => Number(props.fileInfo?.file_type || 0) === 2)
 const isLivePhoto = computed(() => (
   props.fileInfo?.media_subtype === 'live_photo' && !!props.fileInfo?.live_photo_video_path
 ));
+const isMotionPhoto = computed(() => props.fileInfo?.media_subtype === 'motion_photo');
 const isRawJpegPair = computed(() => (
   props.fileInfo?.media_subtype === 'raw_jpeg_pair' && !!props.fileInfo?.live_photo_video_id
 ));
@@ -536,11 +537,15 @@ const generalFileInfo = computed(() => (
     : props.fileInfo
 ));
 const isPrimaryGeneralInfo = computed(() => generalInfoTab.value === 'raw');
-const previewVideoPath = computed(() => (
-  isLivePhoto.value ? props.fileInfo?.live_photo_video_path : props.fileInfo?.file_path
-));
+const motionPhotoVideoPath = ref<string | null>(null);
+let motionPhotoVideoRequestSeq = 0;
+const previewVideoPath = computed(() => {
+  if (isLivePhoto.value) return props.fileInfo?.live_photo_video_path;
+  if (isMotionPhoto.value) return motionPhotoVideoPath.value;
+  return props.fileInfo?.file_path;
+});
 const canPreviewVideo = computed(() => (
-  (isVideoFile.value || isLivePhoto.value)
+  (isVideoFile.value || isLivePhoto.value || isMotionPhoto.value)
   && !!previewVideoPath.value
   && !isWebViewVideoPlaybackDisabled(previewVideoPath.value)
 ));
@@ -582,7 +587,10 @@ const previewImageStyle = computed(() => {
 });
 const previewFormatLabel = computed(() => {
   if (props.fileInfo?.media_subtype === 'live_photo') {
-    return 'LIVE';
+    return t('image_viewer.live');
+  }
+  if (props.fileInfo?.media_subtype === 'motion_photo') {
+    return t('image_viewer.motion');
   }
 
   const formatLabel = (props.fileInfo?.format_label || '').trim();
@@ -647,10 +655,31 @@ function stopPreviewVideo() {
 }
 
 watch(
+  () => [props.fileInfo?.id, props.fileInfo?.media_subtype, props.fileInfo?.modified_at] as const,
+  async ([fileId, mediaSubtype]) => {
+    const requestSeq = ++motionPhotoVideoRequestSeq;
+    motionPhotoVideoPath.value = null;
+    if (!fileId || mediaSubtype !== 'motion_photo') return;
+    try {
+      const path = await getMotionPhotoVideoPath(Number(fileId));
+      if (requestSeq === motionPhotoVideoRequestSeq) {
+        motionPhotoVideoPath.value = path;
+      }
+    } catch (error) {
+      if (requestSeq === motionPhotoVideoRequestSeq) {
+        console.error('Failed to prepare motion photo video:', error);
+      }
+    }
+  },
+  { immediate: true },
+);
+
+watch(
   () => [
     props.fileInfo?.id,
     props.fileInfo?.file_path,
     props.fileInfo?.live_photo_video_path,
+    props.fileInfo?.media_subtype,
     showPreviewPanel.value,
     isHistogramPreview.value,
   ],

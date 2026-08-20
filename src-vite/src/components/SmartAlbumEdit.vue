@@ -203,7 +203,7 @@ const cullingOptions = computed(() => [
 ]);
 
 const mediaSubtypeOptions = computed(() => [
-  { value: 'live_photo', label: t('album.smart_edit.media_subtypes.live_photo') },
+  { value: 'motion_photo', label: t('album.smart_edit.media_subtypes.live_motion_photos') },
   { value: 'raw_jpeg_pair', label: t('album.smart_edit.media_subtypes.raw_jpeg_pair') },
 ]);
 
@@ -333,7 +333,7 @@ function resetRuleValue(rule: any) {
 function setDefaultRuleValue(rule: any) {
   if (rule.field === 'name') rule.value = '';
   else if (rule.field === 'file_type') rule.value = 1;
-  else if (rule.field === 'media_subtype') rule.value = 'live_photo';
+  else if (rule.field === 'media_subtype') rule.value = 'motion_photo';
   else if (rule.field === 'extension') rule.value = extensionOptions.value[0]?.value || 'jpg';
   else if (rule.field === 'favorite' || rule.field === 'has_gps') rule.value = true;
   else if (rule.field === 'orientation') rule.value = 'landscape';
@@ -463,6 +463,9 @@ function cloneValue(value: any) {
 function normalizeRuleValueForEdit(field: string, value: any) {
   if (field === 'file_type') {
     return getFileTypeValue(value);
+  }
+  if (field === 'media_subtype' && value === 'live_photo') {
+    return 'motion_photo';
   }
   if (field === 'extension') {
     return getExtensionValue(value);

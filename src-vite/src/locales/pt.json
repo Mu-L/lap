@@ -149,8 +149,8 @@
         "location": "Localização"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "Par RAW"
+        "raw_jpeg_pair": "Par RAW",
+        "live_motion_photos": "Fotos ao vivo e em movimento"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "AO VIVO",
+    "motion": "MOTION",
     "title": "Visualizador de imagens",
     "loading": "Carregando...",
     "loading_original": "Carregando foto original...",

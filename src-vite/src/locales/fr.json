@@ -149,8 +149,8 @@
         "location": "Lieu"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "Paire RAW"
+        "raw_jpeg_pair": "Paire RAW",
+        "live_motion_photos": "Photos Live et animées"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "LIVE",
+    "motion": "MOTION",
     "title": "Visionneuse d’images",
     "loading": "Chargement...",
     "loading_original": "Chargement de la photo originale...",

@@ -149,8 +149,8 @@
         "location": "Location"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "RAW Pair"
+        "raw_jpeg_pair": "RAW Pair",
+        "live_motion_photos": "Live & Motion Photos"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "LIVE",
+    "motion": "MOTION",
     "title": "Image viewer",
     "loading": "Loading...",
     "loading_original": "Loading original photo...",

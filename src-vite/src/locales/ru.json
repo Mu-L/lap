@@ -149,8 +149,8 @@
         "location": "Место"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "RAW-пара"
+        "raw_jpeg_pair": "RAW-пара",
+        "live_motion_photos": "Живые и динамические фото"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "LIVE",
+    "motion": "MOTION",
     "title": "Просмотр изображений",
     "loading": "Загрузка...",
     "loading_original": "Загрузка исходной фотографии...",

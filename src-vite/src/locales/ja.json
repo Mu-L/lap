@@ -149,8 +149,8 @@
         "location": "場所"
       },
       "media_subtypes": {
-        "live_photo": "Live Photo",
-        "raw_jpeg_pair": "RAWペア"
+        "raw_jpeg_pair": "RAWペア",
+        "live_motion_photos": "ライブフォトとモーションフォト"
       },
       "operators": {
         "is": "=",
@@ -1052,6 +1052,8 @@
     }
   },
   "image_viewer": {
+    "live": "ライブ",
+    "motion": "モーション",
     "title": "画像ビューア",
     "loading": "読み込み中...",
     "loading_original": "元写真を読み込み中...",

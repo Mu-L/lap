@@ -31,6 +31,7 @@ mod t_lens;
 mod t_libraw;
 mod t_menu;
 mod t_migration;
+mod t_motion_photo;
 mod t_pasteboard;
 mod t_protocol;
 mod t_similar;
@@ -326,6 +327,7 @@ async fn main() {
             t_cmds::get_file_thumbs,
             t_cmds::get_file_info,
             t_cmds::update_file_info,
+            t_cmds::prepare_motion_photo_video,
             t_cmds::add_file_to_db,
             t_cmds::check_file_exists,
             t_cmds::set_file_rotate,
