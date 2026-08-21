@@ -1242,7 +1242,8 @@ const startMultilingualModelDownload = async (previousModel: number) => {
     }
     isDownloadingMultilingualModel.value = false;
     config.settings.imageSearch.model = previousModel;
-    toast.error(error?.message || localeMsg.value.settings.image_search.multilingual_model_download_failed);
+    const errorMessage = typeof error === 'string' ? error : error?.message;
+    toast.error(errorMessage || localeMsg.value.settings.image_search.multilingual_model_download_failed);
   }
 };
 
