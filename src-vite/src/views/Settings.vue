@@ -495,48 +495,31 @@
             <div class="flex items-center gap-2 text-base-content/30">
               <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.advanced.section_external_apps') }}</span>
             </div>
-            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.advanced.external_image_editor') }}</div>
-                <div class="text-xs text-base-content/30 truncate" :title="config.settings.externalImageAppPath || ''">
-                  {{ externalImageAppName }}
-                </div>
-              </div>
-              <div class="shrink-0 flex items-center gap-1">
-                <button
-                  class="btn btn-sm btn-ghost min-w-20 rounded-box bg-base-100 border border-base-content/30 text-base-content/70 hover:text-base-content"
-                  @click="selectExternalApp('image')"
-                >
-                  {{ $t('settings.advanced.choose_app') }}
-                </button>
-                <TButton v-if="config.settings.externalImageAppPath"
-                  :icon="IconTrash"
+            <div v-for="group in externalAppGroups" :key="group.kind" class="space-y-1">
+              <div class="flex items-center justify-between px-1 text-sm">
+                <span>{{ group.label }}</span>
+                <TButton
+                  :icon="IconAdd"
+                  :tooltip="$t('settings.advanced.choose_app')"
                   :buttonSize="'small'"
-                  :tooltip="$t('settings.advanced.clear_app')"
-                  @click="clearExternalApp('image')"
+                  :disabled="group.apps.length >= 5"
+                  @click="selectExternalApp(group.kind)"
                 />
               </div>
-            </div>
-            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.advanced.external_video_app') }}</div>
-                <div class="text-xs text-base-content/30 truncate" :title="config.settings.externalVideoAppPath || ''">
-                  {{ externalVideoAppName }}
-                </div>
-              </div>
-              <div class="shrink-0 flex items-center gap-1">
-                <button
-                  class="btn btn-sm btn-ghost min-w-20 rounded-box bg-base-100 border border-base-content/30 text-base-content/70 hover:text-base-content"
-                  @click="selectExternalApp('video')"
-                >
-                  {{ $t('settings.advanced.choose_app') }}
-                </button>
-                <TButton v-if="config.settings.externalVideoAppPath"
-                  :icon="IconTrash"
-                  :buttonSize="'small'"
-                  :tooltip="$t('settings.advanced.clear_app')"
-                  @click="clearExternalApp('video')"
+              <div v-for="app in group.apps" :key="app.id" :title="app.path" class="ml-3 flex items-center gap-2 px-1 py-1 rounded-box hover:bg-base-100/10">
+                <div class="min-w-0 flex-1 truncate text-xs">{{ app.name || app.path }}</div>
+                <input
+                  type="radio"
+                  :name="`external-app-default-${group.kind}`"
+                  class="radio radio-xs"
+                  :title="app.id === group.defaultId ? $t('settings.advanced.default_app') : $t('settings.advanced.set_default_app')"
+                  :checked="app.id === group.defaultId"
+                  @change="setDefaultExternalApp(group.kind, app.id)"
                 />
+                <TButton :icon="IconTrash" :buttonSize="'small'" :tooltip="$t('settings.advanced.clear_app')" @click="removeExternalApp(group.kind, app.id)" />
+              </div>
+              <div v-if="group.apps.length === 0" class="ml-3 px-1 py-1 text-xs text-base-content/30">
+                {{ $t('settings.advanced.external_app_not_selected') }}
               </div>
             </div>
           </div>
@@ -682,7 +665,7 @@ import {
 import { formatFileSize, isLinux, isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { getShortcutLabels, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
 import { useToast } from '@/common/toast';
-import { IconTrash, IconRestore, IconClose } from '@/common/icons';
+import { IconAdd, IconClose, IconRestore, IconTrash } from '@/common/icons';
 
 import TitleBar from '@/components/TitleBar.vue';
 import SettingsAbout from '@/components/SettingsAbout.vue';
@@ -815,13 +798,12 @@ const categorySortOptions = computed(() => {
   return result;
 });
 
-const externalImageAppName = computed(() =>
-  String(config.settings.externalImageAppName || '') || localeMsg.value.settings.advanced.external_app_not_selected
-);
-
-const externalVideoAppName = computed(() =>
-  String(config.settings.externalVideoAppName || '') || localeMsg.value.settings.advanced.external_app_not_selected
-);
+const externalAppGroups = computed(() => ['image', 'video'].map((kind) => ({
+  kind,
+  label: kind === 'image' ? localeMsg.value.settings.advanced.external_image_editor : localeMsg.value.settings.advanced.external_video_app,
+  apps: config.externalAppsFor(kind),
+  defaultId: config.settings.externalApps?.[kind]?.defaultId || null,
+})));
 
 // Define the wheel options using computed to react to language changes
 const wheelOptions = computed(() => {
@@ -1283,21 +1265,6 @@ onMounted(async () => {
   dbStorageDir.value = (await getDbStorageDir()) || '';
   hasCustomDbStorage.value = await isUsingCustomDbStorage();
 
-  if (config.settings.externalImageAppPath) {
-    try {
-      config.settings.externalImageAppName = await getExternalAppDisplayName(config.settings.externalImageAppPath);
-    } catch {
-      config.settings.externalImageAppName = '';
-    }
-  }
-
-  if (config.settings.externalVideoAppPath) {
-    try {
-      config.settings.externalVideoAppName = await getExternalAppDisplayName(config.settings.externalVideoAppPath);
-    } catch {
-      config.settings.externalVideoAppName = '';
-    }
-  }
   
   // Show window after mount
   await appWindow.show();
@@ -1340,18 +1307,9 @@ watch(() => config.settings.scale, (newValue) => {
   updateSettingsWindowSize(Number(newValue || 1));
   emit('settings-scale-changed', newValue);
 });
-watch(() => config.settings.externalImageAppPath, (newValue) => {
-  emit('settings-externalImageAppPath-changed', newValue);
-});
-watch(() => config.settings.externalImageAppName, (newValue) => {
-  emit('settings-externalImageAppName-changed', newValue);
-});
-watch(() => config.settings.externalVideoAppPath, (newValue) => {
-  emit('settings-externalVideoAppPath-changed', newValue);
-});
-watch(() => config.settings.externalVideoAppName, (newValue) => {
-  emit('settings-externalVideoAppName-changed', newValue);
-});
+watch(() => config.settings.externalApps, (newValue) => {
+  emit('settings-externalApps-changed', JSON.parse(JSON.stringify(newValue)));
+}, { deep: true });
 watch(() => config.settings.language, (newValue) => {
   locale.value = newValue;
   emit('settings-language-changed', newValue);
@@ -1580,23 +1538,25 @@ async function selectExternalApp(kind: 'image' | 'video') {
     displayName = await getExternalAppDisplayName(result);
   } catch {}
 
-  if (kind === 'image') {
-    config.settings.externalImageAppPath = result;
-    config.settings.externalImageAppName = displayName;
-  } else {
-    config.settings.externalVideoAppPath = result;
-    config.settings.externalVideoAppName = displayName;
-  }
+  const externalApps = config.settings.externalApps ??= {
+    image: { defaultId: null, apps: [] },
+    video: { defaultId: null, apps: [] },
+  };
+  const group = externalApps[kind];
+  if (group.apps.length >= 5 || group.apps.some((app: any) => app.path === result)) return;
+  const app = { id: `${kind}:${result}`, name: displayName, path: result };
+  group.apps.push(app);
+  if (!group.defaultId) group.defaultId = app.id;
 }
 
-function clearExternalApp(kind: 'image' | 'video') {
-  if (kind === 'image') {
-    config.settings.externalImageAppPath = '';
-    config.settings.externalImageAppName = '';
-  } else {
-    config.settings.externalVideoAppPath = '';
-    config.settings.externalVideoAppName = '';
-  }
+function setDefaultExternalApp(kind: 'image' | 'video', id: string) {
+  config.settings.externalApps[kind].defaultId = id;
+}
+
+function removeExternalApp(kind: 'image' | 'video', id: string) {
+  const group = config.settings.externalApps[kind];
+  group.apps = group.apps.filter((app: any) => app.id !== id);
+  if (group.defaultId === id) group.defaultId = group.apps[0]?.id || null;
 }
 
 function normalizeScale(value: number) {

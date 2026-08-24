@@ -1404,6 +1404,8 @@
       "external_app_not_selected": "선택된 앱이 없습니다",
       "choose_app": "선택",
       "clear_app": "지우기",
+      "default_app": "기본값",
+      "set_default_app": "기본값으로 설정",
       "section_diagnostics": "진단",
       "debug_mode": "디버그 모드"
     },

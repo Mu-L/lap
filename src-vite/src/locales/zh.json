@@ -1404,6 +1404,8 @@
       "external_app_not_selected": "未选择应用",
       "choose_app": "选择",
       "clear_app": "清除",
+      "default_app": "默认",
+      "set_default_app": "设为默认",
       "section_diagnostics": "诊断",
       "debug_mode": "调试模式"
     },

@@ -3398,6 +3398,10 @@ function handleItemAction(payload: { action: string, index: number }) {
     }
     return;
   }
+  if (action.startsWith('open-external-app:')) {
+    void openInExternalApp(action.slice('open-external-app:'.length));
+    return;
+  }
 
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
@@ -7107,9 +7111,7 @@ const clickCopyImages = async (fallbackFile?: any) => {
 }
 
 const appPathForMediaKind = (kind: 'image' | 'video') =>
-  kind === 'image'
-    ? String(config.settings.externalImageAppPath || '')
-    : String(config.settings.externalVideoAppPath || '');
+  String(config.defaultExternalApp(kind)?.path || '');
 
 const EXTERNAL_OPEN_WARNING_THRESHOLD = 100;
 
@@ -7134,7 +7136,7 @@ const cancelExternalOpen = () => {
   pendingExternalOpen.value = null;
 };
 
-const openInExternalApp = async () => {
+const openInExternalApp = async (appId?: string) => {
   const items = selectMode.value
     ? (selectedCount.value > 0 ? await getActionableSelectedItemsForAction() : [])
     : [fileList.value[selectedItemIndex.value]].filter(Boolean);
@@ -7147,7 +7149,9 @@ const openInExternalApp = async () => {
     return;
   }
 
-  const appPath = appPathForMediaKind(kind);
+  const appPath = appId
+    ? String(config.externalAppsFor(kind).find((app: any) => app.id === appId)?.path || '')
+    : appPathForMediaKind(kind);
   if (!appPath) {
     toast.warning(t('tooltip.open_external.no_app'));
     return;

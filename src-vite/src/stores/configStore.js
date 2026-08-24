@@ -143,10 +143,10 @@ export const useConfigStore = defineStore('configStore', {
       autoPlayVideo: true,       // auto play video
       loopVideo: false,          // loop video (only effective when autoPlayVideo is off)
       // showComment: false,        // show comment
-      externalImageAppPath: '',    // external image app path
-      externalImageAppName: '',    // external image app display name
-      externalVideoAppPath: '',    // external video app path
-      externalVideoAppName: '',    // external video app display name
+      externalApps: {
+        image: { defaultId: null, apps: [] },
+        video: { defaultId: null, apps: [] },
+      },
 
       // image search settings
       imageSearch: {
@@ -169,6 +169,11 @@ export const useConfigStore = defineStore('configStore', {
   }),
 
   getters: {
+    externalAppsFor: (state) => (kind) => state.settings.externalApps?.[kind]?.apps || [],
+    defaultExternalApp: (state) => (kind) => {
+      const group = state.settings.externalApps?.[kind];
+      return group?.apps?.find((app) => app.id === group.defaultId) || group?.apps?.[0] || null;
+    },
     // Image search threshold values: [Strict, Focused, Standard, Broad]
     imageSearchThresholds: () => [0.32, 0.29, 0.26, 0.255],
 
@@ -201,17 +206,32 @@ export const useConfigStore = defineStore('configStore', {
     setScale(scale) {
       this.settings.scale = scale;
     },
-    setExternalImageAppPath(externalImageAppPath) {
-      this.settings.externalImageAppPath = externalImageAppPath;
-    },
-    setExternalImageAppName(externalImageAppName) {
-      this.settings.externalImageAppName = externalImageAppName;
-    },
-    setExternalVideoAppPath(externalVideoAppPath) {
-      this.settings.externalVideoAppPath = externalVideoAppPath;
-    },
-    setExternalVideoAppName(externalVideoAppName) {
-      this.settings.externalVideoAppName = externalVideoAppName;
+    setExternalApps(externalApps) {
+      const normalizeGroup = (kind) => {
+        const paths = new Set();
+        const apps = [];
+        for (const app of externalApps?.[kind]?.apps || []) {
+          const path = String(app?.path || '').trim();
+          if (!path || paths.has(path) || apps.length >= 5) continue;
+          paths.add(path);
+          apps.push({
+            id: `${kind}:${path}`,
+            name: String(app?.name || ''),
+            path,
+          });
+        }
+        const requestedDefaultId = String(externalApps?.[kind]?.defaultId || '');
+        return {
+          apps,
+          defaultId: apps.some((app) => app.id === requestedDefaultId)
+            ? requestedDefaultId
+            : apps[0]?.id || null,
+        };
+      };
+      this.settings.externalApps = {
+        image: normalizeGroup('image'),
+        video: normalizeGroup('video'),
+      };
     },
     setLanguage(language) {
       this.settings.language = language;

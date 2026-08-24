@@ -30,19 +30,11 @@ import {
   IconSplitOn4,
 } from '@/common/icons';
 
-// Label lookup table for "open in external app" command based on media type
-// and item count.
 const OPEN_IN_APP_LABELS = {
-  image: {
-    one: ['open_image_in_app', 'Open image in {app}...'],
-    many: ['open_selected_images_in_app', 'Open selected images in {app}...'],
-  },
-  video: {
-    one: ['open_video_in_app', 'Open video in {app}...'],
-    many: ['open_selected_videos_in_app', 'Open selected videos in {app}...'],
-  },
   generic: ['open_in_app', 'Open in external app...'],
 } as const;
+
+type ExternalAppKind = 'image' | 'video';
 
 export const useFileMenuItems = (
   file: Ref<any>,
@@ -64,32 +56,25 @@ export const useFileMenuItems = (
   const menuLabel = ([key, fallback]: readonly [string, string]) =>
     String(localeMsg.value.menu.file[key] || fallback);
 
-  // Constructs a label for the "open in external app" entry, depending on media type
-  // and item count. Multi-select always uses the selected-items wording, including
-  // when only one item is selected.
-  const openInAppLabel = (
-    kind: 'image' | 'video' | 'mixed' | 'empty',
-    count = 1,
-    isMultiSelect = false,
-  ) => {
-    if (kind !== 'image' && kind !== 'video') return menuLabel(OPEN_IN_APP_LABELS.generic);
-    const name = String(
-      (kind === 'video' ? config.settings.externalVideoAppName : config.settings.externalImageAppName) || '',
-    );
-    if (!name) return menuLabel(OPEN_IN_APP_LABELS.generic);
-    const variant = OPEN_IN_APP_LABELS[kind][isMultiSelect || count > 1 ? 'many' : 'one'];
-    return menuLabel(variant).replace('{app}', name);
+  const externalAppMenu = (kind?: ExternalAppKind) => {
+    const apps = kind ? config.externalAppsFor(kind) : [];
+    const defaultApp = kind ? config.defaultExternalApp(kind) : null;
+    return {
+      label: menuLabel(OPEN_IN_APP_LABELS.generic),
+      icon: markRaw(IconExternal),
+      disabled: apps.length === 0,
+      children: apps.map((app: any) => ({
+        label: app.name || app.path,
+        shortcut: app.id === defaultApp?.id ? shortcut('file.openExternalApp') : undefined,
+        action: createAction(`open-external-app:${app.id}`),
+      })),
+    };
   };
 
   // Creates a context menu for multi-select mode.
   const buildSelectionMenu = () => {
     const kind = options?.selectionMediaKind?.value ?? 'empty';
-    const selectionIsVideo = kind === 'video';
-    const selectionIsMixed = kind === 'mixed';
-    // Gate on the app *path* (what actually launches), not the display name.
-    const appPath = String(
-      (selectionIsVideo ? config.settings.externalVideoAppPath : config.settings.externalImageAppPath) || '',
-    );
+    const externalAppKind = kind === 'image' || kind === 'video' ? kind : undefined;
     const selectionCount = options?.selectionCount?.value ?? 0;
     return [
       {
@@ -98,13 +83,7 @@ export const useFileMenuItems = (
         disabled: kind !== 'image' || selectionCount < 2,
         action: createAction('compare-selected-images'),
       },
-      {
-        label: openInAppLabel(kind, selectionCount, true),
-        icon: markRaw(IconExternal),
-        disabled: kind === 'empty' || selectionIsMixed || !appPath,
-        shortcut: shortcut('file.openExternalApp'),
-        action: createAction('open-external-app'),
-      },
+      externalAppMenu(externalAppKind),
     ];
   };
 
@@ -112,8 +91,6 @@ export const useFileMenuItems = (
   const buildSingleFileMenu = (f: any) => {
     const isImage = f.file_type === 1 || f.file_type === 3;
     const isVideo = f.file_type === 2;
-    const imageAppPath = String(config.settings.externalImageAppPath || '');
-    const videoAppPath = String(config.settings.externalVideoAppPath || '');
     return [
       {
         label: localeMsg.value.menu.file.view_in_new_window,
@@ -121,14 +98,7 @@ export const useFileMenuItems = (
         shortcut: shortcut('file.openNewWindow'),
         action: createAction('open')
       },
-      {
-        label: openInAppLabel(isVideo ? 'video' : 'image'),
-        hidden: !isImage && !isVideo,
-        disabled: !((isImage && imageAppPath) || (isVideo && videoAppPath)),
-        icon: markRaw(IconExternal),
-        shortcut: shortcut('file.openExternalApp'),
-        action: createAction('open-external-app')
-      },
+      { ...externalAppMenu(isVideo ? 'video' : 'image'), hidden: !isImage && !isVideo },
       {
         label: localeMsg.value.menu.file.edit_image,
         icon: markRaw(IconImageEdit),

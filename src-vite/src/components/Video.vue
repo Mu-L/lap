@@ -126,8 +126,9 @@ let nextBackendRequestId = 0;
 const activeBackendRequestIds: Array<number | null> = [null, null];
 const loadAttemptCleanups: Array<(() => void) | null> = [null, null];
 
-const externalVideoAppPath = computed(() => String(config.settings?.externalVideoAppPath || '').trim());
-const externalVideoAppName = computed(() => String(config.settings?.externalVideoAppName || '').trim());
+const externalVideoApp = computed(() => config.defaultExternalApp('video'));
+const externalVideoAppPath = computed(() => String(externalVideoApp.value?.path || '').trim());
+const externalVideoAppName = computed(() => String(externalVideoApp.value?.name || '').trim());
 const canOpenExternalApp = computed(() => !!(props.filePath && externalVideoAppPath.value));
 const externalOpenLabel = computed(() => {
   if (externalVideoAppName.value) {

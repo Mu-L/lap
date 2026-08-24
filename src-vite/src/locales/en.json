@@ -1404,6 +1404,8 @@
       "external_app_not_selected": "No app selected",
       "choose_app": "Choose",
       "clear_app": "Clear",
+      "default_app": "Default",
+      "set_default_app": "Set default",
       "section_diagnostics": "Diagnostics",
       "debug_mode": "Debug mode"
     },

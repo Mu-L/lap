@@ -1404,6 +1404,8 @@
       "external_app_not_selected": "Приложение не выбрано",
       "choose_app": "Выбрать",
       "clear_app": "Очистить",
+      "default_app": "По умолчанию",
+      "set_default_app": "Сделать по умолчанию",
       "section_diagnostics": "Диагностика",
       "debug_mode": "Режим отладки"
     },

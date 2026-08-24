@@ -1404,6 +1404,8 @@
       "external_app_not_selected": "Ninguna app seleccionada",
       "choose_app": "Elegir",
       "clear_app": "Borrar",
+      "default_app": "Predeterminada",
+      "set_default_app": "Establecer como predeterminada",
       "section_diagnostics": "Diagnóstico",
       "debug_mode": "Modo depuración"
     },
