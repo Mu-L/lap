@@ -151,8 +151,7 @@ export const useConfigStore = defineStore('configStore', {
       // image search settings
       imageSearch: {
         model: 0,                  // 0: default English-only model, 1: multilingual model
-        thresholdIndex: 3,         // image search threshold index (default is Low)
-        limit: 1000,               // image search limit
+        thresholdIndex: 2,         // image search threshold index (default is Standard)
       },
 
       // similar photos settings
@@ -170,9 +169,14 @@ export const useConfigStore = defineStore('configStore', {
   }),
 
   getters: {
-    // Image search threshold values
-    // [Very High, High, Medium, Low]
-    imageSearchThresholds: () => [0.8, 0.6, 0.4, 0.25],
+    // Image search threshold values: [Strict, Focused, Standard, Broad]
+    imageSearchThresholds: () => [0.32, 0.29, 0.26, 0.255],
+
+    // Fixed threshold for image-to-image "Find related photos" search.
+    similarImageSearchThreshold: () => 0.7,
+
+    // Fixed default threshold for Smart Tags.
+    smartTagSearchThreshold: () => 0.25,
 
     // Similar photo grouping thresholds
     // [Very strict, Strict, Moderate, Relaxed]
@@ -311,9 +315,6 @@ export const useConfigStore = defineStore('configStore', {
     },
     setImageSearchThresholdIndex(imageSearchThresholdIndex) {
       this.settings.imageSearch.thresholdIndex = imageSearchThresholdIndex;
-    },
-    setImageSearchLimit(imageSearchLimit) {
-      this.settings.imageSearch.limit = imageSearchLimit;
     },
     setSimilarPhotoGroupingThresholdIndex(index) {
       if (!this.settings.similarPhotos) this.settings.similarPhotos = { groupingThresholdIndex: 1 };

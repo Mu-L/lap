@@ -1310,20 +1310,19 @@
       "downloading_multilingual_model": "다국어 모델 다운로드 중",
       "multilingual_model_download_success": "다국어 검색 모델이 준비되었습니다. 사용하려면 Lap을 다시 시작하세요.",
       "multilingual_model_download_failed": "다국어 검색 모델 다운로드 실패",
-      "find_similar": "관련 사진 찾기",
       "similarity": "검색 유사도",
-      "similarity_hint": "높을수록 더 정확하고, 낮을수록 결과가 많습니다.",
+      "similarity_hint": "키워드 검색의 시각적 일치 결과를 조절합니다",
       "similarity_options": [
-        "매우 높음",
-        "높음",
-        "중간",
-        "낮음"
+        "엄격",
+        "집중",
+        "표준",
+        "넓게"
       ]
     },
     "similar_photos": {
       "title": "유사 사진",
       "grouping_strictness": "그룹화 엄격도",
-      "grouping_strictness_hint": "같은 그룹으로 묶일 사진의 일치 정도를 설정합니다.",
+      "grouping_strictness_hint": "같은 그룹으로 묶일 사진의 일치 정도를 설정합니다",
       "grouping_strictness_options": [
         "매우 엄격",
         "엄격",

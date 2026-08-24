@@ -374,6 +374,15 @@
                 </option>
               </select>
             </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.image_search.similarity') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.image_search.similarity_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.imageSearch.thresholdIndex">
+                <option v-for="(option, index) in similarityOptions" :key="index" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
             <div v-if="isDownloadingMultilingualModel" class="px-1 pt-1 space-y-1">
               <div class="flex items-center justify-between text-xs text-base-content/30">
                 <span>{{ $t('settings.image_search.downloading_multilingual_model') }}</span>
@@ -394,22 +403,6 @@
                   <IconClose class="w-3.5 h-3.5" />
                 </button>
               </div>
-            </div>
-          </div>
-
-          <!-- find similar -->
-          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.image_search.find_similar') }}</span>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.image_search.similarity') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.image_search.similarity_hint') }}</div>
-              </div>
-                <select class="select select-bordered select-sm min-w-32" v-model="config.settings.imageSearch.thresholdIndex">
-                  <option v-for="(option, index) in similarityOptions" :key="index" :value="option.value">{{ option.label }}</option>
-              </select>
             </div>
           </div>
 
@@ -940,7 +933,7 @@ const filmStripViewPreviewPositionOptions = computed(() => {
 const similarityOptions = computed(() => {
   const options = localeMsg.value.settings.image_search.similarity_options;
   // Use getter to retrieve thresholds
-  const values = config.imageSearchThresholds ?? [0.8, 0.6, 0.4, 0.25]; 
+  const values = config.imageSearchThresholds ?? [0.32, 0.29, 0.26, 0.255];
   // Map index dummy as the value since v-model is thresholdIndex
   return values.map((val, i) => ({ label: options[i], value: i }));
 });
@@ -1458,9 +1451,6 @@ watch(() => config.settings.imageSearch.model, (newValue) => {
 });
 watch(() => config.settings.imageSearch.thresholdIndex, (newValue) => {
   emit('settings-imageSearchThresholdIndex-changed', newValue);
-});
-watch(() => config.settings.imageSearch.limit, (newValue) => {
-  emit('settings-imageSearchLimit-changed', newValue);
 });
 watch(similarPhotoGroupingThresholdIndex, (newValue) => {
   emit('settings-similarPhotoGroupingThresholdIndex-changed', newValue);

@@ -1893,7 +1893,6 @@ pub struct ImageSearchParams {
     pub search_text: String,  // search image text (for AI search)
     pub file_id: Option<i64>, // file id (for similar image search)
     pub threshold: f32,       // search threshold
-    pub limit: i64,           // search limit
     #[serde(default)]
     pub file_type: i64, // file type bitmask (0=all, 1=image, 2=video, 4=raw)
 }
@@ -4342,11 +4341,13 @@ impl AFile {
         // sort
         query.push_str(&format!(" ORDER BY {}", Self::build_order_clause(params)));
 
-        // paging
+        // A non-positive limit returns the complete result set. Virtualized views
+        // use positive limits; unified search needs all text matches.
         query.push_str(" LIMIT ? OFFSET ?");
+        let resolved_limit = if limit > 0 { limit } else { -1 };
 
         let mut final_params: Vec<&dyn ToSql> = sql_params.iter().map(|p| p.as_ref()).collect();
-        final_params.push(&limit);
+        final_params.push(&resolved_limit);
         final_params.push(&offset);
         Self::query_files(&query, &final_params)
     }
@@ -5973,12 +5974,7 @@ impl AFile {
 
         let mut scores: Vec<(i64, f32)> = Vec::new();
 
-        // If search_text is present, force threshold to 0.25
-        let threshold = if !params.search_text.is_empty() {
-            0.25
-        } else {
-            params.threshold
-        };
+        let threshold = params.threshold.clamp(0.0, 1.0);
         let query_norm = embedding
             .iter()
             .map(|value| value * value)
@@ -5998,21 +5994,8 @@ impl AFile {
         // Sort by score descending
         scores.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-        // Limit
-        let limit = if params.limit > 0 {
-            params.limit as usize
-        } else {
-            scores.len()
-        };
-
-        let final_scores = if limit < scores.len() {
-            &scores[..limit]
-        } else {
-            &scores[..]
-        };
-
         // Fetch full file info in batches, then restore similarity order.
-        let result_ids = final_scores.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+        let result_ids = scores.iter().map(|(id, _)| *id).collect::<Vec<_>>();
         let files = Self::get_files_by_ids(&result_ids)?;
         let mut files_by_id = files
             .into_iter()

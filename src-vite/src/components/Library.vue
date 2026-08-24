@@ -280,10 +280,7 @@ const cullingItems = computed(() => [
 ]);
 
 function formatSearchResultCount(count: number) {
-  const limit = Number(config.settings.imageSearch.limit || 0);
-  return limit > 0 && count >= limit
-    ? `${limit.toLocaleString()}+`
-    : count.toLocaleString();
+  return count.toLocaleString();
 }
 
 const refreshTotalCount = async () => {

@@ -174,9 +174,6 @@ listen('settings-imageSearchThresholdIndex-changed', (event) => {
 listen('settings-imageSearchModel-changed', (event) => {
   config.setImageSearchModel(event.payload)
 })
-listen('settings-imageSearchLimit-changed', (event) => {
-  config.setImageSearchLimit(event.payload)
-})
 listen('settings-similarPhotoGroupingThresholdIndex-changed', (event) => {
   config.setSimilarPhotoGroupingThresholdIndex(event.payload)
 })

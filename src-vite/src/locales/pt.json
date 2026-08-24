@@ -1310,20 +1310,19 @@
       "downloading_multilingual_model": "Baixando modelo multilíngue",
       "multilingual_model_download_success": "O modelo de pesquisa multilíngue está pronto. Reinicie o Lap para usá-lo.",
       "multilingual_model_download_failed": "Falha ao baixar o modelo de pesquisa multilíngue",
-      "find_similar": "Encontrar fotos relacionadas",
       "similarity": "Similaridade de pesquisa",
-      "similarity_hint": "Mais alto encontra resultados mais precisos; mais baixo, mais resultados.",
+      "similarity_hint": "Controla correspondências visuais em buscas por palavras-chave",
       "similarity_options": [
-        "Muito alta",
-        "Alta",
-        "Média",
-        "Baixa"
+        "Rigoroso",
+        "Focado",
+        "Padrão",
+        "Amplo"
       ]
     },
     "similar_photos": {
       "title": "Fotos semelhantes",
       "grouping_strictness": "Rigor do agrupamento",
-      "grouping_strictness_hint": "Controla o quanto as fotos devem corresponder para aparecer no mesmo grupo.",
+      "grouping_strictness_hint": "Controla o quanto as fotos devem corresponder para aparecer no mesmo grupo",
       "grouping_strictness_options": [
         "Muito rigoroso",
         "Rigoroso",

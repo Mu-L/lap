@@ -243,10 +243,7 @@ const searchHistoryList = computed(() => libConfig.search.searchHistory as any[]
 const getSearchHistoryCount = (item: any) => Number(item?.count || 0);
 const hasSearchHistoryCount = (item: any) => typeof item !== 'string' && Number(item?.count || 0) > 0;
 const formatSearchResultCount = (count: number) => {
-  const limit = Number(config.settings.imageSearch.limit || 0);
-  return limit > 0 && count >= limit
-    ? `${limit.toLocaleString()}+`
-    : count.toLocaleString();
+  return count.toLocaleString();
 };
 
 function showClearConfirmation() {

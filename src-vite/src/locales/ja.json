@@ -1310,20 +1310,19 @@
       "downloading_multilingual_model": "多言語モデルをダウンロード中",
       "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには Lap を再起動してください。",
       "multilingual_model_download_failed": "多言語検索モデルのダウンロードに失敗しました",
-      "find_similar": "関連写真を検索",
       "similarity": "検索の類似度",
-      "similarity_hint": "高いほど近い結果に、低いほど結果が増えます。",
+      "similarity_hint": "キーワード検索の画像一致を調整します",
       "similarity_options": [
-        "非常に高い",
-        "高い",
-        "中",
-        "低い"
+        "厳密",
+        "絞り込み",
+        "標準",
+        "幅広い"
       ]
     },
     "similar_photos": {
       "title": "類似写真",
       "grouping_strictness": "グループ化の厳密さ",
-      "grouping_strictness_hint": "同じグループに含める写真の一致度を設定します。",
+      "grouping_strictness_hint": "同じグループに含める写真の一致度を設定します",
       "grouping_strictness_options": [
         "非常に厳密",
         "厳密",

@@ -684,7 +684,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, addTagToFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
-import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
+import { getSmartTagById } from '@/common/smartTags';
 import { clearFolderFileCounts, setFolderFileCount } from '@/composables/useAlbumSelection';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { CULLING, DATE_SORT, GROUP, LIB_ITEM, RATE, SIDEBAR } from '@/common/constants';
@@ -2806,7 +2806,6 @@ const currentImageSearchParams = ref({
   searchText: "",
   fileId: 0,
   threshold: 0,
-  limit: 0,
 });
 
 function showEmptyContent(requestId: number) {
@@ -6183,13 +6182,17 @@ async function getImageSearchFileList(
   requestId: number,
   thresholdOverride?: number,
 ) {
+  const thresholdIndex = config.settings.imageSearch.thresholdIndex;
+  const threshold = thresholdOverride
+    ?? (fileId > 0
+      ? config.similarImageSearchThreshold
+      : config.imageSearchThresholds[thresholdIndex]);
   currentQuerySource.value = 'search';
   currentSmartQueryParams.value = null;
   currentImageSearchParams.value = {
     searchText,
     fileId,
-    threshold: thresholdOverride ?? config.imageSearchThresholds[config.settings.imageSearch.thresholdIndex],
-    limit: config.settings.imageSearch.limit,
+    threshold,
     fileType: tempViewMode.value === 'similar' ? 0 : Number(config.search.fileType || 0),
   };
   currentCollectionId.value = null;
@@ -6290,7 +6293,6 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     searchText,
     fileId: 0,
     threshold: config.imageSearchThresholds[config.settings.imageSearch.thresholdIndex],
-    limit: config.settings.imageSearch.limit,
     fileType: Number(config.search.fileType || 0),
   };
   imageSearchError.value = false;
@@ -6303,13 +6305,9 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
   let visualSearchFailed = false;
 
   try {
-    const [textResult, textIdResult, visualResult] = await Promise.all([
-      getQueryFiles(textParams, 0, 10).catch(error => {
+    const [textResult, visualResult] = await Promise.all([
+      getQueryFiles(textParams, 0, 0).catch(error => {
         console.error('Text search failed:', error);
-        return [];
-      }),
-      getQueryFileIds(textParams).catch(error => {
-        console.error('Text search ID failed:', error);
         return [];
       }),
       (isDefaultModelUnsupportedLanguage
@@ -6325,9 +6323,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     imageSearchError.value = visualSearchFailed;
 
     const textMatches = Array.isArray(textResult) ? textResult : [];
-    const allTextIds = Array.isArray(textIdResult) ? textIdResult : [];
-    const textHasMore = allTextIds.length > 10;
-    const textIds = new Set(allTextIds.map((id: any) => Number(id)));
+    const textIds = new Set(textMatches.map((file: any) => Number(file.id)));
     const visualMatches = (Array.isArray(visualResult) ? visualResult : [])
       .filter((file: any) => !textIds.has(Number(file.id)));
     const files = preserveLoadedThumbnails([...textMatches, ...visualMatches]);
@@ -6353,7 +6349,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
             label: localeMsg.value.search.text_matches,
             icon: IconFileSearch,
             files: textMatches,
-            countLabel: textHasMore ? '10+' : String(textMatches.length),
+            countLabel: String(textMatches.length),
           }
         : null,
       visualMatches.length > 0
@@ -6567,7 +6563,12 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
         }
         const smartTagLabel = localeMsg.value.subject.items?.[smartTag.id] || smartTag.id;
         contentTitle.value = `${localeMsg.value.subject.title} > ${smartTagLabel}`;
-        getImageSearchFileList(smartTag.prompt, 0, requestId, SMART_TAG_SEARCH_THRESHOLD);
+        getImageSearchFileList(
+          smartTag.prompt,
+          0,
+          requestId,
+          smartTag.threshold ?? config.smartTagSearchThreshold,
+        );
         break;
       }
       default:

@@ -1310,20 +1310,19 @@
       "downloading_multilingual_model": "正在下载多语言模型",
       "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
       "multilingual_model_download_failed": "多语言搜索模型下载失败",
-      "find_similar": "查找相关照片",
       "similarity": "搜索相似度",
-      "similarity_hint": "越高越相近，越低结果越多。",
+      "similarity_hint": "控制关键词搜索中的视觉匹配",
       "similarity_options": [
-        "极高",
-        "高",
-        "中",
-        "低"
+        "严格",
+        "聚焦",
+        "标准",
+        "宽松"
       ]
     },
     "similar_photos": {
       "title": "相似照片",
       "grouping_strictness": "分组严格度",
-      "grouping_strictness_hint": "控制照片需多相似才会归入同一个相似组。",
+      "grouping_strictness_hint": "控制照片需多相似才会归入同一个相似组",
       "grouping_strictness_options": [
         "极严格",
         "严格",
