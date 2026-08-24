@@ -654,8 +654,7 @@
       "index_faces": "顔をインデックス",
       "reset_index": "インデックスをリセット",
       "unnamed": "名前のない人物",
-      "search": "人物を検索",
-      "show_more": "さらに表示（{loaded}/{total}）"
+      "search": "人物を検索"
     },
     "tag": {
       "add": "タグを追加...",

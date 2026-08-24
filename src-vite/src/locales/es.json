@@ -654,8 +654,7 @@
       "index_faces": "Indexar caras",
       "reset_index": "Reiniciar índice",
       "unnamed": "Persona sin nombre",
-      "search": "Buscar personas",
-      "show_more": "Mostrar más ({loaded}/{total})"
+      "search": "Buscar personas"
     },
     "tag": {
       "add": "Añadir etiqueta...",

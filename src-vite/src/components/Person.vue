@@ -80,7 +80,11 @@
     </div>
 
     <!-- Person List -->
-    <div v-if="allPersons.length > 0" class="grow overflow-x-hidden overflow-y-auto">
+    <div
+      v-if="allPersons.length > 0"
+      class="grow overflow-x-hidden overflow-y-auto"
+      @scroll="handlePersonListScroll"
+    >
       <ul>
         <li v-for="person in sortedPersons" :key="person.id" :id="'person-' + person.id">
           <div
@@ -136,21 +140,6 @@
           </div>
         </li>
       </ul>
-      <button
-        v-if="hasMorePersons"
-        type="button"
-        class="w-full py-2 text-sm text-base-content/70 hover:text-base-content cursor-pointer disabled:cursor-wait"
-        :disabled="isLoadingMorePersons"
-        @click="loadMorePersons"
-      >
-        {{ isLoadingMorePersons
-          ? $t('tooltip.loading')
-          : $t('menu.person.show_more', {
-              loaded: allPersons.length.toLocaleString(),
-              total: totalPersons.toLocaleString(),
-            })
-        }}
-      </button>
     </div>
 
     <div v-else-if="isLoadingPersons" class="mt-2 px-2 flex flex-col items-center justify-center text-base-content/30">
@@ -268,7 +257,6 @@ const personContextMenus = ref<Record<number, any>>({});
 const isLoadingPersons = ref(true);
 const isLoadingMorePersons = ref(false);
 const hasMorePersons = ref(false);
-const totalPersons = ref(0);
 const allPersonCount = ref(0);
 const personSearch = ref('');
 const isPersonSearchFocused = ref(false);
@@ -401,7 +389,6 @@ watch(personSearch, () => {
   personLoadRequest++;
   allPersons.value = [];
   hasMorePersons.value = false;
-  totalPersons.value = 0;
   isLoadingPersons.value = true;
   isLoadingMorePersons.value = false;
   personSearchTimer = setTimeout(() => {
@@ -426,7 +413,6 @@ async function loadPersons(reset = true) {
     isLoadingPersons.value = true;
     allPersons.value = [];
     hasMorePersons.value = false;
-    totalPersons.value = 0;
   } else {
     isLoadingMorePersons.value = true;
   }
@@ -445,7 +431,6 @@ async function loadPersons(reset = true) {
         ? page.persons
         : [...allPersons.value, ...page.persons];
       hasMorePersons.value = page.has_more;
-      totalPersons.value = page.total;
       if (!search) allPersonCount.value = page.total;
       if (allPersons.value.length > 0 && !selectedPerson.value) {
         const index = allPersons.value.findIndex(p => p.id === libConfig.person?.id);
@@ -462,7 +447,9 @@ async function loadPersons(reset = true) {
   }
 }
 
-function loadMorePersons() {
+function handlePersonListScroll(event: Event) {
+  const target = event.currentTarget as HTMLElement;
+  if (target.scrollTop + target.clientHeight < target.scrollHeight - 24) return;
   void loadPersons(false);
 }
 
@@ -510,7 +497,6 @@ async function clickDeletePerson() {
     if (result) {
       const index = allPersons.value.findIndex(p => p.id === selectedPerson.value.id);
       allPersons.value = allPersons.value.filter(p => p.id !== selectedPerson.value.id);
-      totalPersons.value = Math.max(0, totalPersons.value - 1);
       allPersonCount.value = Math.max(0, allPersonCount.value - 1);
       if (index > 0) {
         selectPerson(allPersons.value[index - 1]);

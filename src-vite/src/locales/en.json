@@ -654,8 +654,7 @@
       "index_faces": "Index faces",
       "reset_index": "Reset index",
       "unnamed": "Unnamed person",
-      "search": "Search people",
-      "show_more": "Show more ({loaded}/{total})"
+      "search": "Search people"
     },
     "tag": {
       "add": "Add tag...",
