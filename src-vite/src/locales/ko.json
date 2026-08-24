@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "탐색",
       "section_grid": "그리드",
+      "section_open": "열기",
+      "dbl_click_new_window": "두 번 클릭하여 새 창에서 열기",
       "style": "스타일",
       "style_options": [
         "카드 보기",
@@ -1350,7 +1352,7 @@
         "next_image": "다음",
         "first_image": "처음",
         "last_image": "마지막",
-        "quick_preview": "빠른 미리보기",
+        "quick_preview": "빠른 미리보기 열기",
         "close_viewer": "뷰어 닫기",
         "search_similar": "관련 사진 찾기",
         "show_info": "정보 보기",

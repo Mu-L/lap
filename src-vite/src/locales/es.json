@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Explorar",
       "section_grid": "Cuadrícula",
+      "section_open": "Abrir",
+      "dbl_click_new_window": "Doble clic abre nueva ventana",
       "style": "Estilo",
       "style_options": [
         "Vista de tarjeta",
@@ -1350,7 +1352,7 @@
         "next_image": "Siguiente",
         "first_image": "Primera",
         "last_image": "Última",
-        "quick_preview": "Vista previa rápida",
+        "quick_preview": "Abrir vista previa rápida",
         "close_viewer": "Cerrar visor",
         "search_similar": "Buscar fotos relacionadas",
         "show_info": "Mostrar información",

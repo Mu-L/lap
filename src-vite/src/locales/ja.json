@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "ブラウズ",
       "section_grid": "グリッド",
+      "section_open": "開く",
+      "dbl_click_new_window": "ダブルクリックで新しいウィンドウを開く",
       "style": "スタイル",
       "style_options": [
         "カード表示",
@@ -1350,7 +1352,7 @@
         "next_image": "次へ",
         "first_image": "最初",
         "last_image": "最後",
-        "quick_preview": "クイックプレビュー",
+        "quick_preview": "クイックプレビューを開く",
         "close_viewer": "ビューアを閉じる",
         "search_similar": "関連写真を検索",
         "show_info": "情報を表示",

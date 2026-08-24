@@ -3043,7 +3043,14 @@ function handleItemDblClicked(
   modifiers: { shiftKey?: boolean; metaKey?: boolean; ctrlKey?: boolean } = {}
 ) {
   if (!ensureGroupedFileAtIndex(index)) return;
-  const openInNewWindow = !!(modifiers.shiftKey || modifiers.metaKey || modifiers.ctrlKey);
+  const file = fileList.value[index];
+  const isPhoto = file?.file_type === 1 || file?.file_type === 3;
+  const openInNewWindow = !!(
+    modifiers.shiftKey ||
+    modifiers.metaKey ||
+    modifiers.ctrlKey ||
+    (config.settings.dblClickNewWindow && isPhoto)
+  );
   if (openInNewWindow) {
     checkUnsavedChanges(() => {
       selectedItemIndex.value = index;

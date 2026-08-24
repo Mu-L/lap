@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Обзор",
       "section_grid": "Сетка",
+      "section_open": "Открытие",
+      "dbl_click_new_window": "Двойной щелчок открывает новое окно",
       "style": "Стиль",
       "style_options": [
         "Карточки",
@@ -1350,7 +1352,7 @@
         "next_image": "Следующая",
         "first_image": "Первая",
         "last_image": "Последняя",
-        "quick_preview": "Быстрый просмотр",
+        "quick_preview": "Открыть быстрый просмотр",
         "close_viewer": "Закрыть просмотрщик",
         "search_similar": "Найти связанные фотографии",
         "show_info": "Показать информацию",

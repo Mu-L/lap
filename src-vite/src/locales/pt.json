@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Navegar",
       "section_grid": "Grade",
+      "section_open": "Abrir",
+      "dbl_click_new_window": "Clique duplo abre nova janela",
       "style": "Estilo",
       "style_options": [
         "Visualização em cartões",
@@ -1350,7 +1352,7 @@
         "next_image": "Seguinte",
         "first_image": "Primeira",
         "last_image": "Última",
-        "quick_preview": "Pré-visualização rápida",
+        "quick_preview": "Abrir pré-visualização rápida",
         "close_viewer": "Fechar visualizador",
         "search_similar": "Encontrar fotos relacionadas",
         "show_info": "Mostrar informações",

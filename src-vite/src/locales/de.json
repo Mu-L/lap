@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Durchsuchen",
       "section_grid": "Raster",
+      "section_open": "Öffnen",
+      "dbl_click_new_window": "Doppelklick öffnet neues Fenster",
       "style": "Stil",
       "style_options": [
         "Kartenansicht",
@@ -1350,7 +1352,7 @@
         "next_image": "Nächstes",
         "first_image": "Erstes",
         "last_image": "Letztes",
-        "quick_preview": "Schnellvorschau",
+        "quick_preview": "Schnellvorschau öffnen",
         "close_viewer": "Viewer schließen",
         "search_similar": "Verwandte Fotos finden",
         "show_info": "Info anzeigen",

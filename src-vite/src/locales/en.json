@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Browse",
       "section_grid": "Grid",
+      "section_open": "Open",
+      "dbl_click_new_window": "Double-click opens new window",
       "style": "Style",
       "style_options": [
         "Card view",
@@ -1350,7 +1352,7 @@
         "next_image": "Next",
         "first_image": "First",
         "last_image": "Last",
-        "quick_preview": "Quick preview",
+        "quick_preview": "Open quick preview",
         "close_viewer": "Close viewer",
         "search_similar": "Find related photos",
         "show_info": "Show info",

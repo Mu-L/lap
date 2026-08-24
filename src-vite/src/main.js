@@ -132,6 +132,9 @@ listen('settings-gridLabelSecondary-changed', (event) => {
 listen('settings-gridThumbnailBadge-changed', (event) => {
   config.setGridThumbnailBadge(event.payload)
 })
+listen('settings-dblClickNewWindow-changed', (event) => {
+  config.setDblClickNewWindow(event.payload)
+})
 listen('settings-showFilmStrip-changed', (event) => {
   config.setShowFilmStrip(event.payload)
 })

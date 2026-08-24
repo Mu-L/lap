@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "浏览",
       "section_grid": "网格",
+      "section_open": "打开",
+      "dbl_click_new_window": "双击在新窗口打开",
       "style": "样式",
       "style_options": [
         "卡片视图",
@@ -1350,7 +1352,7 @@
         "next_image": "下一张",
         "first_image": "第一张",
         "last_image": "最后一张",
-        "quick_preview": "快速预览",
+        "quick_preview": "打开快速预览",
         "close_viewer": "关闭查看器",
         "search_similar": "查找相关照片",
         "show_info": "显示信息",

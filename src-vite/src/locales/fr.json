@@ -1199,6 +1199,8 @@
     "browse": {
       "title": "Parcourir",
       "section_grid": "Grille",
+      "section_open": "Ouvrir",
+      "dbl_click_new_window": "Double-clic : nouvelle fenêtre",
       "style": "Style",
       "style_options": [
         "Vue carte",
@@ -1350,7 +1352,7 @@
         "next_image": "Suivante",
         "first_image": "Première",
         "last_image": "Dernière",
-        "quick_preview": "Aperçu rapide",
+        "quick_preview": "Ouvrir l’aperçu rapide",
         "close_viewer": "Fermer la visionneuse",
         "search_similar": "Trouver des photos associées",
         "show_info": "Afficher les informations",
