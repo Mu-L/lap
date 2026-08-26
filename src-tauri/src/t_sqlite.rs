@@ -4770,6 +4770,61 @@ impl AFile {
         Ok(ids)
     }
 
+    /// Resolve a file's index in the flattened grouped result without loading
+    /// the ID list for every preceding group.
+    pub fn get_grouped_file_position(
+        params: &QueryParams,
+        file_id: i64,
+    ) -> Result<Option<i64>, String> {
+        if file_id <= 0 {
+            return Ok(None);
+        }
+        let Some((group_id_expr, _)) =
+            Self::group_key_and_sort_expr(params.group_by, params.calendar_sort)
+        else {
+            return Ok(None);
+        };
+
+        let (joins, where_clause, mut sql_params) = Self::build_search_query_parts(params);
+        let mut query = format!(
+            "SELECT {group_id_expr}
+             FROM afiles a
+             LEFT JOIN afolders b ON a.folder_id = b.id
+             LEFT JOIN albums c ON b.album_id = c.id
+             {joins}{where_clause}"
+        );
+        if where_clause.is_empty() {
+            query.push_str(" WHERE a.id = ?");
+        } else {
+            query.push_str(" AND a.id = ?");
+        }
+        sql_params.push(Box::new(file_id));
+
+        let final_params: Vec<&dyn ToSql> = sql_params.iter().map(|p| p.as_ref()).collect();
+        let conn = open_conn()?;
+        let group_id = conn
+            .query_row(&query, &final_params[..], |row| row.get::<_, String>(0))
+            .optional()
+            .map_err(|e| e.to_string())?;
+        let Some(group_id) = group_id else {
+            return Ok(None);
+        };
+
+        let groups = Self::query_groups(params)?;
+        let Some(group_index) = groups.iter().position(|group| group.id == group_id) else {
+            return Ok(None);
+        };
+        let preceding_count = groups[..group_index]
+            .iter()
+            .map(|group| group.count)
+            .sum::<i64>();
+        let group_file_ids = Self::get_group_file_ids(params, &group_id)?;
+        Ok(group_file_ids
+            .iter()
+            .position(|id| *id == file_id)
+            .map(|index| preceding_count + index as i64))
+    }
+
     pub fn get_query_file_ids(params: &QueryParams) -> Result<Vec<i64>, String> {
         let (joins, where_clause, sql_params) = Self::build_search_query_parts(params);
         let mut query = format!(

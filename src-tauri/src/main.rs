@@ -270,6 +270,7 @@ async fn main() {
             t_cmds::get_query_files,
             t_cmds::get_grouped_query_rows,
             t_cmds::get_group_file_ids,
+            t_cmds::get_grouped_file_position,
             t_cmds::get_query_file_ids,
             t_cmds::get_query_file_position,
             // smart album
@@ -298,6 +299,7 @@ async fn main() {
             t_cmds::get_collection_group_file_ids,
             t_cmds::get_collection_query_file_ids,
             // folder file query
+            t_cmds::get_files_by_ids,
             t_cmds::get_folder_files,
             t_cmds::sync_album_folder_mtimes,
             t_cmds::is_directory_accessible,

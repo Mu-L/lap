@@ -425,7 +425,7 @@
           <SelectionPanel
             v-else-if="selectMode"
             :file-count="fileList.length"
-            :selected-files="selectedFiles"
+            :selected-files="selectionPreviewFiles"
             :selected-count="selectedCount"
             :selected-size="selectedSize"
             :query-source="currentQuerySource"
@@ -675,7 +675,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
-import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getGroupedQueryRows, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
+import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFilesByIds, getGroupedQueryRows, getGroupedFilePosition, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
          copyImages, renameFile, moveFile, moveFileOutsideLibrary, copyFile, deleteFile, deleteFilePermanently, batchDeleteFiles, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, setFileFavorite, setFileRating, setFileCullingFlag, batchUpdateFileMetadata, getTagsForFile, searchSimilarImages, generateEmbedding,
@@ -925,6 +925,9 @@ const isItemRow = (item: any) => item?.type === 'item';
 const selectedFileIds = markRaw(new Set<number>());
 const selectionVersion = ref(0);
 const selectedFilesVersion = ref(0);
+const selectionPreviewFiles = ref<any[]>([]);
+const SELECTION_PREVIEW_LIMIT = 19;
+let selectionPreviewRequestId = 0;
 type SelectionRestoreState = {
   selectedIds: Set<number>;
   selectedSizes: Map<number, number>;
@@ -933,6 +936,8 @@ type SelectionRestoreState = {
 };
 let pendingSelectionRestore: SelectionRestoreState | null = null;
 let isRestoringSelection = false;
+let pendingFocusedFileId: number | null = null;
+let isRestoringFocusedFile = false;
 const setItemSelected = (index: number, selected: boolean) => {
   if (index < 0 || index >= fileList.value.length) return;
   if (!fileList.value[index] && !ensureGroupedFileAtIndex(index)) return;
@@ -956,6 +961,35 @@ const getActionableSelectedItems = () =>
 const selectedFiles = computed(() => {
   selectedFilesVersion.value;
   return selectMode.value ? getActionableSelectedItems() : [];
+});
+
+async function refreshSelectionPanelPreviews() {
+  const requestId = ++selectionPreviewRequestId;
+  if (!selectMode.value || selectedFileIds.size === 0) {
+    selectionPreviewFiles.value = [];
+    return;
+  }
+
+  const previewIds = Array.from(selectedFileIds).slice(0, SELECTION_PREVIEW_LIMIT);
+  const filesById = new Map(getActionableSelectedItems().map(file => [Number(file.id), file]));
+  const missingIds = previewIds.filter(id => !filesById.has(id));
+  if (missingIds.length > 0) {
+    const fetchedFiles = await getFilesByIds(missingIds);
+    if (requestId !== selectionPreviewRequestId) return;
+    for (const file of fetchedFiles || []) {
+      const fileId = Number(file?.id || 0);
+      if (fileId > 0) filesById.set(fileId, file);
+    }
+  }
+
+  const previews = previewIds.map(id => filesById.get(id)).filter(Boolean);
+  if (requestId !== selectionPreviewRequestId) return;
+  selectionPreviewFiles.value = previews;
+  await getFileListThumb(previews, 0, 4);
+}
+
+watch([selectMode, selectedFilesVersion], () => {
+  void refreshSelectionPanelPreviews();
 });
 const getMediaKind = (items: any[]): 'image' | 'video' | 'mixed' | 'empty' => {
   let hasImage = false;
@@ -1044,13 +1078,10 @@ const FILE_OPERATION_CONCURRENCY = 8;
 function clearSelectionForFileListUpdate() {
   if (pendingSelectionRestore) {
     clearLoadedSelectionFlags();
-    selectedCount.value = 0;
-    selectedSize.value = 0;
     lastSelectedIndex.value = -1;
     keyboardSelectionAnchorIndex.value = -1;
     groupSelectedCountMap.value = {};
     groupSelectedSizeMap.value = {};
-    syncSelectionVersions();
     return;
   }
   selectMode.value = false;
@@ -1071,11 +1102,15 @@ function captureSelectionForFileListRefresh() {
       selectedSizes.set(fileId, Number(file?.size || 0));
     }
   }
+  const activeFileId = Number(fileList.value[selectedItemIndex.value]?.id || 0);
+  const fallbackFileId = selectedFileIds.has(activeFileId)
+    ? activeFileId
+    : Number(selectedFileIds.values().next().value || 0);
   pendingSelectionRestore = {
     selectedIds: new Set(selectedFileIds),
     selectedSizes,
     selectedSize: selectedSize.value,
-    fallbackFileId: Number(fileList.value[selectedItemIndex.value]?.id || 0),
+    fallbackFileId,
   };
 }
 
@@ -1085,11 +1120,18 @@ async function restoreSelectionAfterFileListRefresh() {
 
   isRestoringSelection = true;
   const requestId = currentContentRequestId;
+  let retryForNewerRefresh = false;
   try {
     const currentIds = await getCurrentQueryFileIds();
-    if (requestId !== currentContentRequestId || pendingSelectionRestore !== restoreState) return;
+    if (requestId !== currentContentRequestId || pendingSelectionRestore !== restoreState) {
+      retryForNewerRefresh = true;
+      return;
+    }
 
-    const currentFileIds = Array.isArray(currentIds) ? currentIds : [];
+    // A failed ID query must not look like an empty query: doing so clears a
+    // valid selection during a transient backend error.
+    if (!Array.isArray(currentIds)) return;
+    const currentFileIds = currentIds;
     const availableIds = new Set(
       currentFileIds
         .map(Number)
@@ -1099,17 +1141,32 @@ async function restoreSelectionAfterFileListRefresh() {
       Array.from(restoreState.selectedIds).filter(id => availableIds.has(id)),
     );
 
-    if (nextSelectedIds.size === 0) {
-      const fallbackFileId = availableIds.has(restoreState.fallbackFileId)
-        ? restoreState.fallbackFileId
-        : Number(currentFileIds[0] || 0);
-      if (fallbackFileId > 0) nextSelectedIds.add(fallbackFileId);
+    const viewportFileId = nextSelectedIds.has(restoreState.fallbackFileId)
+      ? restoreState.fallbackFileId
+      : Number(nextSelectedIds.values().next().value || 0);
+    const fallbackIndex = viewportFileId <= 0
+      ? -1
+      : (groupedModeActive.value
+        ? await resolveGroupedFileIndex(viewportFileId)
+        : currentFileIds.findIndex(
+            (fileId: number) => Number(fileId) === viewportFileId,
+          ));
+    if (requestId !== currentContentRequestId || pendingSelectionRestore !== restoreState) {
+      retryForNewerRefresh = true;
+      return;
     }
-
-    const fallbackIndex = currentFileIds.findIndex(
-      (fileId: number) => Number(fileId) === restoreState.fallbackFileId,
-    );
-    if (fallbackIndex >= 0) selectedItemIndex.value = fallbackIndex;
+    if (fallbackIndex === null) return;
+    const targetIndex = fallbackIndex >= 0 ? fallbackIndex : 0;
+    if (targetIndex >= 0) {
+      selectedItemIndex.value = targetIndex;
+      await nextTick();
+      if (groupedModeActive.value) {
+        await scrollToGroupedFile(targetIndex);
+      } else {
+        gridViewRef.value?.scrollToItem(targetIndex);
+      }
+    }
+    pendingFocusedFileId = null;
 
     selectedFileIds.clear();
     for (const fileId of nextSelectedIds) selectedFileIds.add(fileId);
@@ -1128,18 +1185,87 @@ async function restoreSelectionAfterFileListRefresh() {
     pendingSelectionRestore = null;
   } catch (error) {
     console.error('restoreSelectionAfterFileListRefresh error:', error);
-    pendingSelectionRestore = null;
   } finally {
     isRestoringSelection = false;
-    if (pendingSelectionRestore && fileList.value.length > 0) {
+    if (retryForNewerRefresh && pendingSelectionRestore && fileList.value.length > 0) {
       void restoreSelectionAfterFileListRefresh();
     }
+  }
+}
+
+function rememberFocusedFileForPresentationRefresh() {
+  const fileId = Number(fileList.value[selectedItemIndex.value]?.id || 0);
+  pendingFocusedFileId = fileId > 0 ? fileId : null;
+}
+
+async function restoreFocusedFileAfterListRefresh() {
+  const fileId = pendingFocusedFileId;
+  if (!fileId || isRestoringFocusedFile || fileList.value.length === 0) return;
+
+  isRestoringFocusedFile = true;
+  const requestId = currentContentRequestId;
+  let retryForNewerRefresh = false;
+  try {
+    const fileIndex = groupedModeActive.value
+      ? await resolveGroupedFileIndex(fileId)
+      : await getCurrentQueryFilePosition(fileId);
+    if (requestId !== currentContentRequestId || pendingFocusedFileId !== fileId) {
+      retryForNewerRefresh = true;
+      return;
+    }
+    // `undefined` means the position request failed. Preserve the existing
+    // focus and wait for the next list refresh instead of resetting it.
+    if (fileIndex === undefined || fileIndex === null) return;
+    pendingFocusedFileId = null;
+    if (fileIndex < 0) {
+      // The refreshed filter no longer contains the focused file. Leave the
+      // normal first-item fallback in place rather than retaining a stale index.
+      selectedItemIndex.value = totalFileCount.value > 0 ? 0 : -1;
+      return;
+    }
+    selectedItemIndex.value = fileIndex;
+    await nextTick();
+    if (groupedModeActive.value) {
+      await scrollToGroupedFile(fileIndex);
+    } else {
+      gridViewRef.value?.scrollToItem(fileIndex);
+    }
+  } catch (error) {
+    console.error('restoreFocusedFileAfterListRefresh error:', error);
+  } finally {
+    isRestoringFocusedFile = false;
+    if (retryForNewerRefresh && pendingFocusedFileId && fileList.value.length > 0) {
+      void restoreFocusedFileAfterListRefresh();
+    }
+  }
+}
+
+// Scroll a grouped view to a file (by flat file index). The render row index is
+// derived from the group metadata so it doesn't depend on `fileIndexToRowIndex`
+// (which only covers loaded rows). For justified/masonry layouts the pixel
+// offset depends on file aspect ratios that are approximated as squares until
+// the files load, so the target chunk is loaded first and the scroll repeated.
+async function scrollToGroupedFile(fileIndex: number) {
+  const rowIndex = getGroupedRowIndexForFileIndex(fileIndex);
+  if (rowIndex < 0) return;
+  gridViewRef.value?.scrollToRowIndex(rowIndex);
+
+  if (isGeometryGridStyle.value) {
+    await fetchGroupedRowsRange(
+      Math.max(0, rowIndex - selectionChunkSize.value),
+      rowIndex + selectionChunkSize.value,
+    );
+    gridViewRef.value?.refreshLayout();
+    await nextTick();
+    gridViewRef.value?.scrollToRowIndex(rowIndex);
   }
 }
 
 watch(fileList, () => {
   if (pendingSelectionRestore && fileList.value.length > 0) {
     void restoreSelectionAfterFileListRefresh();
+  } else if (pendingFocusedFileId && fileList.value.length > 0) {
+    void restoreFocusedFileAfterListRefresh();
   }
 });
 
@@ -1916,6 +2042,7 @@ async function removeSelectedFromCollection() {
 }
 
 const openTrashMsgbox = (reclaimBytes = 0, groupKey = '', fileIds: number[] = []) => {
+  if (selectMode.value && selectedCount.value === 0 && fileIds.length === 0) return;
   dedupReclaimBytes.value = Math.max(0, reclaimBytes);
   dedupTrashGroupKey.value = groupKey || '';
   dedupDeleteFileIds.value = Array.isArray(fileIds) ? [...new Set(fileIds)] : [];
@@ -2940,16 +3067,21 @@ function waitForContentLoadingPaint() {
   });
 }
 
-function resetContentViewportState() {
-  scrollPosition.value = 0;
-  selectedItemIndex.value = 0;
-  if (gridViewRef.value) {
-    gridViewRef.value.scrollToPosition(0);
-  }
-}
-
 function refreshContentFromSelectionChange() {
-  resetContentViewportState();
+  // In single-select mode, retain the active file before the config watcher
+  // resets the viewport. This covers grouping changes as well as sorting and
+  // filters that are not initiated by a toolbar handler.
+  if (!selectMode.value && selectedItemIndex.value >= 0) {
+    rememberFocusedFileForPresentationRefresh();
+  }
+
+  if (!selectMode.value || selectedCount.value === 0) {
+    scrollPosition.value = 0;
+    gridViewRef.value?.scrollToPosition(0);
+    // Keep the file index intact until its new position is resolved. A view
+    // change clears pendingFocusedFileId and therefore retains the old reset.
+    if (!pendingFocusedFileId) selectedItemIndex.value = 0;
+  }
   updateContent();
   // Reset ImageViewer context if open (without focusing/showing it)
   openImageViewer(selectedItemIndex.value, false, true);
@@ -3139,6 +3271,7 @@ async function handleItemSelectToggled(index: number, shiftKey: boolean = false)
   if (!ensureGroupedFileAtIndex(index)) return;
   const targetItem = fileList.value[index];
   if (!targetItem) return;
+
   if (shiftKey && lastSelectedIndex.value !== -1 && lastSelectedIndex.value !== index) {
     // Range selection: select all items between lastSelectedIndex and index
     const start = Math.min(lastSelectedIndex.value, index);
@@ -3159,6 +3292,10 @@ async function handleItemSelectToggled(index: number, shiftKey: boolean = false)
     // Single toggle
     setItemSelected(index, !targetItem.isSelected);
   }
+
+  // Checkbox clicks do not bubble to handleItemClicked. Keep the operated
+  // thumbnail as the current item even when this click unchecks it.
+  selectedItemIndex.value = index;
   
   // Update last selected index
   lastSelectedIndex.value = index;
@@ -3349,6 +3486,7 @@ async function handleTimelineSelectItem(index: number) {
 }
 
 function clickRename() {
+  if (selectMode.value) return;
   renamingFileName.value = extractFileName(fileList.value[selectedItemIndex.value].name);
   showRenameMsgbox.value = true;
 }
@@ -3733,6 +3871,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   const ratingShortcut = getMatchedRating(event);
   if (ratingShortcut !== null) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     if (selectMode.value) {
       void selectModeSetRatings(ratingShortcut);
     } else {
@@ -3744,6 +3883,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   const cullingShortcut = getMatchedCulling(event);
   if (cullingShortcut !== null) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     if (selectMode.value) {
       void selectModeSetCullingFlags(cullingShortcut);
     } else {
@@ -3754,18 +3894,21 @@ function handleLocalKeyDown(event: KeyboardEvent) {
 
   if (matchesShortcut('file.searchSimilar', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     enterSimilarSearchMode(fileList.value[selectedItemIndex.value]);
     return;
   }
 
   if (matchesShortcut('file.openExternalApp', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     void openInExternalApp();
     return;
   }
 
   if (matchesShortcut('file.reveal', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     revealPath(fileList.value[selectedItemIndex.value].file_path);
     return;
   }
@@ -3828,36 +3971,42 @@ function handleLocalKeyDown(event: KeyboardEvent) {
 
   if (matchesShortcut('meta.tag', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     void clickTag();
     return;
   }
 
   if (matchesShortcut('meta.collection', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     void clickAddToCollection();
     return;
   }
 
   if (matchesShortcut('meta.comment', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     showCommentMsgbox.value = true;
     return;
   }
 
   if (matchesShortcut('meta.rotate', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     void clickRotate();
     return;
   }
 
   if (matchesShortcut('file.moveTo', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     showMoveTo.value = true;
     return;
   }
 
   if (matchesShortcut('file.moveToFolder', event, shortcutPlatform)) {
     event.preventDefault();
+    if (selectMode.value && selectedCount.value === 0) return;
     void onMoveToFolder();
     return;
   }
@@ -4009,6 +4158,7 @@ const handleKeyDown = (e: any) => {
   }
 
   if (matchesShortcut('file.openNewWindow', event, shortcutPlatform)) {
+    if (selectMode.value && selectedCount.value === 0) return;
     openImageViewer(selectedItemIndex.value, true);
   } else if (
     isMac &&
@@ -4021,6 +4171,7 @@ const handleKeyDown = (e: any) => {
     // Handle the shortcut in the capture/global channel as a fallback.
     clickRename();
   } else if (matchesShortcut('file.copy', event, shortcutPlatform)) {
+    if (selectMode.value && selectedCount.value === 0) return;
     void clickCopyImages(fileList.value[selectedItemIndex.value]);
   // macOS handles Cmd+Arrow in App's capture listener before the content DOM handler.
   } else if (isMac && matchesShortcut('view.first', event, shortcutPlatform)) {
@@ -4028,16 +4179,14 @@ const handleKeyDown = (e: any) => {
   } else if (isMac && matchesShortcut('view.last', event, shortcutPlatform)) {
     keyActions.End();
   } else if (matchesShortcut('file.editImage', event, shortcutPlatform)) {
+    if (selectMode.value && selectedCount.value === 0) return;
     const file = fileList.value[selectedItemIndex.value];
     if (file && (file.file_type === 1 || file.file_type === 3)) {
       void openImageEditor(selectedItemIndex.value);
     }
   } else if (matchesShortcut('file.trash', event, shortcutPlatform)) {
-    if (currentQuerySource.value === 'collection' && currentCollectionId.value) {
-      void removeFileFromCurrentCollection(selectedItemIndex.value);
-    } else {
-      openTrashMsgbox();
-    }
+    if (selectMode.value && selectedCount.value === 0) return;
+    openTrashMsgbox();
   } else if (key === 'ArrowUp' || key === 'ArrowDown') {
     (keyActions as any)[key]();
   }
@@ -5068,6 +5217,29 @@ watch(
 );
 
 /// watch for file list changes
+watch(
+  () => JSON.stringify({
+    sidebar: config.main.sidebarIndex,
+    pane: libConfig.activePane,
+    collectionId: libConfig.collection.selectedId,
+    libraryItem: libConfig.library.item,
+    smartId: libConfig.library.smartId,
+    album: [libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected],
+    smartAlbum: [libConfig.smartAlbum.type, libConfig.smartAlbum.id],
+    personId: libConfig.person.id,
+    calendar: [config.calendar.isMonthly, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
+    tagId: libConfig.tag.id,
+    location: [libConfig.location.admin1, libConfig.location.name],
+    camera: [config.camera.isCamera, libConfig.camera.make, libConfig.camera.model, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel],
+  }),
+  (nextView, previousView) => {
+    if (previousView !== undefined && nextView !== previousView) {
+      pendingFocusedFileId = null;
+      if (selectMode.value) selectNoneInCurrentList();
+    }
+  },
+);
+
 watch(
   () => [
     config.main.sidebarIndex,      // toolbar index
@@ -7386,9 +7558,10 @@ const resolveConflictPolicy = async (
 }
 
 const getFilesForFolderAction = async () => {
-  return selectMode.value && selectedCount.value > 0
-    ? await getActionableSelectedItemsForAction()
-    : (selectedItemIndex.value >= 0 ? [fileList.value[selectedItemIndex.value]] : []);
+  if (selectMode.value) {
+    return selectedCount.value > 0 ? await getActionableSelectedItemsForAction() : [];
+  }
+  return selectedItemIndex.value >= 0 ? [fileList.value[selectedItemIndex.value]] : [];
 }
 
 const getTransferDestinationKey = (file: any) =>
@@ -8266,6 +8439,7 @@ watch(() => config.settings.slideShowInterval, () => {
 
 // set file rotate
 const clickRotate = async () => {
+  if (selectMode.value && selectedCount.value === 0) return;
   if (selectMode.value && selectedCount.value > 0) {
     const items = await getActionableSelectedItemsForAction();
     if (!items) return;
@@ -8303,6 +8477,7 @@ const clickRotate = async () => {
 // set file tag
 const clickTag = async () => {
   console.log('clickTag');
+  if (selectMode.value && selectedCount.value === 0) return;
   if (selectMode.value) {
     const items = await getActionableSelectedItemsForAction();
     if (!items) return;
@@ -8318,6 +8493,7 @@ const clickTag = async () => {
 }
 
 const clickAddToCollection = async () => {
+  if (selectMode.value && selectedCount.value === 0) return;
   if (selectMode.value) {
     const items = await getActionableSelectedItemsForAction();
     if (!items) return;
@@ -8365,7 +8541,7 @@ const onEditComment = async (newComment: any) => {
 }
 
 const openCommentEditor = () => {
-  if ((selectMode.value && selectedCount.value > 0) || selectedItemIndex.value >= 0) {
+  if ((selectMode.value && selectedCount.value > 0) || (!selectMode.value && selectedItemIndex.value >= 0)) {
     showCommentMsgbox.value = true;
   }
 }
@@ -8479,23 +8655,6 @@ const handleSelectMode = (value: any) => {
     groupSelectedCountMap.value = {};
     groupSelectedSizeMap.value = {};
   } else {
-    if (fileList.value.length > 0) {
-      if (selectedItemIndex.value >= 0 && selectedItemIndex.value < fileList.value.length) {
-        ensureGroupedFileAtIndex(selectedItemIndex.value);
-      }
-      const fallbackIndex = fileList.value.findIndex(item => isRealFileItem(item));
-      const targetIndex =
-        selectedItemIndex.value >= 0 &&
-        selectedItemIndex.value < fileList.value.length &&
-        isRealFileItem(fileList.value[selectedItemIndex.value])
-          ? selectedItemIndex.value
-          : fallbackIndex;
-
-      if (targetIndex >= 0) {
-        selectedItemIndex.value = targetIndex;
-        setItemSelected(targetIndex, true);
-      }
-    }
     showQuickView.value = false;
     stopSlideShow();
     config.rightPanel.show = false;
@@ -8592,10 +8751,11 @@ const fileTypeSummaryLabel = computed(() => {
 
 const handleFileTypeSelect = (values: any[]) => {
   if (isScanStreamingMode.value) return;
-  selectMode.value = false;   // exit multi-select mode
   const nextValues = (Array.isArray(values) ? values : []).map(value => Number(value));
   const hasAll = nextValues.includes(0);
   const mask = hasAll ? 0 : nextValues.reduce((acc, value) => acc | value, 0);
+  if (normalizeFileTypeMask(activeFileTypeMask.value) === normalizeFileTypeMask(mask)) return;
+  rememberFocusedFileForPresentationRefresh();
   if (isSmartAlbumView.value) {
     const album = getActiveCustomSmartAlbum();
     if (!album) return;
@@ -8615,7 +8775,7 @@ const handleFileTypeSelect = (values: any[]) => {
 
 const handleSortTypeSelect = (option: any, extendOption: any) => {
   if (isScanStreamingMode.value) return;
-  selectMode.value = false;   // exit multi-select mode
+  rememberFocusedFileForPresentationRefresh();
   if (isSmartAlbumView.value) {
     const album = getActiveCustomSmartAlbum();
     if (album) {
@@ -8630,6 +8790,7 @@ const handleSortTypeSelect = (option: any, extendOption: any) => {
 
 const handleGroupSelect = (optionIndex: any) => {
   if (isScanStreamingMode.value) return;
+  rememberFocusedFileForPresentationRefresh();
   const nextGroupBy = Number(groupOptions.value[Number(optionIndex)]?.value ?? GROUP.NONE);
   if (isSmartAlbumView.value) {
     const album = getActiveCustomSmartAlbum();
@@ -8637,7 +8798,6 @@ const handleGroupSelect = (optionIndex: any) => {
   } else {
     config.search.groupBy = nextGroupBy;
   }
-  selectMode.value = false;
 };
 
 const toggleInfoPanel = () => {
@@ -8668,9 +8828,14 @@ const toggleDedupPanel = () => {
 
 let dedupNavigationRequestId = 0;
 
-async function resolveGroupedFileIndexForDedup(fileId: number): Promise<number> {
-  let fileIndexCursor = 0;
+async function resolveGroupedFileIndex(fileId: number): Promise<number | null> {
+  if (currentQuerySource.value === 'query') {
+    const position = await getGroupedFilePosition(getGroupingQueryParams(), fileId);
+    if (position === undefined) return null;
+    return Number.isInteger(position) && Number(position) >= 0 ? Number(position) : -1;
+  }
 
+  let fileIndexCursor = 0;
   for (const group of groupedTimelineGroups.value) {
     const groupId = String(group.groupId || '');
     const groupCount = Number(group.count || 0);
@@ -8678,18 +8843,12 @@ async function resolveGroupedFileIndexForDedup(fileId: number): Promise<number> 
       fileIndexCursor += Math.max(0, groupCount);
       continue;
     }
-
     const ids = await getCachedGroupFileIds(groupId);
-    const groupFileIndex = Array.isArray(ids)
-      ? ids.findIndex((id: number) => Number(id) === Number(fileId))
-      : -1;
-    if (groupFileIndex >= 0) {
-      return fileIndexCursor + groupFileIndex;
-    }
-
+    if (!Array.isArray(ids)) return null;
+    const groupFileIndex = ids.findIndex((id: number) => Number(id) === Number(fileId));
+    if (groupFileIndex >= 0) return fileIndexCursor + groupFileIndex;
     fileIndexCursor += groupCount;
   }
-
   return -1;
 }
 
@@ -8698,7 +8857,7 @@ async function resolveFileIndexForDedup(fileId: number): Promise<number> {
   if (loadedIndex !== -1) return loadedIndex;
 
   const position = groupedModeActive.value
-    ? await resolveGroupedFileIndexForDedup(fileId)
+    ? await resolveGroupedFileIndex(fileId)
     : await getCurrentQueryFilePosition(fileId);
   if (position === null || position < 0 || position >= totalFileCount.value) {
     return -1;

@@ -759,6 +759,15 @@ export async function getQueryFiles(params, offset, limit) {
   return null;
 }
 
+export async function getFilesByIds(fileIds) {
+  try {
+    return await invoke('get_files_by_ids', { fileIds });
+  } catch (error) {
+    console.error('getFilesByIds error:', error);
+    return null;
+  }
+}
+
 /// get grouped query rows from db (row-based pagination: group headers + files)
 export async function getGroupedQueryRows(params, offset, limit) {
   try {
@@ -774,6 +783,15 @@ export async function getGroupedQueryRows(params, offset, limit) {
     console.error('getGroupedQueryRows error:', error);
   }
   return null;
+}
+
+export async function getGroupedFilePosition(params, fileId) {
+  try {
+    return await invoke('get_grouped_file_position', { params, fileId });
+  } catch (error) {
+    console.error('getGroupedFilePosition error:', error);
+    return undefined;
+  }
 }
 
 /// get all file ids in a grouped query group

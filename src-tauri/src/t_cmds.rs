@@ -811,6 +811,13 @@ pub async fn get_query_files(
         .map_err(|e| format!("Error while getting query files: {}", e))
 }
 
+/// Get file metadata for a bounded set of IDs without traversing a virtualized query.
+#[tauri::command]
+pub async fn get_files_by_ids(file_ids: Vec<i64>) -> Result<Vec<AFile>, String> {
+    AFile::get_files_by_ids(&file_ids)
+        .map_err(|e| format!("Error while getting files by IDs: {}", e))
+}
+
 /// Get grouped render rows for a normal query.
 /// The result includes group header rows, file item rows, group metadata, and row counts for virtual scrolling.
 #[tauri::command]
@@ -829,6 +836,16 @@ pub async fn get_grouped_query_rows(
 pub async fn get_group_file_ids(params: QueryParams, group_id: String) -> Result<Vec<i64>, String> {
     AFile::get_group_file_ids(&params, &group_id)
         .map_err(|e| format!("Error while getting group file ids: {}", e))
+}
+
+/// Get a file's index in the flattened grouped query result.
+#[tauri::command]
+pub async fn get_grouped_file_position(
+    params: QueryParams,
+    file_id: i64,
+) -> Result<Option<i64>, String> {
+    AFile::get_grouped_file_position(&params, file_id)
+        .map_err(|e| format!("Error while getting grouped file position: {}", e))
 }
 
 /// Get all file ids in the current normal query.

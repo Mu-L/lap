@@ -187,7 +187,7 @@
             v-for="item in visibleMoreActions"
             :key="item.label"
             :icon="item.icon"
-            :disabled="Boolean(item.disabled)"
+            :disabled="selectedCount === 0 || Boolean(item.disabled)"
             @click="$emit('moreAction', item.action)"
           >
             {{ item.label }}

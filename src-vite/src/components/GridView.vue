@@ -966,6 +966,7 @@ function getFolderGroupLabel(item: any) {
 
 defineExpose({
   getColumnCount,
+  scrollToItem,
   scrollToPosition,
   scrollToRowIndex,
   getScrollTop,
