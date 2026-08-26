@@ -24,7 +24,6 @@ import {
   IconFlag,
   IconFlagFilled,
   IconFlagOff,
-  IconBookmarkOff,
   IconBookmark,
   IconSplitOn,
   IconSplitOn4,
@@ -43,7 +42,6 @@ export const useFileMenuItems = (
   translate: (key: string) => string,
   onAction: (action: string) => void,
   options?: {
-    isCollectionView?: Ref<boolean>;
     selectMode?: Ref<boolean>;
     selectionMediaKind?: Ref<'image' | 'video' | 'mixed' | 'empty'>;
     selectionCount?: Ref<number>;
@@ -285,12 +283,10 @@ export const useFileMenuItems = (
       },
       { label: "-", action: null },
       {
-        label: options?.isCollectionView?.value
-          ? translate('menu.file.remove_from_collection')
-          : localeMsg.value.menu.file.delete,
-        icon: markRaw(options?.isCollectionView?.value ? IconBookmarkOff : IconTrash),
+        label: localeMsg.value.menu.file.delete,
+        icon: markRaw(IconTrash),
         shortcut: shortcut('file.trash'),
-        action: createAction(options?.isCollectionView?.value ? 'remove-from-collection' : 'trash')
+        action: createAction('trash')
       },
     ];
   };

@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "Collections",
-    "add": "Add collection",
+    "add": "New collection",
     "edit_collections": "Edit collections",
     "recent": "Recent Collections",
     "search": "Search collections",
     "enter_new_collection_name": "New collection name",
     "not_found": "No collections found",
+    "name_exists": "A collection with this name already exists",
+    "name_save_failed": "Could not save collection name",
     "default_name": "Collection {index}",
     "expand": "Expand",
     "collapse": "Collapse",
@@ -57,7 +59,7 @@
     "smart_album_list": "Smart albums",
     "search_smart_albums": "Search smart albums",
     "no_smart_albums_found": "No smart albums found",
-    "add_smart_album": "Add smart album",
+    "add_smart_album": "New smart album",
     "folder_unavailable": {
       "title": "Folder unavailable",
       "description": "Reconnect the storage device or check the folder location."
@@ -67,7 +69,7 @@
       "description": "The folder may have been moved or deleted. Refresh its parent folder."
     },
     "edit": {
-      "title_add": "Add album",
+      "title_add": "New album",
       "title": "Album Info",
       "folder": "Folder",
       "select_folder": "Select a folder",
@@ -101,8 +103,8 @@
       "description": "Create smart albums from custom query rules."
     },
     "smart_edit": {
-      "title_add": "Add smart album",
-      "title_edit": "Edit...",
+      "title_add": "New smart album",
+      "title_edit": "Edit smart album",
       "reorder": "Reorder",
       "name": "Name",
       "description": "Description",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Welcome to Lap",
     "description": "Your local photo library. Fast, searchable, and always under your control.",
-    "add_album_title": "Start by adding an album",
+    "add_album_title": "Start with a new album",
     "add_album_description": "Select a folder and let Lap organize your photos and videos.",
     "smart_album_title": "Organize with smart albums",
     "smart_album_description": "Use rules to automatically group photos that match your criteria.",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "Tags",
-    "add_tag": "Add new tag",
     "delete_tag": "Delete tag",
     "edit_tag": "Edit tags",
     "search_tags": "Search tags",
     "enter_new_tag_name": "Enter new tag name",
     "not_found": "No tags found",
+    "name_exists": "A tag with this name already exists",
+    "name_save_failed": "Could not save tag name",
     "load_failed": "Failed to load tag states. Close this dialog and try again."
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "Face recognition is in beta and may be inaccurate."
     },
     "not_found": {
-      "albums": "No albums found. Add a folder with photos or videos",
+      "albums": "No albums found",
       "files": "No files found",
       "image_search_failed": "Image search unavailable",
       "image_search_failed_hint": "Check that the image search model is available, then try again.",
@@ -586,14 +589,14 @@
       "unpin": "Unpin"
     },
     "library": {
-      "add": "Add library...",
+      "add": "New library...",
       "edit": "Edit library...",
       "manage": "Manage libraries...",
       "remove": "Remove library",
       "default": "Default library"
     },
     "album": {
-      "add": "Add album...",
+      "add": "New album",
       "edit": "Album Info...",
       "scan": "Scan album",
       "reorder": "Reorder",
@@ -657,7 +660,6 @@
       "search": "Search people"
     },
     "tag": {
-      "add": "Add tag...",
       "rename": "Rename",
       "delete": "Delete"
     },
@@ -725,7 +727,7 @@
       "reorder": "Reorder",
       "rename": "Rename",
       "switch_to": "Switch to",
-      "add_new": "Add new library",
+      "add_new": "New library",
       "add": "Add",
       "placeholder": "Enter library name",
       "max_limit_reached": "Library limit reached",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "New tag",
-      "content": "Enter the name for the new tag:",
       "ok": "Create",
       "error": "Failed to create tag."
     },

@@ -15,7 +15,7 @@ use crate::t_apple_sidecar::{
 };
 use crate::t_similar;
 use crate::t_sqlite::{
-    ACamera, ACollection, ACollectionOrder, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
+    ACamera, ACollection, ACollectionOrder, ACollectionSelectionCount, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
     ATagSelectionCount, AThumb, ATimeLine, Album, AlbumDisplayOrder, GroupedQueryResult, ImageSearchParams, Person,
     PersonPage, QueryParams, SmartQueryParams,
 };
@@ -906,6 +906,14 @@ pub fn remove_files_from_collection(
 ) -> Result<usize, String> {
     ACollection::remove_files(collection_id, file_ids)
         .map_err(|e| format!("Error while removing files from collection: {}", e))
+}
+
+#[tauri::command]
+pub fn get_collection_selection_counts(
+    file_ids: Vec<i64>,
+) -> Result<Vec<ACollectionSelectionCount>, String> {
+    ACollection::get_selection_counts(&file_ids)
+        .map_err(|e| format!("Error while getting collection selection counts: {}", e))
 }
 
 #[tauri::command]

@@ -886,6 +886,15 @@ export async function removeFilesFromCollection(collectionId, fileIds) {
   }
 }
 
+export async function getCollectionSelectionCounts(fileIds) {
+  try {
+    return await invoke('get_collection_selection_counts', { fileIds });
+  } catch (error) {
+    console.error('Failed to get collection selection counts:', error);
+    return null;
+  }
+}
+
 export async function clearCollection(collectionId) {
   try {
     return await invoke('clear_collection', { collectionId });

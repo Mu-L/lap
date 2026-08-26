@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "Collections",
-    "add": "Ajouter une collection",
+    "add": "Nouvelle collection",
     "edit_collections": "Modifier les collections",
     "recent": "Collections récentes",
     "search": "Rechercher des collections",
     "enter_new_collection_name": "Nom de la nouvelle collection",
     "not_found": "Aucune collection trouvée",
+    "name_exists": "Une collection portant ce nom existe déjà",
+    "name_save_failed": "Impossible d’enregistrer le nom de la collection",
     "default_name": "Collection {index}",
     "expand": "Développer",
     "collapse": "Réduire",
@@ -57,7 +59,7 @@
     "smart_album_list": "Albums intelligents",
     "search_smart_albums": "Rechercher des albums intelligents",
     "no_smart_albums_found": "Aucun album intelligent trouvé",
-    "add_smart_album": "Ajouter un album intelligent",
+    "add_smart_album": "Nouvel album intelligent",
     "folder_unavailable": {
       "title": "Dossier indisponible",
       "description": "Reconnectez le périphérique de stockage ou vérifiez l’emplacement du dossier."
@@ -67,7 +69,7 @@
       "description": "Le dossier a peut-être été déplacé ou supprimé. Actualisez son dossier parent."
     },
     "edit": {
-      "title_add": "Ajouter album",
+      "title_add": "Nouvel album",
       "title": "Info album",
       "folder": "Dossier",
       "select_folder": "Choisir dossier",
@@ -101,8 +103,8 @@
       "description": "Créez des albums intelligents avec des règles de requête personnalisées."
     },
     "smart_edit": {
-      "title_add": "Ajouter un album intelligent",
-      "title_edit": "Modifier...",
+      "title_add": "Nouvel album intelligent",
+      "title_edit": "Modifier l’album intelligent",
       "reorder": "Réorganiser",
       "name": "Nom",
       "description": "Description",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Bienvenue sur Lap",
     "description": "Votre photothèque locale. Rapide, consultable et toujours sous votre contrôle.",
-    "add_album_title": "Commencez par ajouter un album",
+    "add_album_title": "Commencez avec un nouvel album",
     "add_album_description": "Sélectionnez un dossier et laissez Lap organiser vos photos et vidéos.",
     "smart_album_title": "Organiser avec des albums intelligents",
     "smart_album_description": "Utilisez des règles pour regrouper automatiquement les photos qui vous intéressent.",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "Tags",
-    "add_tag": "Ajouter tag",
     "delete_tag": "Supprimer tag",
     "edit_tag": "Modifier les étiquettes",
     "search_tags": "Rechercher tags",
     "enter_new_tag_name": "Nouveau nom",
     "not_found": "Aucun tag trouvé",
+    "name_exists": "Un tag portant ce nom existe déjà",
+    "name_save_failed": "Impossible d’enregistrer le nom du tag",
     "load_failed": "Impossible de charger l’état des tags. Fermez cette boîte de dialogue et réessayez."
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "La reconnaissance faciale est en bêta et peut être imprécise."
     },
     "not_found": {
-      "albums": "Aucun album trouvé. Ajoutez un dossier avec des photos ou des vidéos",
+      "albums": "Aucun album trouvé",
       "files": "Aucun fichier trouvé",
       "image_search_failed": "Recherche d’images indisponible",
       "image_search_failed_hint": "Vérifiez que le modèle de recherche d’images est disponible, puis réessayez.",
@@ -586,14 +589,14 @@
       "unpin": "Désépingler"
     },
     "library": {
-      "add": "Ajouter bibliothèque...",
+      "add": "Nouvelle bibliothèque...",
       "edit": "Modifier bibliothèque...",
       "manage": "Gérer bibliothèques...",
       "remove": "Supprimer bibliothèque",
       "default": "Bibliothèque par défaut"
     },
     "album": {
-      "add": "Ajouter album...",
+      "add": "Nouvel album",
       "edit": "Info album...",
       "scan": "Scanner l'album",
       "reorder": "Réorganiser",
@@ -657,7 +660,6 @@
       "search": "Rechercher des personnes"
     },
     "tag": {
-      "add": "Ajouter tag...",
       "rename": "Renommer",
       "delete": "Supprimer"
     },
@@ -725,7 +727,7 @@
       "reorder": "Réorganiser",
       "rename": "Renommer",
       "switch_to": "Basculer vers",
-      "add_new": "Ajouter nouvelle",
+      "add_new": "Nouvelle bibliothèque",
       "add": "Ajouter",
       "placeholder": "Nom bibliothèque",
       "max_limit_reached": "Limite atteinte",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "Nouveau tag",
-      "content": "Nom tag:",
       "ok": "Créer",
       "error": "Impossible de créer le tag."
     },

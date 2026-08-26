@@ -46,6 +46,21 @@ fn subtree_like_pattern(path: &str) -> String {
     format!("{}%", prefix.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"))
 }
 
+fn populate_selected_file_ids(
+    tx: &rusqlite::Transaction<'_>,
+    file_ids: &[i64],
+) -> Result<(), String> {
+    for chunk in file_ids.chunks(500) {
+        let placeholders = std::iter::repeat_n("(?)", chunk.len()).collect::<Vec<_>>().join(",");
+        tx.execute(
+            &format!("INSERT OR IGNORE INTO selected_file_ids (id) VALUES {placeholders}"),
+            params_from_iter(chunk.iter()),
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 struct ThumbGenerationLocks {
     active: Mutex<HashSet<String>>,
     available: Condvar,
@@ -1405,6 +1420,12 @@ pub struct AFileCollection {
     pub name: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct ACollectionSelectionCount {
+    pub collection_id: i64,
+    pub count: i64,
+}
+
 impl ACollection {
     fn now_ts() -> i64 {
         SystemTime::now()
@@ -1441,6 +1462,22 @@ impl ACollection {
         }
     }
 
+    fn ensure_name_available(conn: &Connection, name: &str, exclude_id: Option<i64>) -> Result<(), String> {
+        let existing: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM acollections WHERE name = ?1 COLLATE NOCASE AND (?2 IS NULL OR id != ?2)",
+                params![name, exclude_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+        if existing.is_some() {
+            Err("A collection with this name already exists".to_string())
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn list() -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
         let mut stmt = conn
@@ -1474,6 +1511,7 @@ impl ACollection {
         }
 
         let conn = open_conn()?;
+        Self::ensure_name_available(&conn, trimmed, None)?;
         let sort_order: i64 = conn
             .query_row(
                 "SELECT COALESCE(MAX(sort_order), -1) + 1 FROM acollections",
@@ -1517,6 +1555,7 @@ impl ACollection {
         }
 
         let conn = open_conn()?;
+        Self::ensure_name_available(&conn, trimmed, Some(id))?;
         let changed = conn
             .execute(
                 "UPDATE acollections SET name = ?1, updated_at = ?2 WHERE id = ?3",
@@ -1731,6 +1770,49 @@ impl ACollection {
             collections.push(row.map_err(|e| e.to_string())?);
         }
         Ok(collections)
+    }
+
+    pub fn get_selection_counts(file_ids: &[i64]) -> Result<Vec<ACollectionSelectionCount>, String> {
+        if file_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        tx.execute(
+            "CREATE TEMP TABLE IF NOT EXISTS selected_file_ids (id INTEGER PRIMARY KEY)",
+            [],
+        )
+        .map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM selected_file_ids", [])
+            .map_err(|e| e.to_string())?;
+        populate_selected_file_ids(&tx, file_ids)?;
+
+        let counts = {
+            let mut stmt = tx
+                .prepare(
+                    "SELECT cf.collection_id, COUNT(*)
+                     FROM acollections_files cf
+                     INNER JOIN selected_file_ids selected ON selected.id = cf.file_id
+                     GROUP BY cf.collection_id",
+                )
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok(ACollectionSelectionCount {
+                        collection_id: row.get(0)?,
+                        count: row.get(1)?,
+                    })
+                })
+                .map_err(|e| e.to_string())?;
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(|e| e.to_string())?
+        };
+
+        tx.execute("DELETE FROM selected_file_ids", [])
+            .map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(counts)
     }
 }
 
@@ -7114,12 +7196,16 @@ impl ATag {
 
     /// Add a new tag. If the tag already exists, return the existing one.
     pub fn add(name: &str) -> Result<Self, String> {
+        let trimmed = name.trim();
+        if trimmed.is_empty() {
+            return Err("Tag name cannot be empty".to_string());
+        }
         let conn = open_conn()?;
         // First, try to fetch the tag to see if it already exists.
         let existing_tag = conn
             .query_row(
-                "SELECT id, name, 0 as count FROM atags WHERE name = ?1",
-                params![name],
+                "SELECT id, name, 0 as count FROM atags WHERE name = ?1 COLLATE NOCASE",
+                params![trimmed],
                 Self::from_row,
             )
             .optional()
@@ -7129,12 +7215,12 @@ impl ATag {
             Ok(tag)
         } else {
             // The tag doesn't exist, so insert it.
-            conn.execute("INSERT INTO atags (name) VALUES (?1)", params![name])
+            conn.execute("INSERT INTO atags (name) VALUES (?1)", params![trimmed])
                 .map_err(|e| e.to_string())?;
             let id = conn.last_insert_rowid();
             Ok(Self {
                 id,
-                name: name.to_string(),
+                name: trimmed.to_string(),
                 count: Some(0),
             })
         }
@@ -7272,14 +7358,7 @@ impl ATag {
         .map_err(|e| e.to_string())?;
         tx.execute("DELETE FROM selected_file_ids", [])
             .map_err(|e| e.to_string())?;
-        {
-            let mut stmt = tx
-                .prepare_cached("INSERT OR IGNORE INTO selected_file_ids (id) VALUES (?1)")
-                .map_err(|e| e.to_string())?;
-            for file_id in file_ids {
-                stmt.execute(params![file_id]).map_err(|e| e.to_string())?;
-            }
-        }
+        populate_selected_file_ids(&tx, file_ids)?;
 
         let counts = {
             let mut stmt = tx
@@ -7376,20 +7455,60 @@ impl ATag {
 
     /// Delete a tag from the database. This will also remove all its associations with files.
     pub fn delete(tag_id: i64) -> Result<usize, String> {
-        let conn = open_conn()?;
-        let result = conn
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let file_ids = {
+            let mut stmt = tx
+                .prepare("SELECT file_id FROM afile_tags WHERE tag_id = ?1")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map(params![tag_id], |row| row.get::<_, i64>(0))
+                .map_err(|e| e.to_string())?;
+            rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())?
+        };
+        let result = tx
             .execute("DELETE FROM atags WHERE id = ?1", params![tag_id])
             .map_err(|e| e.to_string())?;
+        if result > 0 {
+            let mut stmt = tx
+                .prepare_cached(
+                    "UPDATE afiles
+                     SET has_tags = EXISTS (
+                         SELECT 1 FROM afile_tags WHERE afile_tags.file_id = afiles.id
+                     )
+                     WHERE id = ?1",
+                )
+                .map_err(|e| e.to_string())?;
+            for file_id in file_ids {
+                stmt.execute(params![file_id]).map_err(|e| e.to_string())?;
+            }
+        }
+        tx.commit().map_err(|e| e.to_string())?;
         Ok(result)
     }
 
     /// Rename a tag
     pub fn rename(tag_id: i64, new_name: &str) -> Result<usize, String> {
+        let trimmed = new_name.trim();
+        if trimmed.is_empty() {
+            return Err("Tag name cannot be empty".to_string());
+        }
         let conn = open_conn()?;
+        let existing: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM atags WHERE name = ?1 COLLATE NOCASE AND id != ?2",
+                params![trimmed, tag_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+        if existing.is_some() {
+            return Err("A tag with this name already exists".to_string());
+        }
         let result = conn
             .execute(
                 "UPDATE atags SET name = ?1 WHERE id = ?2",
-                params![new_name, tag_id],
+                params![trimmed, tag_id],
             )
             .map_err(|e| e.to_string())?;
         Ok(result)

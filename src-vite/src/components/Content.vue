@@ -568,6 +568,7 @@
     v-if="showTaggingDialog"
     :fileIds="fileIdsToTag"
     @ok="updateFileHasTags"
+    @states-changed="syncTagStates"
     @cancel="showTaggingDialog = false"
   />
 
@@ -576,6 +577,7 @@
     v-if="showAddToCollectionDialog"
     :fileIds="fileIdsToAddToCollection"
     @applied="handleCollectionsAdded"
+    @deleted="handleCollectionDeleted"
     @cancel="showAddToCollectionDialog = false"
   />
 
@@ -8909,7 +8911,11 @@ async function updateSelectedImage(index: number) {
 
 // click ok in tagging dialog
 async function updateFileHasTags(fileStates: Array<{ file_id: number; has_tags: boolean }>) {
+  await syncTagStates(fileStates);
   showTaggingDialog.value = false;
+}
+
+async function syncTagStates(fileStates: Array<{ file_id: number; has_tags: boolean }>) {
   const filesById = new Map(
     fileList.value
       .filter(file => isRealFileItem(file))
@@ -8933,7 +8939,7 @@ async function updateFileHasTags(fileStates: Array<{ file_id: number; has_tags: 
   }
 }
 
-function handleCollectionsAdded({ results, failed = 0 }: { results: any[]; failed?: number }) {
+function handleCollectionsAdded({ fileIds = [], results, removedCollectionIds = [], failed = 0 }: { fileIds?: number[]; results: any[]; removedCollectionIds?: number[]; failed?: number }) {
   showAddToCollectionDialog.value = false;
   const addedFileIds = new Set(results.flatMap(result => result?.addedFileIds || []).map(Number));
   const skippedFileIds = new Set(results.flatMap(result => result?.skippedFileIds || []).map(Number));
@@ -8948,7 +8954,27 @@ function handleCollectionsAdded({ results, failed = 0 }: { results: any[]; faile
     });
     void tauriEmit('collection-files-dropped', { fileIds: [...addedFileIds] });
   }
+  if (currentQuerySource.value === 'collection' && removedCollectionIds.includes(Number(currentCollectionId.value))) {
+    const removedIds = new Set(fileIds.map(Number));
+    if (groupedModeActive.value) {
+      void updateContent(true);
+    } else {
+      fileList.value = fileList.value.filter(file => !removedIds.has(Number(file.id)));
+      totalFileCount.value = fileList.value.length;
+      totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file.size || 0), 0);
+      selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
+    }
+    void tauriEmit('collection-files-dropped', { collectionId: currentCollectionId.value });
+  }
   if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
+}
+
+function handleCollectionDeleted(collectionId: number) {
+  if (Number(currentCollectionId.value) !== Number(collectionId)) return;
+  libConfig.activePane = 'main';
+  libConfig.collection.selectedId = null;
+  config.main.sidebarIndex = SIDEBAR.LIBRARY;
+  libConfig.library.item = LIB_ITEM.ALL;
 }
 
 // Helper to yield to main thread

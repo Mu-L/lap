@@ -288,6 +288,7 @@ async fn main() {
             t_cmds::reorder_collections,
             t_cmds::add_files_to_collection,
             t_cmds::remove_files_from_collection,
+            t_cmds::get_collection_selection_counts,
             t_cmds::clear_collection,
             t_cmds::get_collection_file_ids,
             t_cmds::get_file_collections,

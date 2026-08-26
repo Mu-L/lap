@@ -179,6 +179,7 @@
       v-if="showTaggingDialog"
       :fileIds="taggingFileIds"
       @ok="updateFileHasTags"
+      @states-changed="syncTagStates"
       @cancel="showTaggingDialog = false"
     />
 
@@ -219,6 +220,7 @@ import { isWin, isMac, isLinux, setTheme, getSlideShowInterval, SCALE_VALUES } f
 import { matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import {
   editFileComment,
+  getFileCollections,
   getFileInfo,
   getTagsForFile,
   setFileFavorite,
@@ -1338,24 +1340,26 @@ const clickAddToCollection = (pane: Pane = 'left') => {
   showAddToCollectionDialog.value = true;
 };
 
-function handleCollectionsAdded({ fileIds, results, failed = 0 }: { fileIds: number[]; results: any[]; failed?: number }) {
+async function handleCollectionsAdded({ fileIds, results, changedCollectionIds = [], failed = 0 }: { fileIds: number[]; results: any[]; changedCollectionIds?: number[]; failed?: number }) {
   const addedFileIds = new Set(results.flatMap(result => result?.addedFileIds || []).map(Number));
-  if (addedFileIds.size === 0) {
+  const changedFileIds = changedCollectionIds.length > 0 ? new Set(fileIds.map(Number)) : addedFileIds;
+  if (changedFileIds.size === 0) {
     if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
     showAddToCollectionDialog.value = false;
     return;
   }
-  const ids = new Set(fileIds.filter(fileId => addedFileIds.has(Number(fileId))).map(Number));
   const updatedIds = new Set<number>();
   for (const pane of allPanes) {
     const currentFileId = getFileIdByPane(pane);
-    if (!ids.has(currentFileId) || updatedIds.has(currentFileId)) continue;
+    if (!changedFileIds.has(currentFileId) || updatedIds.has(currentFileId)) continue;
     updatedIds.add(currentFileId);
     const collectionVersion = Number(getFileInfoByPane(pane)?.collectionVersion || 0) + 1;
-    applyFileMetaToPanes(currentFileId, { has_collections: true, collectionVersion });
-    syncFileMetaToContent(currentFileId, { has_collections: true, collectionVersion });
+    const hasCollections = addedFileIds.has(currentFileId)
+      || Boolean((await getFileCollections(currentFileId))?.length);
+    applyFileMetaToPanes(currentFileId, { has_collections: hasCollections, collectionVersion });
+    syncFileMetaToContent(currentFileId, { has_collections: hasCollections, collectionVersion });
   }
-  void emit('collection-files-dropped', { fileIds: [...addedFileIds] });
+  void emit('collection-files-dropped', { fileIds: [...changedFileIds] });
   if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
   showAddToCollectionDialog.value = false;
 }
@@ -1374,8 +1378,12 @@ const onEditComment = async (newComment: any) => {
 };
 
 async function updateFileHasTags(fileStates: Array<{ file_id: number; has_tags: boolean }>) {
+  await syncTagStates(fileStates);
+  showTaggingDialog.value = false;
+}
+
+async function syncTagStates(fileStates: Array<{ file_id: number; has_tags: boolean }>) {
   if (!Array.isArray(fileStates) || fileStates.length === 0) {
-    showTaggingDialog.value = false;
     return;
   }
 
@@ -1388,8 +1396,6 @@ async function updateFileHasTags(fileStates: Array<{ file_id: number; has_tags: 
     applyFileMetaToPanes(taggedFileId, changes);
     syncFileMetaToContent(taggedFileId, changes);
   }
-
-  showTaggingDialog.value = false;
 }
 
 const handleItemAction = async (payload: { action: string }) => {

@@ -9,7 +9,7 @@
         <TButton
           :icon="IconAdd"
           :buttonSize="'small'"
-          :tooltip="$t('menu.tag.add')"
+          :tooltip="$t('msgbox.new_tag.title')"
           @click="clickAddTag"
         />
       </div>
@@ -101,7 +101,7 @@
     :title="$t('msgbox.new_tag.title')"
     :showInput="true"
     :inputText="''"
-    :inputPlaceholder="$t('msgbox.new_tag.content')"
+    :inputPlaceholder="$t('tag.enter_new_tag_name')"
     :needValidateInput="true"
     :OkText="$t('msgbox.new_tag.ok')"
     :cancelText="$t('msgbox.cancel')"
@@ -123,8 +123,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue';
+import { listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/common/toast';
 import { config, libConfig } from '@/common/config';
 import { getAllTags, renameTag, deleteTag, createTag } from '@/common/api';
 import { 
@@ -149,8 +151,9 @@ const props = defineProps({
 });
 
 /// i18n
-const { locale, messages } = useI18n();
+const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
+const toast = useToast();
 
 const emit = defineEmits(['editDataChanged']);
 
@@ -206,8 +209,15 @@ const getMoreMenuItems = () => [
   },
 ];
 
-onMounted(() => {
+let unlistenTagsChanged: (() => void) | null = null;
+
+onMounted(async () => {
   loadTags();
+  unlistenTagsChanged = await listen('tags-changed', loadTags);
+});
+
+onBeforeUnmount(() => {
+  unlistenTagsChanged?.();
 });
 
 watch(() => config.settings.categorySort, () => {
@@ -272,16 +282,21 @@ function clickAddTag() {
 }
 
 async function clickNewTag(newTagName: string) {
-  if (!newTagName || newTagName.trim().length === 0) {
+  const name = newTagName?.trim();
+  if (!name) {
     return;
   }
-  const result = await createTag(newTagName);
+  if (allTags.value.some(tag => String(tag.name).toLocaleLowerCase() === name.toLocaleLowerCase())) {
+    toast.error(t('tag.name_exists'));
+    return;
+  }
+  const result = await createTag(name);
   if (result) {
     showNewTagMsgbox.value = false;
     await loadTags();
     
     // select the new tag
-    const newTag = allTags.value.find(tag => tag.name === newTagName);
+    const newTag = allTags.value.find(tag => tag.name === name);
     if (newTag) {
       selectTag(newTag);
       nextTick(() => {

@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "Colecciones",
-    "add": "Añadir colección",
+    "add": "Nueva colección",
     "edit_collections": "Editar colecciones",
     "recent": "Colecciones recientes",
     "search": "Buscar colecciones",
     "enter_new_collection_name": "Nombre de la nueva colección",
     "not_found": "No se encontraron colecciones",
+    "name_exists": "Ya existe una colección con este nombre",
+    "name_save_failed": "No se pudo guardar el nombre de la colección",
     "default_name": "Colección {index}",
     "expand": "Expandir",
     "collapse": "Contraer",
@@ -57,7 +59,7 @@
     "smart_album_list": "Álbumes inteligentes",
     "search_smart_albums": "Buscar álbumes inteligentes",
     "no_smart_albums_found": "No se encontraron álbumes inteligentes",
-    "add_smart_album": "Añadir álbum inteligente",
+    "add_smart_album": "Nuevo álbum inteligente",
     "folder_unavailable": {
       "title": "Carpeta no disponible",
       "description": "Vuelve a conectar el dispositivo de almacenamiento o comprueba la ubicación de la carpeta."
@@ -67,7 +69,7 @@
       "description": "Es posible que la carpeta se haya movido o eliminado. Actualiza su carpeta principal."
     },
     "edit": {
-      "title_add": "Añadir álbum",
+      "title_add": "Nuevo álbum",
       "title": "Info del álbum",
       "folder": "Carpeta",
       "select_folder": "Seleccionar carpeta",
@@ -101,8 +103,8 @@
       "description": "Crea álbumes inteligentes con reglas de consulta personalizadas."
     },
     "smart_edit": {
-      "title_add": "Añadir álbum inteligente",
-      "title_edit": "Editar...",
+      "title_add": "Nuevo álbum inteligente",
+      "title_edit": "Editar álbum inteligente",
       "reorder": "Reordenar",
       "name": "Nombre",
       "description": "Descripción",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Bienvenido a Lap",
     "description": "Tu biblioteca de fotos local. Rápida, buscable y siempre bajo tu control.",
-    "add_album_title": "Comienza añadiendo un álbum",
+    "add_album_title": "Comienza con un álbum nuevo",
     "add_album_description": "Selecciona una carpeta y deja que Lap organice tus fotos y videos.",
     "smart_album_title": "Organiza con álbumes inteligentes",
     "smart_album_description": "Usa reglas para agrupar automáticamente las fotos que cumplan tus criterios.",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "Etiquetas",
-    "add_tag": "Añadir etiqueta",
     "delete_tag": "Eliminar etiqueta",
     "edit_tag": "Editar etiquetas",
     "search_tags": "Buscar etiquetas",
     "enter_new_tag_name": "Introduce nuevo nombre",
     "not_found": "No se encontraron etiquetas",
+    "name_exists": "Ya existe una etiqueta con este nombre",
+    "name_save_failed": "No se pudo guardar el nombre de la etiqueta",
     "load_failed": "No se pudo cargar el estado de las etiquetas. Cierra este diálogo e inténtalo de nuevo."
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "El reconocimiento facial está en beta y puede no ser preciso."
     },
     "not_found": {
-      "albums": "No se encontraron álbumes. Añade una carpeta con fotos o videos",
+      "albums": "No se encontraron álbumes",
       "files": "No se encontraron archivos",
       "image_search_failed": "Búsqueda de imágenes no disponible",
       "image_search_failed_hint": "Comprueba que el modelo de búsqueda de imágenes esté disponible y vuelve a intentarlo.",
@@ -586,14 +589,14 @@
       "unpin": "Desfijar"
     },
     "library": {
-      "add": "Añadir biblioteca...",
+      "add": "Nueva biblioteca...",
       "edit": "Editar biblioteca...",
       "manage": "Gestionar bibliotecas...",
       "remove": "Eliminar biblioteca",
       "default": "Biblioteca por defecto"
     },
     "album": {
-      "add": "Añadir álbum...",
+      "add": "Nuevo álbum",
       "edit": "Info del álbum...",
       "scan": "Escanear álbum",
       "reorder": "Reordenar",
@@ -657,7 +660,6 @@
       "search": "Buscar personas"
     },
     "tag": {
-      "add": "Añadir etiqueta...",
       "rename": "Renombrar",
       "delete": "Eliminar"
     },
@@ -725,7 +727,7 @@
       "reorder": "Reordenar",
       "rename": "Renombrar",
       "switch_to": "Cambiar a",
-      "add_new": "Añadir nueva",
+      "add_new": "Nueva biblioteca",
       "add": "Añadir",
       "placeholder": "Nombre de biblioteca",
       "max_limit_reached": "Límite alcanzado",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "Nueva etiqueta",
-      "content": "Nombre etiqueta:",
       "ok": "Crear",
       "error": "No se pudo crear la etiqueta."
     },

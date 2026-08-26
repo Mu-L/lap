@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "合集",
-    "add": "添加合集",
+    "add": "新建合集",
     "edit_collections": "编辑合集",
     "recent": "最近使用的合集",
     "search": "搜索合集",
     "enter_new_collection_name": "新合集名称",
     "not_found": "未找到合集",
+    "name_exists": "已存在同名合集",
+    "name_save_failed": "无法保存合集名称",
     "default_name": "合集 {index}",
     "expand": "展开",
     "collapse": "折叠",
@@ -38,7 +40,7 @@
     "added_toast": "已添加 {count} 个文件到合集",
     "add_failed_toast": "无法将文件添加到 {count} 个合集",
     "already_exists_toast": "{count} 个文件已在合集中",
-    "clear": "移除所有文件",
+    "clear": "清空合集",
     "clear_confirm_title": "清空合集",
     "clear_confirm_message": "移除 \"{name}\" 中的所有文件？文件本身不会被删除。",
     "clear_confirm_ok": "清空",
@@ -57,7 +59,7 @@
     "smart_album_list": "智能相册",
     "search_smart_albums": "搜索智能相册",
     "no_smart_albums_found": "未找到智能相册",
-    "add_smart_album": "添加智能相册",
+    "add_smart_album": "新建智能相册",
     "folder_unavailable": {
       "title": "文件夹无法访问",
       "description": "请重新连接存储设备，或检查文件夹位置。"
@@ -67,7 +69,7 @@
       "description": "文件夹可能已移动或删除。请刷新父文件夹。"
     },
     "edit": {
-      "title_add": "添加相册",
+      "title_add": "新建相册",
       "title": "相册信息",
       "folder": "文件夹",
       "select_folder": "选择文件夹",
@@ -101,8 +103,8 @@
       "description": "通过自定义查询条件创建智能相册。"
     },
     "smart_edit": {
-      "title_add": "添加智能相册",
-      "title_edit": "编辑...",
+      "title_add": "新建智能相册",
+      "title_edit": "编辑智能相册",
       "reorder": "重新排序",
       "name": "名称",
       "description": "描述",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "欢迎使用 Lap",
     "description": "您的本地照片库。快速、可搜索，始终由您掌控。",
-    "add_album_title": "从添加相册开始",
+    "add_album_title": "从新建相册开始",
     "add_album_description": "选择一个文件夹，让 Lap 为您整理照片和视频。",
     "smart_album_title": "智能整理照片",
     "smart_album_description": "使用规则自动归类符合条件的照片。",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "标签",
-    "add_tag": "添加新标签",
     "delete_tag": "删除标签",
     "edit_tag": "编辑标签",
     "search_tags": "搜索标签",
     "enter_new_tag_name": "输入新标签名称",
     "not_found": "未找到标签",
+    "name_exists": "已存在同名标签",
+    "name_save_failed": "无法保存标签名称",
     "load_failed": "无法加载标签状态，请关闭对话框后重试。"
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "人脸识别仍处于测试阶段，结果可能不准确。"
     },
     "not_found": {
-      "albums": "未找到相册。添加包含照片或视频的文件夹",
+      "albums": "未找到相册",
       "files": "未找到文件",
       "image_search_failed": "图像搜索不可用",
       "image_search_failed_hint": "请检查图像搜索模型是否可用，然后重试。",
@@ -586,14 +589,14 @@
       "unpin": "取消固定"
     },
     "library": {
-      "add": "添加库...",
+      "add": "新建库...",
       "edit": "编辑库...",
       "manage": "管理库...",
       "remove": "移除库",
       "default": "默认库"
     },
     "album": {
-      "add": "添加相册...",
+      "add": "新建相册",
       "edit": "相册信息...",
       "scan": "扫描相册",
       "reorder": "重新排序",
@@ -657,7 +660,6 @@
       "search": "搜索人物"
     },
     "tag": {
-      "add": "添加标签...",
       "rename": "重命名",
       "delete": "删除"
     },
@@ -725,7 +727,7 @@
       "reorder": "重新排列",
       "rename": "重命名",
       "switch_to": "切换到",
-      "add_new": "添加新库",
+      "add_new": "新建库",
       "add": "添加",
       "placeholder": "输入库的名称",
       "max_limit_reached": "已达到库数量限制",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "新建标签",
-      "content": "输入新标签的名称:",
       "ok": "创建",
       "error": "创建标签失败。"
     },

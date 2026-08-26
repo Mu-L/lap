@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "Sammlungen",
-    "add": "Sammlung hinzufügen",
+    "add": "Neue Sammlung",
     "edit_collections": "Sammlungen bearbeiten",
     "recent": "Zuletzt verwendete Sammlungen",
     "search": "Sammlungen suchen",
     "enter_new_collection_name": "Neuer Sammlungsname",
     "not_found": "Keine Sammlungen gefunden",
+    "name_exists": "Eine Sammlung mit diesem Namen existiert bereits",
+    "name_save_failed": "Sammlungsname konnte nicht gespeichert werden",
     "default_name": "Sammlung {index}",
     "expand": "Ausklappen",
     "collapse": "Einklappen",
@@ -57,7 +59,7 @@
     "smart_album_list": "Smart-Alben",
     "search_smart_albums": "Smart-Alben suchen",
     "no_smart_albums_found": "Keine Smart-Alben gefunden",
-    "add_smart_album": "Smart-Album hinzufügen",
+    "add_smart_album": "Neues Smart-Album",
     "folder_unavailable": {
       "title": "Ordner nicht verfügbar",
       "description": "Verbinden Sie das Speichergerät erneut oder prüfen Sie den Ordnerpfad."
@@ -67,7 +69,7 @@
       "description": "Der Ordner wurde möglicherweise verschoben oder gelöscht. Aktualisieren Sie den übergeordneten Ordner."
     },
     "edit": {
-      "title_add": "Album hinzufügen",
+      "title_add": "Neues Album",
       "title": "Albuminfo",
       "folder": "Ordner",
       "select_folder": "Ordner wählen",
@@ -101,8 +103,8 @@
       "description": "Erstellen Sie Smart-Alben aus benutzerdefinierten Abfrageregeln."
     },
     "smart_edit": {
-      "title_add": "Smart-Album hinzufügen",
-      "title_edit": "Bearbeiten...",
+      "title_add": "Neues Smart-Album",
+      "title_edit": "Smart-Album bearbeiten",
       "reorder": "Neu anordnen",
       "name": "Name",
       "description": "Beschreibung",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Willkommen bei Lap",
     "description": "Deine lokale Fotobibliothek. Schnell, durchsuchbar und immer unter deiner Kontrolle.",
-    "add_album_title": "Beginne mit dem Hinzufügen eines Albums",
+    "add_album_title": "Beginne mit einem neuen Album",
     "add_album_description": "Wähle einen Ordner und lass Lap deine Fotos und Videos organisieren.",
     "smart_album_title": "Mit Smart-Alben organisieren",
     "smart_album_description": "Mit Regeln werden passende Fotos automatisch gruppiert.",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "Tags",
-    "add_tag": "Tag hinzufügen",
     "delete_tag": "Tag löschen",
     "edit_tag": "Tags bearbeiten",
     "search_tags": "Tags suchen",
     "enter_new_tag_name": "Neuer Tag-Name",
     "not_found": "Keine Tags gefunden",
+    "name_exists": "Ein Tag mit diesem Namen existiert bereits",
+    "name_save_failed": "Tag-Name konnte nicht gespeichert werden",
     "load_failed": "Tag-Status konnte nicht geladen werden. Schließen Sie diesen Dialog und versuchen Sie es erneut."
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "Die Gesichtserkennung ist noch im Beta-Stadium und kann ungenau sein."
     },
     "not_found": {
-      "albums": "Keine Alben gefunden. Fügen Sie einen Ordner mit Fotos oder Videos hinzu",
+      "albums": "Keine Alben gefunden",
       "files": "Keine Dateien gefunden",
       "image_search_failed": "Bildsuche nicht verfügbar",
       "image_search_failed_hint": "Prüfen Sie, ob das Bildsuchmodell verfügbar ist, und versuchen Sie es erneut.",
@@ -586,14 +589,14 @@
       "unpin": "Lösen"
     },
     "library": {
-      "add": "Bibliothek hinzufügen...",
+      "add": "Neue Bibliothek...",
       "edit": "Bibliothek bearbeiten...",
       "manage": "Bibliotheken verwalten...",
       "remove": "Bibliothek entfernen",
       "default": "Standard-Bibliothek"
     },
     "album": {
-      "add": "Album hinzufügen...",
+      "add": "Neues Album",
       "edit": "Albuminfo...",
       "scan": "Album scannen",
       "reorder": "Neu anordnen",
@@ -657,7 +660,6 @@
       "search": "Personen suchen"
     },
     "tag": {
-      "add": "Tag hinzufügen...",
       "rename": "Umbenennen",
       "delete": "Löschen"
     },
@@ -725,7 +727,7 @@
       "reorder": "Ordnen",
       "rename": "Umbenennen",
       "switch_to": "Wechseln zu",
-      "add_new": "Neue hinzufügen",
+      "add_new": "Neue Bibliothek",
       "add": "Hinzufügen",
       "placeholder": "Bibliotheksname",
       "max_limit_reached": "Limit erreicht",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "Neuer Tag",
-      "content": "Tag-Name:",
       "ok": "Erstellen",
       "error": "Tag konnte nicht erstellt werden."
     },

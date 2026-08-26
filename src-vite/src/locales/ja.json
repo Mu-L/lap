@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "コレクション",
-    "add": "コレクションを追加",
+    "add": "新規コレクション",
     "edit_collections": "コレクションを編集",
     "recent": "最近使用したコレクション",
     "search": "コレクションを検索",
     "enter_new_collection_name": "新しいコレクション名",
     "not_found": "コレクションが見つかりません",
+    "name_exists": "同じ名前のコレクションが既にあります",
+    "name_save_failed": "コレクション名を保存できませんでした",
     "default_name": "コレクション {index}",
     "expand": "展開",
     "collapse": "折りたたむ",
@@ -57,7 +59,7 @@
     "smart_album_list": "スマートアルバム",
     "search_smart_albums": "スマートアルバムを検索",
     "no_smart_albums_found": "スマートアルバムが見つかりません",
-    "add_smart_album": "スマートアルバムを追加",
+    "add_smart_album": "新規スマートアルバム",
     "folder_unavailable": {
       "title": "フォルダーを利用できません",
       "description": "ストレージデバイスを再接続するか、フォルダーの場所を確認してください。"
@@ -67,7 +69,7 @@
       "description": "フォルダーが移動または削除された可能性があります。親フォルダーを更新してください。"
     },
     "edit": {
-      "title_add": "アルバムを追加",
+      "title_add": "新規アルバム",
       "title": "アルバム情報",
       "folder": "フォルダー",
       "select_folder": "フォルダーを選択",
@@ -101,8 +103,8 @@
       "description": "カスタムクエリ条件からスマートアルバムを作成できます。"
     },
     "smart_edit": {
-      "title_add": "スマートアルバムを追加",
-      "title_edit": "編集...",
+      "title_add": "新規スマートアルバム",
+      "title_edit": "スマートアルバムを編集",
       "reorder": "並べ替え",
       "name": "名前",
       "description": "説明",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Lap へようこそ",
     "description": "あなたのローカルフォトライブラリ。高速で検索可能、常にあなたの管理下に。",
-    "add_album_title": "アルバムを追加して始める",
+    "add_album_title": "新しいアルバムから始めましょう",
     "add_album_description": "フォルダを選択して、Lapに写真と動画を整理させましょう。",
     "smart_album_title": "スマートアルバムで整理",
     "smart_album_description": "条件に合う写真をルールで自動的にまとめます。",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "タグ",
-    "add_tag": "タグを追加",
     "delete_tag": "タグを削除",
     "edit_tag": "タグを編集",
     "search_tags": "タグを検索",
     "enter_new_tag_name": "新しいタグ名を入力",
     "not_found": "タグが見つかりません",
+    "name_exists": "同じ名前のタグが既にあります",
+    "name_save_failed": "タグ名を保存できませんでした",
     "load_failed": "タグの状態を読み込めませんでした。ダイアログを閉じて再試行してください。"
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "顔認識はベータ版のため、結果が正確でない場合があります。"
     },
     "not_found": {
-      "albums": "アルバムが見つかりません。写真や動画を含むフォルダーを追加してください",
+      "albums": "アルバムが見つかりません",
       "files": "ファイルが見つかりません",
       "image_search_failed": "画像検索を利用できません",
       "image_search_failed_hint": "画像検索モデルを確認してから、もう一度お試しください。",
@@ -586,14 +589,14 @@
       "unpin": "固定解除"
     },
     "library": {
-      "add": "ライブラリを追加...",
+      "add": "新規ライブラリ...",
       "edit": "ライブラリを編集...",
       "manage": "ライブラリを管理...",
       "remove": "ライブラリを削除",
       "default": "デフォルトライブラリ"
     },
     "album": {
-      "add": "アルバムを追加...",
+      "add": "新規アルバム",
       "edit": "アルバム情報...",
       "scan": "アルバムをスキャン",
       "reorder": "並べ替え",
@@ -657,7 +660,6 @@
       "search": "人物を検索"
     },
     "tag": {
-      "add": "タグを追加...",
       "rename": "名前を変更",
       "delete": "削除"
     },
@@ -725,7 +727,7 @@
       "reorder": "並べ替え",
       "rename": "名前変更",
       "switch_to": "切り替え先",
-      "add_new": "新規追加",
+      "add_new": "新規ライブラリ",
       "add": "追加",
       "placeholder": "ライブラリ名",
       "max_limit_reached": "上限に達しました",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "新しいタグ",
-      "content": "タグ名:",
       "ok": "作成",
       "error": "タグを作成できませんでした。"
     },

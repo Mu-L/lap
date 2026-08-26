@@ -15,12 +15,14 @@
   },
   "collection": {
     "title": "컬렉션",
-    "add": "컬렉션 추가",
+    "add": "새 컬렉션",
     "edit_collections": "컬렉션 편집",
     "recent": "최근 사용한 컬렉션",
     "search": "컬렉션 검색",
     "enter_new_collection_name": "새 컬렉션 이름",
     "not_found": "컬렉션을 찾을 수 없습니다",
+    "name_exists": "같은 이름의 컬렉션이 이미 있습니다",
+    "name_save_failed": "컬렉션 이름을 저장할 수 없습니다",
     "default_name": "컬렉션 {index}",
     "expand": "펼치기",
     "collapse": "접기",
@@ -57,7 +59,7 @@
     "smart_album_list": "스마트 앨범",
     "search_smart_albums": "스마트 앨범 검색",
     "no_smart_albums_found": "스마트 앨범을 찾을 수 없습니다",
-    "add_smart_album": "스마트 앨범 추가",
+    "add_smart_album": "새 스마트 앨범",
     "folder_unavailable": {
       "title": "폴더를 사용할 수 없음",
       "description": "저장 장치를 다시 연결하거나 폴더 위치를 확인하세요."
@@ -67,7 +69,7 @@
       "description": "폴더가 이동되었거나 삭제되었을 수 있습니다. 상위 폴더를 새로 고치세요."
     },
     "edit": {
-      "title_add": "앨범 추가",
+      "title_add": "새 앨범",
       "title": "앨범 정보",
       "folder": "폴더",
       "select_folder": "폴더 선택",
@@ -101,8 +103,8 @@
       "description": "사용자 지정 쿼리 규칙으로 스마트 앨범을 만들 수 있습니다."
     },
     "smart_edit": {
-      "title_add": "스마트 앨범 추가",
-      "title_edit": "편집...",
+      "title_add": "새 스마트 앨범",
+      "title_edit": "스마트 앨범 편집",
       "reorder": "순서 변경",
       "name": "이름",
       "description": "설명",
@@ -200,7 +202,7 @@
   "welcome": {
     "title": "Lap에 오신 것을 환영합니다",
     "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",
-    "add_album_title": "앨범을 추가하여 시작하기",
+    "add_album_title": "새 앨범으로 시작하세요",
     "add_album_description": "폴더를 선택하고 Lap이 사진과 동영상을 정리하도록 하세요.",
     "smart_album_title": "스마트 앨범으로 정리",
     "smart_album_description": "규칙에 맞는 사진을 자동으로 그룹화합니다.",
@@ -280,12 +282,13 @@
   },
   "tag": {
     "title": "태그",
-    "add_tag": "태그 추가",
     "delete_tag": "태그 삭제",
     "edit_tag": "태그 편집",
     "search_tags": "태그 검색",
     "enter_new_tag_name": "새 태그 이름 입력",
     "not_found": "태그를 찾을 수 없음",
+    "name_exists": "같은 이름의 태그가 이미 있습니다",
+    "name_save_failed": "태그 이름을 저장할 수 없습니다",
     "load_failed": "태그 상태를 불러오지 못했습니다. 대화 상자를 닫고 다시 시도하세요."
   },
   "subject": {
@@ -511,7 +514,7 @@
       "person": "얼굴 인식은 베타 기능이며 결과가 정확하지 않을 수 있습니다."
     },
     "not_found": {
-      "albums": "앨범을 찾을 수 없습니다. 사진이나 비디오가 있는 폴더를 추가하세요",
+      "albums": "앨범을 찾을 수 없습니다",
       "files": "파일을 찾을 수 없습니다",
       "image_search_failed": "이미지 검색을 사용할 수 없습니다",
       "image_search_failed_hint": "이미지 검색 모델을 확인한 후 다시 시도하세요.",
@@ -586,14 +589,14 @@
       "unpin": "고정 해제"
     },
     "library": {
-      "add": "라이브러리 추가...",
+      "add": "새 라이브러리...",
       "edit": "라이브러리 편집...",
       "manage": "라이브러리 관리...",
       "remove": "라이브러리 제거",
       "default": "기본 라이브러리"
     },
     "album": {
-      "add": "앨범 추가...",
+      "add": "새 앨범",
       "edit": "앨범 정보...",
       "scan": "앨범 스캔",
       "reorder": "순서 변경",
@@ -657,7 +660,6 @@
       "search": "인물 검색"
     },
     "tag": {
-      "add": "태그 추가...",
       "rename": "이름 변경",
       "delete": "삭제"
     },
@@ -725,7 +727,7 @@
       "reorder": "순서",
       "rename": "이름변경",
       "switch_to": "전환",
-      "add_new": "새 라이브러리 추가",
+      "add_new": "새 라이브러리",
       "add": "추가",
       "placeholder": "라이브러리 이름",
       "max_limit_reached": "제한 도달",
@@ -843,7 +845,6 @@
     },
     "new_tag": {
       "title": "새 태그",
-      "content": "태그 이름:",
       "ok": "생성",
       "error": "태그를 만들지 못했습니다."
     },
