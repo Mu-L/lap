@@ -1199,7 +1199,9 @@
       "title": "Navegar",
       "section_grid": "Grade",
       "section_open": "Abrir",
-      "dbl_click_new_window": "Clique duplo abre nova janela",
+      "dbl_click_thumbnail": "Clique duas vezes na miniatura",
+      "dbl_click_quick_preview": "Visualização rápida",
+      "dbl_click_new_window": "Abrir em nova janela",
       "style": "Estilo",
       "style_options": [
         "Visualização em cartões",

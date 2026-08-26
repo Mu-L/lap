@@ -1199,7 +1199,9 @@
       "title": "Обзор",
       "section_grid": "Сетка",
       "section_open": "Открытие",
-      "dbl_click_new_window": "Двойной щелчок открывает новое окно",
+      "dbl_click_thumbnail": "Дважды щёлкните миниатюру",
+      "dbl_click_quick_preview": "Быстрый просмотр",
+      "dbl_click_new_window": "Открыть в новом окне",
       "style": "Стиль",
       "style_options": [
         "Карточки",

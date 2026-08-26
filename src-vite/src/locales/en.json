@@ -1199,7 +1199,9 @@
       "title": "Browse",
       "section_grid": "Grid",
       "section_open": "Open",
-      "dbl_click_new_window": "Double-click opens new window",
+      "dbl_click_thumbnail": "Double-click thumbnail",
+      "dbl_click_quick_preview": "Quick preview",
+      "dbl_click_new_window": "Open in new window",
       "style": "Style",
       "style_options": [
         "Card view",

@@ -1199,7 +1199,9 @@
       "title": "ブラウズ",
       "section_grid": "グリッド",
       "section_open": "開く",
-      "dbl_click_new_window": "ダブルクリックで新しいウィンドウを開く",
+      "dbl_click_thumbnail": "サムネイルをダブルクリック",
+      "dbl_click_quick_preview": "クイックプレビュー",
+      "dbl_click_new_window": "新しいウィンドウで開く",
       "style": "スタイル",
       "style_options": [
         "カード表示",

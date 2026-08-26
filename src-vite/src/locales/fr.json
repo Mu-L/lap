@@ -1199,7 +1199,9 @@
       "title": "Parcourir",
       "section_grid": "Grille",
       "section_open": "Ouvrir",
-      "dbl_click_new_window": "Double-clic : nouvelle fenêtre",
+      "dbl_click_thumbnail": "Double-cliquer sur la miniature",
+      "dbl_click_quick_preview": "Aperçu rapide",
+      "dbl_click_new_window": "Ouvrir dans une nouvelle fenêtre",
       "style": "Style",
       "style_options": [
         "Vue carte",

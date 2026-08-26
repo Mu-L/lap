@@ -1199,7 +1199,9 @@
       "title": "Durchsuchen",
       "section_grid": "Raster",
       "section_open": "Öffnen",
-      "dbl_click_new_window": "Doppelklick öffnet neues Fenster",
+      "dbl_click_thumbnail": "Miniaturansicht doppelklicken",
+      "dbl_click_quick_preview": "Schnellvorschau",
+      "dbl_click_new_window": "In neuem Fenster öffnen",
       "style": "Stil",
       "style_options": [
         "Kartenansicht",

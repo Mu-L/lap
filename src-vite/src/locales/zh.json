@@ -1199,7 +1199,9 @@
       "title": "浏览",
       "section_grid": "网格",
       "section_open": "打开",
-      "dbl_click_new_window": "双击在新窗口打开",
+      "dbl_click_thumbnail": "双击缩略图",
+      "dbl_click_quick_preview": "快速预览",
+      "dbl_click_new_window": "在新窗口中打开",
       "style": "样式",
       "style_options": [
         "卡片视图",

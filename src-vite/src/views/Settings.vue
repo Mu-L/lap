@@ -232,9 +232,12 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.dbl_click_new_window') }}</div>
+                <div>{{ $t('settings.browse.dbl_click_thumbnail') }}</div>
               </div>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.dblClickNewWindow" />
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.dblClickAction">
+                <option value="quickPreview">{{ $t('settings.browse.dbl_click_quick_preview') }}</option>
+                <option value="newWindow">{{ $t('settings.browse.dbl_click_new_window') }}</option>
+              </select>
             </div>
           </div>
 
@@ -1387,8 +1390,8 @@ watch(() => config.settings.navigatorViewMode, (newValue) => {
 watch(() => config.settings.navigatorViewSize, (newValue) => {
   emit('settings-navigatorViewSize-changed', newValue);
 });
-watch(() => config.settings.dblClickNewWindow, (newValue) => {
-  emit('settings-dblClickNewWindow-changed', newValue);
+watch(() => config.settings.dblClickAction, (newValue) => {
+  emit('settings-dblClickAction-changed', newValue);
 });
 watch(() => config.settings.viewBackground, (newValue) => {
   emit('settings-viewBackground-changed', newValue);

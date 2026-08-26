@@ -3048,7 +3048,7 @@ function handleItemDblClicked(
     modifiers.shiftKey ||
     modifiers.metaKey ||
     modifiers.ctrlKey ||
-    (config.settings.dblClickNewWindow && isPhoto)
+    (config.settings.dblClickAction === 'newWindow' && isPhoto)
   );
   if (openInNewWindow) {
     checkUnsavedChanges(() => {

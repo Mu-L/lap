@@ -1199,7 +1199,9 @@
       "title": "Explorar",
       "section_grid": "Cuadrícula",
       "section_open": "Abrir",
-      "dbl_click_new_window": "Doble clic abre nueva ventana",
+      "dbl_click_thumbnail": "Doble clic en la miniatura",
+      "dbl_click_quick_preview": "Vista rápida",
+      "dbl_click_new_window": "Abrir en una ventana nueva",
       "style": "Estilo",
       "style_options": [
         "Vista de tarjeta",

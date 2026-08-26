@@ -138,7 +138,7 @@ export const useConfigStore = defineStore('configStore', {
       slideShowTransition: 0,    // 0: Slide, 1: Fade, 2: None
       navigatorViewMode: 0,      // 0: Auto, 1: Always show, 2: Always hide
       navigatorViewSize: 240,    // navigator view size (160, 240, 320, 400)
-      dblClickNewWindow: false,  // open images/RAW files in Image Viewer when double-clicked in the grid
+      dblClickAction: 'quickPreview', // quickPreview | newWindow
       viewBackground: 0,         // 0: default, 1: black, 2: dark gray, 3: medium gray, 4: light gray, 5: white
       autoPlayVideo: true,       // auto play video
       loopVideo: false,          // loop video (only effective when autoPlayVideo is off)
@@ -320,8 +320,8 @@ export const useConfigStore = defineStore('configStore', {
     setViewBackground(viewBackground) {
       this.settings.viewBackground = viewBackground;
     },
-    setDblClickNewWindow(enabled) {
-      this.settings.dblClickNewWindow = enabled;
+    setDblClickAction(action) {
+      this.settings.dblClickAction = action === 'newWindow' ? 'newWindow' : 'quickPreview';
     },
     cycleViewBackground() {
       this.settings.viewBackground = (Number(this.settings.viewBackground || 0) + 1) % 6;

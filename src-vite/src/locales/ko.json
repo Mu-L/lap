@@ -1199,7 +1199,9 @@
       "title": "탐색",
       "section_grid": "그리드",
       "section_open": "열기",
-      "dbl_click_new_window": "두 번 클릭하여 새 창에서 열기",
+      "dbl_click_thumbnail": "썸네일 두 번 클릭",
+      "dbl_click_quick_preview": "빠른 미리보기",
+      "dbl_click_new_window": "새 창에서 열기",
       "style": "스타일",
       "style_options": [
         "카드 보기",
