@@ -404,7 +404,7 @@
           :style="{ width: activeRightPanelWidth + 'px', top: '3rem', bottom: config.settings.showStatusBar ? '2rem' : '0.25rem' }"
         >
           <DedupPane
-            v-if="!selectMode && config.rightPanel.mode === 'dedup'"
+            v-if="rightPanelContent === 'dedup'"
             ref="dedupPaneRef"
             :selected-file-id="fileList[selectedItemIndex]?.id"
             :dedup-scan-key="dedupScanKey"
@@ -423,7 +423,7 @@
             @dedup-status-updated="dedupStatuses = $event"
           />
           <SelectionPanel
-            v-else-if="selectMode"
+            v-else-if="rightPanelContent === 'selection'"
             :file-count="fileList.length"
             :selected-files="selectionPreviewFiles"
             :selected-count="selectedCount"
@@ -451,7 +451,7 @@
             @more-action="action => action()"
           />
           <FileInfo
-            v-else
+            v-else-if="rightPanelContent === 'info'"
             ref="fileInfoRef"
             :fileInfo="fileList[selectedItemIndex]" 
             @close="checkUnsavedChanges(() => config.rightPanel.show = false)" 
@@ -932,6 +932,7 @@ type SelectionRestoreState = {
   selectedIds: Set<number>;
   selectedSizes: Map<number, number>;
   selectedSize: number;
+  viewportFileId: number;
   fallbackFileId: number;
 };
 let pendingSelectionRestore: SelectionRestoreState | null = null;
@@ -1103,14 +1104,12 @@ function captureSelectionForFileListRefresh() {
     }
   }
   const activeFileId = Number(fileList.value[selectedItemIndex.value]?.id || 0);
-  const fallbackFileId = selectedFileIds.has(activeFileId)
-    ? activeFileId
-    : Number(selectedFileIds.values().next().value || 0);
   pendingSelectionRestore = {
     selectedIds: new Set(selectedFileIds),
     selectedSizes,
     selectedSize: selectedSize.value,
-    fallbackFileId,
+    viewportFileId: activeFileId,
+    fallbackFileId: Number(selectedFileIds.values().next().value || 0),
   };
 }
 
@@ -1141,9 +1140,11 @@ async function restoreSelectionAfterFileListRefresh() {
       Array.from(restoreState.selectedIds).filter(id => availableIds.has(id)),
     );
 
-    const viewportFileId = nextSelectedIds.has(restoreState.fallbackFileId)
-      ? restoreState.fallbackFileId
-      : Number(nextSelectedIds.values().next().value || 0);
+    const viewportFileId = availableIds.has(restoreState.viewportFileId)
+      ? restoreState.viewportFileId
+      : (nextSelectedIds.has(restoreState.fallbackFileId)
+        ? restoreState.fallbackFileId
+        : Number(nextSelectedIds.values().next().value || 0));
     const fallbackIndex = viewportFileId <= 0
       ? -1
       : (groupedModeActive.value
@@ -1240,14 +1241,18 @@ async function restoreFocusedFileAfterListRefresh() {
   }
 }
 
-// Scroll a grouped view to a file (by flat file index). The render row index is
-// derived from the group metadata so it doesn't depend on `fileIndexToRowIndex`
-// (which only covers loaded rows). For justified/masonry layouts the pixel
-// offset depends on file aspect ratios that are approximated as squares until
-// the files load, so the target chunk is loaded first and the scroll repeated.
+async function waitForGroupedGridLayout() {
+  await nextTick();
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+  gridViewRef.value?.refreshLayout();
+  await nextTick();
+}
+
 async function scrollToGroupedFile(fileIndex: number) {
   const rowIndex = getGroupedRowIndexForFileIndex(fileIndex);
   if (rowIndex < 0) return;
+
+  await waitForGroupedGridLayout();
   gridViewRef.value?.scrollToRowIndex(rowIndex);
 
   if (isGeometryGridStyle.value) {
@@ -1255,8 +1260,7 @@ async function scrollToGroupedFile(fileIndex: number) {
       Math.max(0, rowIndex - selectionChunkSize.value),
       rowIndex + selectionChunkSize.value,
     );
-    gridViewRef.value?.refreshLayout();
-    await nextTick();
+    await waitForGroupedGridLayout();
     gridViewRef.value?.scrollToRowIndex(rowIndex);
   }
 }
@@ -1870,6 +1874,11 @@ const pendingAction = ref<(() => void) | null>(null);
 const fileInfoRef = ref<any>(null);
 const isDedupPanelOpen = computed(() => config.rightPanel.show && config.rightPanel.mode === 'dedup');
 const isInfoPanelOpen = computed(() => config.rightPanel.show && config.rightPanel.mode === 'info');
+const rightPanelContent = computed<'selection' | 'dedup' | 'info' | null>(() => {
+  if (selectMode.value) return 'selection';
+  if (!config.rightPanel.show) return null;
+  return config.rightPanel.mode === 'dedup' ? 'dedup' : 'info';
+});
 const RIGHT_PANEL_MIN_WIDTH = 160; // Keep aligned with left panel minimum width.
 const RIGHT_PANEL_ANIMATION_MS = 200;
 const activeRightPanelWidth = computed(() => Number(config.rightPanel.width || 360));
@@ -1905,14 +1914,17 @@ watch(shouldShowRightPanel, async (visible) => {
 
   if (visible) {
     rightPanelMounted.value = true;
+    rightPanelLayoutVisible.value = true;
     await nextTick();
     if (animationVersion !== rightPanelAnimationVersion) return;
     rightPanelVisualVisible.value = true;
-    rightPanelAnimationTimer = setTimeout(() => {
-      if (animationVersion !== rightPanelAnimationVersion) return;
-      rightPanelAnimationTimer = null;
-      void commitRightPanelLayout(true);
-    }, RIGHT_PANEL_ANIMATION_MS);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (animationVersion === rightPanelAnimationVersion) {
+          void refreshCenteredGridLayout();
+        }
+      });
+    });
     return;
   }
 
@@ -8819,12 +8831,26 @@ const toggleDedupPanel = () => {
       config.rightPanel.show = false;
       return;
     }
-    handleSelectMode(false);
-    disablePreviewModes();
-    config.rightPanel.mode = 'dedup';
-    config.rightPanel.show = true;
+    void openDedupPanel();
   });
 };
+
+async function openDedupPanel() {
+  const wasInSelectMode = selectMode.value;
+  if (wasInSelectMode) selectMode.value = false;
+  disablePreviewModes();
+  config.rightPanel.mode = 'dedup';
+  config.rightPanel.show = true;
+
+  await nextTick();
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+  if (!wasInSelectMode) return;
+  clearLoadedSelectionFlags();
+  resetSelectionSummary();
+  groupSelectedCountMap.value = {};
+  groupSelectedSizeMap.value = {};
+}
 
 let dedupNavigationRequestId = 0;
 
