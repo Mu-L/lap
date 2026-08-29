@@ -687,17 +687,34 @@ async function clickSettings(tabIndex?: number) {
     await emit('settings-settingsTabIndex-changed', tabIndex);
   }
 
-  // check if the settings window is already open
-  const settingsWindow = await WebviewWindow.getByLabel('settings');
+  // Reuse an existing settings window if it can be shown; otherwise destroy it
+  // and create a fresh one. Re-showing a closed transparent window can fail
+  // silently on Windows, so never swallow the failure.
+  let settingsWindow: WebviewWindow | null = null;
+  try {
+    settingsWindow = await WebviewWindow.getByLabel('settings');
+  } catch (error) {
+    console.error('Failed to look up settings window:', error);
+  }
+
   if (settingsWindow) {
-    if (isWin && await settingsWindow.isMinimized()) {
-      await settingsWindow.unminimize();
+    try {
+      if (isWin && await settingsWindow.isMinimized()) {
+        await settingsWindow.unminimize();
+      }
+      await settingsWindow.show();
+      if (isWin) {
+        await settingsWindow.setFocus();
+      }
+      return;
+    } catch (error) {
+      console.error('Failed to show existing settings window, recreating:', error);
+      try {
+        await settingsWindow.destroy();
+      } catch (destroyError) {
+        console.error('Failed to destroy stale settings window:', destroyError);
+      }
     }
-    await settingsWindow.show();
-    if (isWin) {
-      await settingsWindow.setFocus();
-    }
-    return;
   }
 
   const options: any = {
@@ -724,11 +741,6 @@ async function clickSettings(tabIndex?: number) {
   
   newSettingsWindow.once('tauri://created', () => {
     console.log('settings window created');
-  });
-
-  newSettingsWindow.once('tauri://close-requested', () => {
-    newSettingsWindow.close();
-    console.log('settings window closed');
   });
 }
 

@@ -694,6 +694,7 @@ const settingsTabs = [
 ];
 
 const appWindow = getCurrentWebviewWindow()
+let unlistenCloseRequested: (() => void) | null = null;
 let gridSizeEmitTimer: number | null = null;
 const SETTINGS_BASE_WIDTH = 600;
 const SETTINGS_BASE_HEIGHT = 620;
@@ -1271,9 +1272,21 @@ onMounted(async () => {
   
   // Show window after mount
   await appWindow.show();
+
+  // Destroy the window on close (rather than merely `close()`, which leaves the
+  // label registered) so reopening always creates a fresh window. Re-showing a
+  // closed transparent window can fail silently on Windows.
+  unlistenCloseRequested = await appWindow.onCloseRequested(async (event) => {
+    event.preventDefault();
+    await appWindow.destroy();
+  });
 });
 
 onUnmounted(() => {
+  if (unlistenCloseRequested) {
+    unlistenCloseRequested();
+    unlistenCloseRequested = null;
+  }
   if (isDownloadingMultilingualModel.value) {
     void cancelMultilingualImageSearchModelDownload();
   }
