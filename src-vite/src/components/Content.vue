@@ -3189,12 +3189,12 @@ function handleItemDblClicked(
 ) {
   if (!ensureGroupedFileAtIndex(index)) return;
   const file = fileList.value[index];
-  const isPhoto = file?.file_type === 1 || file?.file_type === 3;
+  const isMedia = file?.file_type === 1 || file?.file_type === 2 || file?.file_type === 3;
   const openInNewWindow = !!(
     modifiers.shiftKey ||
     modifiers.metaKey ||
     modifiers.ctrlKey ||
-    (config.settings.dblClickAction === 'newWindow' && isPhoto)
+    (config.settings.dblClickAction === 'newWindow' && isMedia)
   );
   if (openInNewWindow) {
     checkUnsavedChanges(() => {
