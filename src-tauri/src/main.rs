@@ -47,6 +47,18 @@ async fn main() {
         eprintln!("Unhandled panic: {}", panic_info);
     }));
 
+    // The bundled linuxdeploy-plugin-gtk hook forces `GDK_BACKEND=x11`, which
+    // aborts on pure-Wayland sessions with no XWayland available. Prefer the
+    // native Wayland backend with an x11 fallback; `wayland,x11` is also safe
+    // on X11-only systems. This must run before tao initializes GTK.
+    //
+    // SAFETY: runs at the very start of main(), before any worker threads are
+    // spawned, so no other thread can be reading the environment concurrently.
+    #[cfg(target_os = "linux")]
+    unsafe {
+        std::env::set_var("GDK_BACKEND", "wayland,x11");
+    }
+
     let builder = tauri::Builder::default();
     let builder = t_protocol::register_protocols(builder);
 
