@@ -466,6 +466,46 @@ jobs:
             mv "$file" "$dir/${filename}-${SUFFIX}.${ext}"
           done
 
+      - name: Embed AppImage update info and generate zsync (test)
+        shell: bash
+        run: |
+          set -euo pipefail
+          APPIMAGE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle/appimage"
+
+          # zsyncmake (zsync package) generates the .zsync delta file
+          sudo apt-get install -y zsync
+
+          # appimagetool ships as an AppImage; extract-and-run avoids needing FUSE on CI
+          wget -q -O appimagetool.AppImage \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${{ matrix.arch }}.AppImage"
+          chmod +x appimagetool.AppImage
+          export APPIMAGE_EXTRACT_AND_RUN=1
+
+          for f in "$APPIMAGE_DIR"/*.AppImage; do
+            [ -f "$f" ] || continue
+            name="$(basename "$f")"
+            # Placeholder update info for verifying the pipeline; the release
+            # workflow embeds `gh-releases-zsync|...|latest|...` instead.
+            update_info="zsync|https://github.com/${{ github.repository }}/releases/download/pr-build/${name}.zsync"
+
+            echo "==> ${name}: extracting"
+            rm -rf squashfs-root
+            chmod +x "$f"
+            "$f" --appimage-extract
+
+            echo "==> ${name}: repacking with update info"
+            tmp="${f%.AppImage}.new.AppImage"
+            ./appimagetool.AppImage --no-appstream -u "${update_info}" squashfs-root "$tmp"
+            mv -f "$tmp" "$f"
+
+            echo "==> ${name}: generating .zsync"
+            zsyncmake -u "https://github.com/${{ github.repository }}/releases/download/pr-build/${name}" \
+              -o "$f.zsync" "$f"
+          done
+
+          echo "==> resulting files:"
+          ls -la "$APPIMAGE_DIR"
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -473,6 +513,7 @@ jobs:
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
             src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage.zsync
           if-no-files-found: error
 
   publish-pr-build:
