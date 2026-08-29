@@ -365,7 +365,7 @@ impl FileNode {
             .min_depth(1)
             .max_depth(1)
             .into_iter()
-            .filter_entry(|e| !is_hidden(e))
+            .filter_entry(is_visible_or_root)
         {
             let entry = entry.map_err(|e| e.to_string())?;
             let entry_path = entry.path();
@@ -477,6 +477,14 @@ pub fn is_hidden(entry: &walkdir::DirEntry) -> bool {
             .metadata()
             .ok()
             .map_or(false, |m| has_hidden_attribute(&m))
+}
+
+/// Predicate for `WalkDir::filter_entry`. Always keeps the walk root (depth 0)
+/// so an explicitly-selected NTFS volume root — which can report
+/// `Hidden | System` attributes — is still traversed. Hidden filtering applies
+/// only below the root.
+pub fn is_visible_or_root(entry: &walkdir::DirEntry) -> bool {
+    entry.depth() == 0 || !is_hidden(entry)
 }
 
 /// Hidden-file check for `std::fs::DirEntry` (used by fs::read_dir callers).
@@ -1568,7 +1576,7 @@ pub fn get_folder_files(
             .min_depth(1)
             .max_depth(1)
             .into_iter()
-            .filter_entry(|e| !is_hidden(e))
+            .filter_entry(is_visible_or_root)
             .filter_map(Result::ok)
             .filter(|entry| entry.file_type().is_file())
         {
@@ -2076,7 +2084,7 @@ fn sync_folder_direct_files(
         .min_depth(1)
         .max_depth(1)
         .into_iter()
-        .filter_entry(|e| !is_hidden(e))
+        .filter_entry(is_visible_or_root)
     {
         let entry = entry.map_err(|e| e.to_string())?;
         if !entry.file_type().is_file() {
@@ -2577,7 +2585,7 @@ pub fn count_folder_files(path: &str) -> (u64, u64, u64, u64, u64, u64, u64) {
     // Use WalkDir to iterate over directory entries
     for entry in WalkDir::new(path)
         .into_iter()
-        .filter_entry(|e| !is_hidden(e))
+        .filter_entry(is_visible_or_root)
         .filter_map(Result::ok)
     {
         let entry_type = entry.file_type();
@@ -3479,7 +3487,7 @@ pub async fn index_album_worker(
     let mut thumbnail_join_set: JoinSet<Result<bool, String>> = JoinSet::new();
     for entry in WalkDir::new(&album.path)
         .into_iter()
-        .filter_entry(|e| !is_hidden(e))
+        .filter_entry(is_visible_or_root)
     {
         // Check cancellation
         if let Some(&true) = cancellation_token.lock().unwrap().get(&album_id) {
