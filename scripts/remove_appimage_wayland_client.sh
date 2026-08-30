@@ -3,7 +3,9 @@
 #
 # 1. Remove the bundled libwayland-client.so.0 so the host's ABI-compatible copy
 #    is resolved instead (required for EGL/Mesa on pure-Wayland systems).
-# 2. Optionally embed update information and generate a .zsync delta file.
+# 2. Remove GStreamer plugin path overrides, since the AppImage does not bundle
+#    GStreamer plugins (fixes "GStreamer element appsink not found").
+# 3. Optionally embed update information and generate a .zsync delta file.
 #
 # Usage:
 #   remove_appimage_wayland_client.sh <appimage-directory>
@@ -85,6 +87,18 @@ for appimage in "${APPIMAGES[@]}"; do
   fi
   echo "==> Removing bundled libwayland-client.so.0 from ${image_name}"
   rm -f "$wayland_client"
+
+  # Remove GStreamer plugin path overrides (tauri#15665). The AppImage does not
+  # bundle GStreamer plugins, so these overrides point at a non-existent
+  # directory and break plugin discovery ("GStreamer element appsink not found").
+  apprun_wrapped="$image_work_dir/squashfs-root/AppRun.wrapped"
+  if [ -f "$apprun_wrapped" ]; then
+    sed -i '/GST_PLUGIN_SYSTEM_PATH/d; /GST_PLUGIN_PATH/d' "$apprun_wrapped"
+  fi
+  for hook in "$image_work_dir/squashfs-root/apprun-hooks/"*.sh; do
+    [ -f "$hook" ] || continue
+    sed -i '/GST_PLUGIN_SYSTEM_PATH/d; /GST_PLUGIN_PATH/d' "$hook"
+  done
 
   repack_args=(--no-appstream)
   if [ -n "$UPDATE_INFO" ]; then
