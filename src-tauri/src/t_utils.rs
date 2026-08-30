@@ -3013,6 +3013,7 @@ struct ThumbnailTask {
     duration: Option<u64>,
     is_heavy: bool,
     processed_already_ready: bool,
+    force_regenerate: bool,
 }
 
 struct FileIndexOutcome {
@@ -3233,10 +3234,13 @@ fn index_single_file(
                 {
                     if let Some(file_id) = file.id {
                         let has_thumbnail = file.has_thumbnail.unwrap_or(false);
+                        let needs_thumbnail_regeneration = has_thumbnail
+                            && crate::t_sqlite::AThumb::needs_size_regeneration(file_id, thumbnail_size);
+                        let thumbnail_ready = has_thumbnail && !needs_thumbnail_regeneration;
                         let has_embedding = file.has_embedding.unwrap_or(false);
-                        let processed_immediately = has_thumbnail;
+                        let processed_immediately = thumbnail_ready;
                         let search_ready_immediately = match ftype {
-                            1 | 3 => has_thumbnail && has_embedding,
+                            1 | 3 => thumbnail_ready && has_embedding,
                             _ => false,
                         };
                         let fully_indexed = match ftype {
@@ -3263,7 +3267,8 @@ fn index_single_file(
                                     file.width.unwrap_or(0),
                                     file.height.unwrap_or(0),
                                 ),
-                                processed_already_ready: has_thumbnail,
+                                processed_already_ready: thumbnail_ready,
+                                force_regenerate: needs_thumbnail_regeneration,
                             })
                         };
 
@@ -3320,7 +3325,7 @@ async fn process_thumbnail_task(
             task_for_thumb.file_type,
             task_for_thumb.orientation,
             task_for_thumb.thumbnail_size,
-            false,
+            task_for_thumb.force_regenerate,
             task_for_thumb.duration,
             None,
         ) {

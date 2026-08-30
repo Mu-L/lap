@@ -619,6 +619,7 @@
       "compare_selected_images": "Vergleichen",
       "open_selected_videos_in_app": "Videos in {app} öffnen...",
       "open_in_app": "In externer App öffnen...",
+      "manage_app": "Apps verwalten...",
       "find_similar_images": "Verwandte Fotos finden",
       "find_person_images": "Diese Person finden",
       "print": "Drucken...",
@@ -1268,10 +1269,10 @@
       ],
       "navigator_view__size": "Navigator-Größe",
       "navigator_view_size_options": [
-        "Klein(160px)",
-        "Mittel(240px)",
-        "Groß(320px)",
-        "Extra Groß(400px)"
+        "Klein (160 px)",
+        "Mittel (240 px)",
+        "Groß (320 px)",
+        "Extra groß (400 px)"
       ],
       "section_view": "Ansicht",
       "view_background": "Hintergrund",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "Erweitert",
+      "section_thumbnail_cache": "Miniaturansichts-Cache",
+      "thumbnail_quality": "Miniaturansichtsqualität",
+      "thumbnail_quality_hint": "Legt die Auflösung generierter Miniaturansichten fest. Höhere Einstellungen sehen schärfer aus, benötigen aber mehr Zeit zur Erstellung und mehr Speicherplatz.",
+      "clean_unused_thumbnails": "Nicht verwendeten Miniaturansichts-Cache bereinigen",
+      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind.",
+      "clean": "Bereinigen",
+      "thumbnail_cache_cleaned": "{count} Miniaturansichten bereinigt, {size} freigegeben.",
+      "thumbnail_quality_options": [
+        "Niedrig (256 px)",
+        "Standard (512 px)",
+        "Hoch (1024 px)"
+      ],
       "section_external_apps": "Externe Apps",
+      "manage_external_apps": "Externe Apps verwalten",
       "external_image_editor": "Foto öffnen mit",
       "external_video_app": "Video öffnen mit",
       "external_app_not_selected": "Keine App ausgewählt",

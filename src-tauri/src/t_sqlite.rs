@@ -28,12 +28,16 @@ use std::ops::{Deref, DerefMut};
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process;
-use std::sync::{Condvar, Mutex, OnceLock};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, State};
+use tokio::sync::Semaphore;
+use walkdir::WalkDir;
 
 static THUMB_GENERATION_LOCKS: OnceLock<ThumbGenerationLocks> = OnceLock::new();
 static THUMB_BACKGROUND_TASKS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+static THUMB_BACKGROUND_GENERATION_PERMITS: OnceLock<Arc<Semaphore>> = OnceLock::new();
+const MAX_BACKGROUND_THUMB_GENERATIONS: usize = 4;
 
 fn subtree_like_pattern(path: &str) -> String {
     let separator = std::path::MAIN_SEPARATOR;
@@ -75,6 +79,12 @@ fn thumb_generation_locks() -> &'static ThumbGenerationLocks {
 
 fn thumb_background_tasks() -> &'static Mutex<HashSet<String>> {
     THUMB_BACKGROUND_TASKS.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+fn thumb_background_generation_permits() -> Arc<Semaphore> {
+    THUMB_BACKGROUND_GENERATION_PERMITS
+        .get_or_init(|| Arc::new(Semaphore::new(MAX_BACKGROUND_THUMB_GENERATIONS)))
+        .clone()
 }
 
 pub fn has_active_thumb_background_tasks() -> bool {
@@ -6198,8 +6208,18 @@ pub struct AThumb {
     pub thumb_data_base64: Option<String>, // fetch thumbnail data as base64 string (for webview)
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThumbnailCacheCleanupResult {
+    pub files_removed: u64,
+    pub bytes_freed: u64,
+}
+
 impl AThumb {
     const CACHE_EXTENSIONS: [&'static str; 2] = ["png", "jpg"];
+    // Cache files are written before their database row is updated. Keep recent
+    // unreferenced files so maintenance cannot race thumbnail generation.
+    const CLEANUP_MIN_FILE_AGE: Duration = Duration::from_secs(5 * 60);
 
     fn should_use_original_image(file_id: i64, file_type: i64, thumbnail_size: u32) -> bool {
         if file_type != 1 || thumbnail_size == 0 {
@@ -6242,8 +6262,11 @@ impl AThumb {
         data.starts_with(&[0xFF, 0xD8, 0xFF]) && data.ends_with(&[0xFF, 0xD9])
     }
 
-    fn generation_lock_key(file_id: i64, thumbnail_size: u32) -> String {
-        format!("{}:{}", file_id, thumbnail_size)
+    fn generation_lock_key(file_id: i64, _thumbnail_size: u32) -> String {
+        // A file has one active thumbnail record. Serializing every size for a
+        // file prevents an older in-flight request from overwriting a newer
+        // thumbnail-size selection.
+        file_id.to_string()
     }
 
     fn acquire_generation_guard(file_id: i64, thumbnail_size: u32) -> ThumbGenerationGuard {
@@ -6422,6 +6445,69 @@ impl AThumb {
                 let _ = fs::remove_file(path);
             }
         }
+    }
+
+    /// Remove cache files that are no longer referenced by the current library.
+    /// Only image files below this library's cache directory are considered.
+    pub fn clean_unused_cache() -> Result<ThumbnailCacheCleanupResult, String> {
+        let referenced_keys: HashSet<String> = {
+            let conn = open_conn()?;
+            let mut stmt = conn
+                .prepare("SELECT thumb_key FROM athumbs WHERE thumb_key IS NOT NULL")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map([], |row| row.get(0))
+                .map_err(|e| e.to_string())?;
+            rows.map(|row| row.map_err(|e| e.to_string()))
+                .collect::<Result<HashSet<String>, String>>()?
+        };
+
+        let cache_root = t_config::get_app_cache_dir()?.join(Self::get_current_library_id());
+        if !cache_root.is_dir() {
+            return Ok(ThumbnailCacheCleanupResult {
+                files_removed: 0,
+                bytes_freed: 0,
+            });
+        }
+
+        let mut result = ThumbnailCacheCleanupResult {
+            files_removed: 0,
+            bytes_freed: 0,
+        };
+        for entry in WalkDir::new(cache_root).into_iter().filter_map(|entry| entry.ok()) {
+            if !entry.file_type().is_file()
+                || !matches!(entry.path().extension().and_then(|ext| ext.to_str()), Some("jpg" | "png"))
+            {
+                continue;
+            }
+
+            let Some(thumb_key) = entry.path().file_stem().and_then(|stem| stem.to_str()) else {
+                continue;
+            };
+            if referenced_keys.contains(thumb_key) {
+                continue;
+            }
+
+            let Ok(metadata) = entry.metadata() else {
+                continue;
+            };
+            let is_old_enough = metadata
+                .modified()
+                .ok()
+                .and_then(|modified| SystemTime::now().duration_since(modified).ok())
+                .is_some_and(|age| age >= Self::CLEANUP_MIN_FILE_AGE);
+            if !is_old_enough {
+                continue;
+            }
+
+            let byte_count = metadata.len();
+            if fs::remove_file(entry.path()).is_ok() {
+                result.files_removed += 1;
+                result.bytes_freed += byte_count;
+            }
+        }
+
+        Ok(result)
     }
 
     fn relocate_thumb_cache_for_key(
@@ -6749,11 +6835,9 @@ impl AThumb {
         Ok(thumbs)
     }
 
-    fn is_stale(&self, file_path: &str, thumbnail_size: u32) -> bool {
-        if self.thumb_size != Some(thumbnail_size as i64) {
-            return true;
-        }
-
+    fn is_stale(&self, file_path: &str, _thumbnail_size: u32) -> bool {
+        // A quality setting change must not invalidate the existing cache while
+        // browsing. Explicit refresh actions regenerate at the requested size.
         let current_mtime = Self::get_source_mtime(file_path);
         match (self.thumb_mtime, current_mtime) {
             (Some(cached_mtime), Some(source_mtime)) => cached_mtime != source_mtime,
@@ -6762,6 +6846,18 @@ impl AThumb {
             // Keep existing thumbnails so they work again when the path returns.
             (_, None) => false,
         }
+    }
+
+    /// Whether an explicit album re-scan should regenerate this thumbnail at
+    /// the currently selected quality.
+    pub fn needs_size_regeneration(file_id: i64, thumbnail_size: u32) -> bool {
+        Self::fetch(file_id)
+            .ok()
+            .flatten()
+            .is_some_and(|thumbnail| {
+                thumbnail.error_code != 2
+                    && thumbnail.thumb_size != Some(thumbnail_size as i64)
+            })
     }
 
     fn fetch_thumb_key(file_id: i64) -> Result<Option<String>, String> {
@@ -7037,6 +7133,14 @@ impl AThumb {
         }
 
         tauri::async_runtime::spawn(async move {
+            let Ok(_generation_permit) = thumb_background_generation_permits()
+                .acquire_owned()
+                .await
+            else {
+                Self::finish_background_task(file_id, thumbnail_size);
+                return;
+            };
+
             let generated = tauri::async_runtime::spawn_blocking(move || {
                 let duration = if file_type == 2 {
                     AFile::get_file_info(file_id)
@@ -7188,6 +7292,33 @@ impl AThumb {
             .execute("DELETE FROM athumbs WHERE file_id = ?1", params![file_id])
             .map_err(|e| e.to_string())?;
         Ok(result)
+    }
+
+    /// Remove thumbnails for a folder and its descendants. The next explicit
+    /// folder refresh renders the visible files at the current quality.
+    pub fn delete_for_folder(album_id: i64, folder_path: &str) -> Result<usize, String> {
+        let file_ids = {
+            let conn = open_conn()?;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT a.id
+                    FROM afiles a
+                    JOIN afolders f ON f.id = a.folder_id
+                    WHERE f.album_id = ?1 AND (f.path = ?2 OR f.path LIKE ?3 ESCAPE '\\')",
+                )
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map(params![album_id, folder_path, subtree_like_pattern(folder_path)], |row| row.get(0))
+                .map_err(|e| e.to_string())?;
+            rows.map(|row| row.map_err(|e| e.to_string()))
+                .collect::<Result<Vec<i64>, String>>()?
+        };
+
+        let mut removed = 0;
+        for file_id in file_ids {
+            removed += Self::delete(file_id)?;
+        }
+        Ok(removed)
     }
 
     /// get the thumbnail count of the folder

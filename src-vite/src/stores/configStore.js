@@ -99,7 +99,7 @@ export const useConfigStore = defineStore('configStore', {
     libraryChangedVersion: 0,
 
     settings: {
-      tabIndex: 0,               // settings tab index (0: general, 1: library, 2: browse, 3: viewer, 4: search, 5: shortcuts, 6: advanced, 7: about)
+      tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: viewer, 3: search, 4: library, 5: advanced, 6: shortcuts, 7: about)
 
       // general settings
       language: 'en',             // default language
@@ -120,9 +120,9 @@ export const useConfigStore = defineStore('configStore', {
       groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
       
       // grid view settings
-      thumbnailSize: 512,         // thumbnail image size (small: 128, medium: 256, large: 512, extra large: 1024)
+      thumbnailSize: 512,         // gallery thumbnail quality: 256, 512, or 1024
       grid: {
-        size: 160,               // grid size, range 120-360
+        sizePosition: 0,         // grid size slider position (0-1)
         style: 0,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
         showFilmStrip: false,    // show filmstrip view
         scaling: 1,              // 0: Fit Entire Image, 1: Crop to Fill, 2: Stretch to Fill
@@ -273,8 +273,8 @@ export const useConfigStore = defineStore('configStore', {
     },
 
     // grid view settings
-    setGridSize(gridSize) {
-      this.settings.grid.size = gridSize;
+    setThumbnailSize(thumbnailSize) {
+      this.settings.thumbnailSize = thumbnailSize;
     },
     setGridStyle(gridStyle) {
       this.settings.grid.style = gridStyle;

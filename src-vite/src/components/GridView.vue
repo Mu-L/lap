@@ -85,6 +85,7 @@
           :select-mode="selectMode"
           :query-source="querySource"
           :dedup-status="dedupStatuses[Number(getFileItem(item).id)]"
+          :grid-size="gridSize"
           @clicked="(modifiers) => $emit('item-clicked', getFileIndex(item, index), modifiers)"
           @dblclicked="(modifiers) => $emit('item-dblclicked', getFileIndex(item, index), modifiers)"
           @select-toggled="(shiftKey) => $emit('item-select-toggled', getFileIndex(item, index), shiftKey)"
@@ -121,6 +122,7 @@ import { watch, ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
+import { thumbnailProfile } from '@/common/thumbnailProfiles';
 import Thumbnail from '@/components/Thumbnail.vue';
 import VirtualScroll from '@/components/VirtualScroll.vue';
 import { GROUP } from '@/common/constants';
@@ -161,6 +163,7 @@ const props = withDefaults(defineProps<{
   querySource?: string;
   dedupStatuses?: Record<number, 'keep' | 'dup'>;
   draggedFileIds?: Set<number>;
+  gridSize: number;
 }>(), {
   selectedItemIndex: -1,
   timelineData: () => [],
@@ -177,6 +180,7 @@ const props = withDefaults(defineProps<{
   querySource: '',
   dedupStatuses: () => ({}),
   draggedFileIds: () => new Set<number>(),
+  gridSize: 120,
 });
 
 const emit = defineEmits([
@@ -191,6 +195,7 @@ const emit = defineEmits([
   'visible-range-update',
   'scroll',
   'layout-update',
+  'grid-size-change',
   'item-drag-start',
   'item-drag',
   'item-drag-end',
@@ -321,7 +326,8 @@ const groupedLayoutGeometryResult = computed(() => {
     return { boxes: [], contentSize: 0 };
   }
 
-  const { style, size } = config.settings.grid;
+  const { style } = config.settings.grid;
+  const size = props.gridSize;
   const boxes: Geometry[] = new Array(renderItems.value.length);
 
   if (!isGeometryGridStyle(style)) {
@@ -396,7 +402,8 @@ const layoutGeometryResult = computed(() => {
     return { boxes: [], contentSize: 0 };
   }
 
-  const { style, size, showFilmStrip } = config.settings.grid;
+  const { style, showFilmStrip } = config.settings.grid;
+  const size = props.gridSize;
 
   if (hasGroupRows.value) {
     return groupedLayoutGeometryResult.value;
@@ -449,7 +456,8 @@ const isVerticalFilmstrip = computed(() => config.settings.grid.showFilmStrip &&
 
 // item width and height(including gap)
 const itemWidth = computed(() => {
-  const { style, size } = config.settings.grid;
+  const { style } = config.settings.grid;
+  const size = props.gridSize;
   if (isVerticalFilmstrip.value && containerWidth.value > 0) {
     return containerWidth.value;
   }
@@ -458,7 +466,8 @@ const itemWidth = computed(() => {
 });
 
 const itemHeight = computed(() => {
-  const { style, size } = config.settings.grid;
+  const { style } = config.settings.grid;
+  const size = props.gridSize;
   
   if (style === 0) {
     let labelHeight = 0;
@@ -500,7 +509,7 @@ function updateLayout() {
   emit('layout-update', { height: layoutContentHeight.value });
 }
 
-watch(() => [config.settings.grid.size, config.settings.grid.style, config.settings.grid.showFilmStrip], async () => {
+watch(() => [props.gridSize, config.settings.grid.style, config.settings.grid.showFilmStrip], async () => {
   if (isInitialLayout) {
     isInitialLayout = false;
     updateColumnCount();
@@ -613,16 +622,16 @@ onBeforeUnmount(() => {
 
 function onGestureStart(e: any) {
   e.preventDefault();
-  startGridSize.value = config.settings.grid.size;
+  startGridSize.value = props.gridSize;
 }
 
 function onGestureChange(e: any) {
   e.preventDefault();
   if (startGridSize.value > 0) {
     let newSize = Math.round(startGridSize.value * e.scale);
-    // Clamp between 120 and 360
-    newSize = Math.max(120, Math.min(360, newSize));
-    config.settings.grid.size = newSize;
+    const profile = thumbnailProfile(config.settings.thumbnailSize);
+    newSize = Math.max(profile.minGridSize, Math.min(profile.maxGridSize, newSize));
+    emit('grid-size-change', newSize);
   }
 }
 

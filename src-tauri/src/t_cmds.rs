@@ -2026,6 +2026,19 @@ pub fn edit_file_comment(file_id: i64, comment: &str) -> Result<usize, String> {
         .map_err(|e| format!("Error while editing file comment: {}", e))
 }
 
+/// Remove unreferenced thumbnail cache files for the current library.
+#[tauri::command]
+pub fn clean_unused_thumbnail_cache() -> Result<t_sqlite::ThumbnailCacheCleanupResult, String> {
+    AThumb::clean_unused_cache()
+}
+
+/// Clear thumbnails for a manually refreshed folder so they are rebuilt at the
+/// current thumbnail quality when the folder is rendered again.
+#[tauri::command]
+pub fn refresh_folder_thumbnails(album_id: i64, folder_path: &str) -> Result<usize, String> {
+    AThumb::delete_for_folder(album_id, folder_path)
+}
+
 /// get a file's thumb image, if not exist, create a new one
 #[tauri::command]
 pub async fn get_file_thumb(

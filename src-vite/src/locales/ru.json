@@ -619,6 +619,7 @@
       "compare_selected_images": "Сравнить",
       "open_selected_videos_in_app": "Открыть видео в {app}...",
       "open_in_app": "Открыть во внешнем приложении...",
+      "manage_app": "Управление приложениями...",
       "find_similar_images": "Найти связанные фотографии",
       "find_person_images": "Найти этого человека",
       "print": "Печать...",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "Дополнительно",
+      "section_thumbnail_cache": "Кэш миниатюр",
+      "thumbnail_quality": "Качество миниатюр",
+      "thumbnail_quality_hint": "Задаёт разрешение создаваемых миниатюр. При более высоких настройках они выглядят чётче, но создаются дольше и занимают больше места на диске.",
+      "clean_unused_thumbnails": "Очистить неиспользуемый кэш миниатюр",
+      "clean_unused_thumbnails_hint": "Удаляет кэшированные миниатюры, которые больше не связаны с файлами в этой библиотеке.",
+      "clean": "Очистить",
+      "thumbnail_cache_cleaned": "Удалено миниатюр: {count}; освобождено: {size}.",
+      "thumbnail_quality_options": [
+        "Низкое (256 пкс)",
+        "Стандартное (512 пкс)",
+        "Высокое (1024 пкс)"
+      ],
       "section_external_apps": "Внешние приложения",
+      "manage_external_apps": "Управление внешними приложениями",
       "external_image_editor": "Открыть фото с помощью",
       "external_video_app": "Открывать видео в",
       "external_app_not_selected": "Приложение не выбрано",

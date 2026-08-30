@@ -337,6 +337,8 @@ async fn main() {
             t_cmds::batch_delete_files,
             // file metadata
             t_cmds::edit_file_comment,
+            t_cmds::clean_unused_thumbnail_cache,
+            t_cmds::refresh_folder_thumbnails,
             t_cmds::get_file_thumb,
             t_cmds::get_file_thumb_by_id,
             t_cmds::get_file_thumbs,

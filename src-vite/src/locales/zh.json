@@ -619,6 +619,7 @@
       "compare_selected_images": "对比",
       "open_selected_videos_in_app": "在 {app} 中打开视频...",
       "open_in_app": "在外部应用中打开...",
+      "manage_app": "管理应用...",
       "find_similar_images": "查找相关照片",
       "find_person_images": "查找此人物",
       "print": "打印...",
@@ -1268,10 +1269,10 @@
       ],
       "navigator_view__size": "导航器大小",
       "navigator_view_size_options": [
-        "小(160px)",
-        "中(240px)",
-        "大(320px)",
-        "特大(400px)"
+        "小 (160 px)",
+        "中 (240 px)",
+        "大 (320 px)",
+        "特大 (400 px)"
       ],
       "section_view": "查看",
       "view_background": "背景",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "高级",
+      "section_thumbnail_cache": "缩略图缓存",
+      "thumbnail_quality": "缩略图质量",
+      "thumbnail_quality_hint": "控制生成缩略图的分辨率。更高设置更清晰，但生成更慢且占用更多磁盘空间。",
+      "clean_unused_thumbnails": "清理未使用的缩略图缓存",
+      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图。",
+      "clean": "清理",
+      "thumbnail_cache_cleaned": "已清理 {count} 个缩略图，释放 {size}。",
+      "thumbnail_quality_options": [
+        "低 (256 px)",
+        "标准 (512 px)",
+        "高 (1024 px)"
+      ],
       "section_external_apps": "外部应用",
+      "manage_external_apps": "管理外部应用",
       "external_image_editor": "使用以下应用打开照片",
       "external_video_app": "使用以下应用打开视频",
       "external_app_not_selected": "未选择应用",

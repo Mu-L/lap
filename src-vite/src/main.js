@@ -120,8 +120,8 @@ if (isMainWindow) {
   listen('settings-showSubfolderFiles-changed', (event) => {
     config.setShowSubfolderFiles(event.payload)
   })
-  listen('settings-gridSize-changed', (event) => {
-    config.setGridSize(event.payload)
+  listen('settings-thumbnailSize-changed', (event) => {
+    config.setThumbnailSize(event.payload)
   })
   listen('settings-gridStyle-changed', (event) => {
     config.setGridStyle(event.payload)

@@ -619,6 +619,7 @@
       "compare_selected_images": "Comparer",
       "open_selected_videos_in_app": "Ouvrir les vidéos dans {app}...",
       "open_in_app": "Ouvrir dans une app externe...",
+      "manage_app": "Gérer les apps...",
       "find_similar_images": "Trouver des photos associées",
       "find_person_images": "Trouver cette personne",
       "print": "Imprimer...",
@@ -1268,10 +1269,10 @@
       ],
       "navigator_view__size": "Taille du navigateur",
       "navigator_view_size_options": [
-        "Petit(160px)",
-        "Moyen(240px)",
-        "Grand(320px)",
-        "Très Grand(400px)"
+        "Petit (160 px)",
+        "Moyen (240 px)",
+        "Grand (320 px)",
+        "Très grand (400 px)"
       ],
       "section_view": "Affichage",
       "view_background": "Arrière-plan",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "Avancé",
+      "section_thumbnail_cache": "Cache des miniatures",
+      "thumbnail_quality": "Qualité des miniatures",
+      "thumbnail_quality_hint": "Définit la résolution des miniatures générées. Des réglages plus élevés offrent un aperçu plus net, mais nécessitent plus de temps de génération et d’espace disque.",
+      "clean_unused_thumbnails": "Nettoyer le cache de miniatures inutilisé",
+      "clean_unused_thumbnails_hint": "Supprime les miniatures mises en cache qui ne sont plus associées à des fichiers de cette bibliothèque.",
+      "clean": "Nettoyer",
+      "thumbnail_cache_cleaned": "Nettoyage de {count} miniatures terminé, {size} libérés.",
+      "thumbnail_quality_options": [
+        "Faible (256 px)",
+        "Standard (512 px)",
+        "Élevée (1024 px)"
+      ],
       "section_external_apps": "Applications externes",
+      "manage_external_apps": "Gérer les applications externes",
       "external_image_editor": "Ouvrir la photo avec",
       "external_video_app": "Ouvrir la vidéo avec",
       "external_app_not_selected": "Aucune app selectionnee",

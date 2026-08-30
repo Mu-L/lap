@@ -154,7 +154,7 @@ import { isMac, shortenFilename, isValidFileName, getFolderPath, getFullPath, no
 import {
   createFolder, renameFolder, fetchFolder, getAllAlbums, moveFolder, moveFolderOutsideLibrary,
   copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum, selectFolder as selectFolderInDb,
-  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes,
+  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes, refreshFolderThumbnails,
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
@@ -410,6 +410,7 @@ const getMenuItemsForFolder = async (folder: any) => {
         await selection.selectFolder(props.albumId, folder);
         const folderId = Number(selection.folderId.value || 0);
         if (folderId > 0) {
+          await refreshFolderThumbnails(props.albumId, folder.path);
           await syncAlbumFolderMtimes(props.albumId, folderId, folder.path, true);
         }
         await expandFolder(folder, true);

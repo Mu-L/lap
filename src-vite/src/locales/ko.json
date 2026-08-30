@@ -619,6 +619,7 @@
       "compare_selected_images": "비교",
       "open_selected_videos_in_app": "{app}에서 동영상 열기...",
       "open_in_app": "외부 앱에서 열기...",
+      "manage_app": "앱 관리...",
       "find_similar_images": "관련 사진 찾기",
       "find_person_images": "이 인물 찾기",
       "print": "인쇄...",
@@ -1268,10 +1269,10 @@
       ],
       "navigator_view__size": "내비게이터 크기",
       "navigator_view_size_options": [
-        "작게(160px)",
-        "중간(240px)",
-        "크게(320px)",
-        "아주 크게(400px)"
+        "작게 (160 px)",
+        "중간 (240 px)",
+        "크게 (320 px)",
+        "아주 크게 (400 px)"
       ],
       "section_view": "보기",
       "view_background": "배경",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "고급",
+      "section_thumbnail_cache": "썸네일 캐시",
+      "thumbnail_quality": "썸네일 품질",
+      "thumbnail_quality_hint": "생성된 썸네일의 해상도를 설정합니다. 높은 설정일수록 더 선명하지만 생성 시간이 길고 디스크 공간을 더 사용합니다.",
+      "clean_unused_thumbnails": "사용하지 않는 썸네일 캐시 정리",
+      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다.",
+      "clean": "정리",
+      "thumbnail_cache_cleaned": "{count}개의 썸네일을 정리하여 {size}을(를) 확보했습니다.",
+      "thumbnail_quality_options": [
+        "낮음 (256 px)",
+        "표준 (512 px)",
+        "높음 (1024 px)"
+      ],
       "section_external_apps": "외부 앱",
+      "manage_external_apps": "외부 앱 관리",
       "external_image_editor": "사진을 다음으로 열기",
       "external_video_app": "동영상 열기 앱",
       "external_app_not_selected": "선택된 앱이 없습니다",

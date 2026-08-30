@@ -60,12 +60,18 @@ export const useFileMenuItems = (
     return {
       label: menuLabel(OPEN_IN_APP_LABELS.generic),
       icon: markRaw(IconExternal),
-      disabled: apps.length === 0,
-      children: apps.map((app: any) => ({
-        label: app.name || app.path,
-        shortcut: app.id === defaultApp?.id ? shortcut('file.openExternalApp') : undefined,
-        action: createAction(`open-external-app:${app.id}`),
-      })),
+      children: [
+        ...apps.map((app: any) => ({
+          label: app.name || app.path,
+          shortcut: app.id === defaultApp?.id ? shortcut('file.openExternalApp') : undefined,
+          action: createAction(`open-external-app:${app.id}`),
+        })),
+        ...(apps.length ? [{ label: '-', action: null }] : []),
+        {
+          label: String(localeMsg.value.menu.file.manage_app || 'Manage app...'),
+          action: createAction('manage-external-apps'),
+        },
+      ],
     };
   };
 

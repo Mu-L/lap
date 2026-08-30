@@ -108,75 +108,8 @@
 
         </div>
 
-        <!-- Library Tab -->
-        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
-
-          <!-- album -->
-          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_album') }}</span>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.show_subfolder_files') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.show_subfolder_files_hint') }}</div>
-              </div>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.showSubfolderFiles" />
-            </div>
-          </div>
-
-          <!-- file grouping -->
-          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_file_grouping') }}</span>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.group_raw_jpeg_pairs') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.group_raw_jpeg_pairs_hint') }}</div>
-              </div>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
-            </div>
-          </div>
-
-          <!-- sorting -->
-          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_sorting') }}</span>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.folder_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.folder_sort_hint') }}</div>
-              </div>
-              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.folderSort">
-                <option v-for="option in folderSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.calendar_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.calendar_sort_hint') }}</div>
-              </div>
-              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarSort">
-                <option v-for="option in calendarSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.category_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.category_sort_hint') }}</div>
-              </div>
-              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.categorySort">
-                <option v-for="option in categorySortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-              </select>
-            </div>
-          </div>
-
-        </div>
-
         <!-- Browse Tab -->
-        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
+        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
 
           <!-- grid view -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -265,7 +198,7 @@
         </div>
 
         <!-- Viewer Tab -->
-        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col space-y-2">
+        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
 
           <!-- navigation -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -348,7 +281,7 @@
         </div>
 
         <!-- Search Tab -->
-        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col overflow-hidden space-y-2">
+        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col overflow-hidden space-y-2">
 
           <!-- image search -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -459,71 +392,102 @@
           </div>
         </div>
 
-        <!-- Shortcuts Tab -->
-        <div v-else-if="config.settings.tabIndex === 5" class="flex flex-col space-y-2">
-          <div
-            v-for="section in shortcutSections"
-            :key="section.key"
-            class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm"
-          >
+        <!-- Library Tab -->
+        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col space-y-2">
+
+          <!-- album -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ section.title }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_album') }}</span>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
-              <div
-                v-for="item in section.items"
-                :key="item.actionId"
-                class="min-h-9 flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200"
-              >
-                <div class="min-w-0 text-sm leading-5 truncate">{{ item.label }}</div>
-                <div class="shrink-0 flex items-center gap-1">
-                  <span
-                    v-for="(key, keyIndex) in item.keys"
-                    :key="`${item.actionId}-${keyIndex}-${key}`"
-                    class="min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-box border border-base-content/10 bg-base-100/40 text-xs font-semibold text-base-content/30 shadow-sm"
-                  >
-                    {{ key }}
-                  </span>
-                </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.show_subfolder_files') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.show_subfolder_files_hint') }}</div>
               </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.showSubfolderFiles" />
             </div>
           </div>
+
+          <!-- file grouping -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_file_grouping') }}</span>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.group_raw_jpeg_pairs') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.group_raw_jpeg_pairs_hint') }}</div>
+              </div>
+              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
+            </div>
+          </div>
+
+          <!-- sorting -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_sorting') }}</span>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.folder_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.folder_sort_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.folderSort">
+                <option v-for="option in folderSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.calendar_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.calendar_sort_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarSort">
+                <option v-for="option in calendarSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.library.category_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.library.category_sort_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.categorySort">
+                <option v-for="option in categorySortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+          </div>
+
         </div>
 
         <!-- Advanced Tab -->
-        <div v-else-if="config.settings.tabIndex === 6" class="flex flex-col space-y-2">
+        <div v-else-if="config.settings.tabIndex === 5" class="flex flex-col space-y-2">
 
-          <!-- external app -->
+          <!-- thumbnail cache -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.advanced.section_external_apps') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.advanced.section_thumbnail_cache') }}</span>
             </div>
-            <div v-for="group in externalAppGroups" :key="group.kind" class="space-y-1">
-              <div class="flex items-center justify-between px-1 text-sm">
-                <span>{{ group.label }}</span>
-                <TButton
-                  :icon="IconAdd"
-                  :tooltip="$t('settings.advanced.choose_app')"
-                  :buttonSize="'small'"
-                  :disabled="group.apps.length >= 5"
-                  @click="selectExternalApp(group.kind)"
-                />
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.thumbnail_quality') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.thumbnail_quality_hint') }}</div>
               </div>
-              <div v-for="app in group.apps" :key="app.id" :title="app.path" class="ml-3 flex items-center gap-2 px-1 py-1 rounded-box hover:bg-base-100/10">
-                <div class="min-w-0 flex-1 truncate text-xs">{{ app.name || app.path }}</div>
-                <input
-                  type="radio"
-                  :name="`external-app-default-${group.kind}`"
-                  class="radio radio-xs"
-                  :title="app.id === group.defaultId ? $t('settings.advanced.default_app') : $t('settings.advanced.set_default_app')"
-                  :checked="app.id === group.defaultId"
-                  @change="setDefaultExternalApp(group.kind, app.id)"
-                />
-                <TButton :icon="IconTrash" :buttonSize="'small'" :tooltip="$t('settings.advanced.clear_app')" @click="removeExternalApp(group.kind, app.id)" />
+              <select class="select select-bordered select-sm min-w-40 shrink-0" :value="config.settings.thumbnailSize" @change="onThumbnailSizeChange">
+                <option v-for="option in thumbnailQualityOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.clean_unused_thumbnails') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.clean_unused_thumbnails_hint') }}</div>
               </div>
-              <div v-if="group.apps.length === 0" class="ml-3 px-1 py-1 text-xs text-base-content/30">
-                {{ $t('settings.advanced.external_app_not_selected') }}
-              </div>
+              <button
+                class="btn btn-sm btn-ghost rounded-box bg-base-100 border border-base-content/30 text-base-content/70 hover:text-base-content shrink-0"
+                :disabled="isCleaningThumbnailCache"
+                @click="cleanUnusedThumbnailCache"
+              >
+                {{ isCleaningThumbnailCache ? $t('tooltip.loading') : $t('settings.advanced.clean') }}
+              </button>
             </div>
           </div>
 
@@ -600,6 +564,36 @@
           </div>
         </div>
 
+        <!-- Shortcuts Tab -->
+        <div v-else-if="config.settings.tabIndex === 6" class="flex flex-col space-y-2">
+          <div
+            v-for="section in shortcutSections"
+            :key="section.key"
+            class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm"
+          >
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ section.title }}</span>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-4 gap-y-1">
+              <div
+                v-for="item in section.items"
+                :key="item.actionId"
+                class="min-h-9 flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200"
+              >
+                <div class="min-w-0 text-sm leading-5 truncate">{{ item.label }}</div>
+                <div class="shrink-0 flex items-center gap-1">
+                  <span
+                    v-for="(key, keyIndex) in item.keys"
+                    :key="`${item.actionId}-${keyIndex}-${key}`"
+                    class="min-w-7 h-7 px-2 inline-flex items-center justify-center rounded-box border border-base-content/10 bg-base-100/40 text-xs font-semibold text-base-content/30 shadow-sm"
+                  >
+                    {{ key }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- About Tab -->
         <div v-else-if="config.settings.tabIndex === 7" class="py-2">
             <SettingsAbout />
@@ -651,9 +645,9 @@ import { emit } from '@tauri-apps/api/event';
 import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
+import { normalizeThumbnailSize } from '@/common/thumbnailProfiles';
 import { THUMBNAIL_BADGE } from '@/common/constants';
 import {
-  getExternalAppDisplayName,
   getDbStorageDir,
   changeDbStorageDir,
   resetDbStorageDir,
@@ -663,12 +657,13 @@ import {
   setImageSearchModel,
   downloadMultilingualImageSearchModel,
   cancelMultilingualImageSearchModelDownload,
+  cleanUnusedThumbnailCache as cleanUnusedThumbnailCacheApi,
   listenImageSearchModelDownloadProgress,
 } from '@/common/api';
 import { formatFileSize, isLinux, isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { getShortcutLabels, ShortcutActionId, ShortcutPlatform } from '@/common/shortcuts';
 import { useToast } from '@/common/toast';
-import { IconAdd, IconClose, IconRestore, IconTrash } from '@/common/icons';
+import { IconClose, IconRestore } from '@/common/icons';
 
 import TitleBar from '@/components/TitleBar.vue';
 import SettingsAbout from '@/components/SettingsAbout.vue';
@@ -678,24 +673,23 @@ import RestoreDialog from '@/components/RestoreDialog.vue';
 import TButton from '@/components/TButton.vue';
 
 /// i18n
-const { locale, messages } = useI18n();
+const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[config.settings.language] as any);
 const toast = useToast();
 const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 'windows');
 const settingsTabs = [
   'settings.general.title',
-  'settings.library.title',
   'settings.browse.title',
   'settings.image_view.title',
   'settings.image_search.title',
-  'settings.shortcuts.title',
+  'settings.library.title',
   'settings.advanced.title',
+  'settings.shortcuts.title',
   'settings.about.title',
 ];
 
 const appWindow = getCurrentWebviewWindow()
 let unlistenCloseRequested: (() => void) | null = null;
-let gridSizeEmitTimer: number | null = null;
 const SETTINGS_BASE_WIDTH = 600;
 const SETTINGS_BASE_HEIGHT = 620;
 const dbStorageDir = ref('');
@@ -711,6 +705,7 @@ const multilingualModelDownloadProgress = ref(0);
 const multilingualModelDownloadedBytes = ref(0);
 const multilingualModelTotalBytes = ref(0);
 const isMultilingualModelAvailable = ref(false);
+const isCleaningThumbnailCache = ref(false);
 let unlistenImageSearchModelDownloadProgress: (() => void) | null = null;
 
 const onRestoreDone = () => {
@@ -802,13 +797,6 @@ const categorySortOptions = computed(() => {
   return result;
 });
 
-const externalAppGroups = computed(() => ['image', 'video'].map((kind) => ({
-  kind,
-  label: kind === 'image' ? localeMsg.value.settings.advanced.external_image_editor : localeMsg.value.settings.advanced.external_video_app,
-  apps: config.externalAppsFor(kind),
-  defaultId: config.settings.externalApps?.[kind]?.defaultId || null,
-})));
-
 // Define the wheel options using computed to react to language changes
 const wheelOptions = computed(() => {
   const options = localeMsg.value.settings.image_view.mouse_wheel_options; // returns an array
@@ -817,6 +805,42 @@ const wheelOptions = computed(() => {
     { label: options[1], value: 1 },  // 1: zoom in / out
   ];
 });
+
+const thumbnailQualityOptions = computed(() => {
+  const labels = localeMsg.value.settings.advanced.thumbnail_quality_options || [
+    'Low(256px)',
+    'Standard(512px)',
+    'High(1024px)',
+  ];
+  return [
+    { value: 256, label: labels[0] },
+    { value: 512, label: labels[1] },
+    { value: 1024, label: labels[2] },
+  ];
+});
+
+function onThumbnailSizeChange(event: Event) {
+  const next = normalizeThumbnailSize((event.target as HTMLSelectElement).value);
+  if (normalizeThumbnailSize(config.settings.thumbnailSize) === next) return;
+  config.settings.thumbnailSize = next;
+}
+
+async function cleanUnusedThumbnailCache() {
+  if (isCleaningThumbnailCache.value) return;
+
+  try {
+    isCleaningThumbnailCache.value = true;
+    const result = await cleanUnusedThumbnailCacheApi();
+    toast.success(t('settings.advanced.thumbnail_cache_cleaned', {
+      count: result?.filesRemoved || 0,
+      size: formatFileSize(result?.bytesFreed || 0),
+    }));
+  } catch (error: any) {
+    toast.error(error?.message || String(error));
+  } finally {
+    isCleaningThumbnailCache.value = false;
+  }
+}
 
 // Define the grid scaling options
 const gridScalingOptions = computed(() => {
@@ -1290,10 +1314,6 @@ onUnmounted(() => {
   if (isDownloadingMultilingualModel.value) {
     void cancelMultilingualImageSearchModelDownload();
   }
-  if (gridSizeEmitTimer) {
-    clearTimeout(gridSizeEmitTimer);
-    gridSizeEmitTimer = null;
-  }
   if (unlistenImageSearchModelDownloadProgress) {
     unlistenImageSearchModelDownloadProgress();
     unlistenImageSearchModelDownloadProgress = null;
@@ -1323,9 +1343,6 @@ watch(() => config.settings.scale, (newValue) => {
   updateSettingsWindowSize(Number(newValue || 1));
   emit('settings-scale-changed', newValue);
 });
-watch(() => config.settings.externalApps, (newValue) => {
-  emit('settings-externalApps-changed', JSON.parse(JSON.stringify(newValue)));
-}, { deep: true });
 watch(() => config.settings.language, (newValue) => {
   locale.value = newValue;
   emit('settings-language-changed', newValue);
@@ -1362,15 +1379,8 @@ watch(() => config.settings.groupRawJpegPairs, (newValue) => {
 });
 
 // grid view settings
-watch(() => config.settings.grid.size, (newValue: number) => {
-  if (gridSizeEmitTimer) {
-    clearTimeout(gridSizeEmitTimer);
-  }
-
-  gridSizeEmitTimer = window.setTimeout(() => {
-    emit('settings-gridSize-changed', newValue);
-    gridSizeEmitTimer = null;
-  }, 100);
+watch(() => config.settings.thumbnailSize, (newValue) => {
+  emit('settings-thumbnailSize-changed', newValue);
 });
 watch(() => config.settings.grid.style, (newValue) => {
   emit('settings-gridStyle-changed', newValue);
@@ -1531,48 +1541,6 @@ async function confirmResetDbStorageDir() {
   } finally {
     isChangingDbStorage.value = false;
   }
-}
-
-async function selectExternalApp(kind: 'image' | 'video') {
-  const result = await openDialog({
-    title: kind === 'image'
-      ? localeMsg.value.settings.image_view.external_image_editor
-      : localeMsg.value.settings.image_view.external_video_app,
-    multiple: false,
-    directory: false,
-    ...(isMac
-      ? {
-          defaultPath: '/Applications',
-          filters: [{ name: 'Applications', extensions: ['app'] }],
-        }
-      : {}),
-  });
-
-  if (!result || Array.isArray(result)) return;
-  let displayName = '';
-  try {
-    displayName = await getExternalAppDisplayName(result);
-  } catch {}
-
-  const externalApps = config.settings.externalApps ??= {
-    image: { defaultId: null, apps: [] },
-    video: { defaultId: null, apps: [] },
-  };
-  const group = externalApps[kind];
-  if (group.apps.length >= 5 || group.apps.some((app: any) => app.path === result)) return;
-  const app = { id: `${kind}:${result}`, name: displayName, path: result };
-  group.apps.push(app);
-  if (!group.defaultId) group.defaultId = app.id;
-}
-
-function setDefaultExternalApp(kind: 'image' | 'video', id: string) {
-  config.settings.externalApps[kind].defaultId = id;
-}
-
-function removeExternalApp(kind: 'image' | 'video', id: string) {
-  const group = config.settings.externalApps[kind];
-  group.apps = group.apps.filter((app: any) => app.id !== id);
-  if (group.defaultId === id) group.defaultId = group.apps[0]?.id || null;
 }
 
 function normalizeScale(value: number) {

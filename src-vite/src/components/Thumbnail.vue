@@ -274,6 +274,10 @@ const props = defineProps({
     type: String as () => 'keep' | 'dup' | '',
     default: '',
   },
+  gridSize: {
+    type: Number,
+    required: true,
+  },
 });
 
 const emit = defineEmits([
@@ -514,14 +518,16 @@ function handleContextMenu(event: MouseEvent) {
 
 
 const layoutStyle = computed(() => {
-  const { style, size } = config.settings.grid;
+  const { style } = config.settings.grid;
+  const size = props.gridSize;
   if (style === 0) return { width: `${size}px`, height: `${size}px` };
   if (style === 1) return { width: '100%', height: `${size}px` };
   return { width: '100%', height: '100%' };
 });
 
 const imgStyle = computed((): CSSProperties => {
-  const { style, size } = config.settings.grid;
+  const { style } = config.settings.grid;
+  const size = props.gridSize;
   const isRotated = props.file.rotate && props.file.rotate % 180 !== 0;
 
   if (isRotated) {

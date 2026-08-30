@@ -106,8 +106,8 @@
           
           <!-- grid size slider -->
           <div class="flex flex-row items-center gap-2 px-2 shrink-0 group">
-            <SliderInput v-model="config.settings.grid.size" 
-              :min="120" :max="360" :step="1" label="" :slider_width="80" 
+            <SliderInput v-model="gridSizePosition"
+              :min="0" :max="100" :step="1" label="" :slider_width="80"
             />
           </div>
 
@@ -206,6 +206,7 @@
                 :query-source="currentQuerySource"
                 :dedup-statuses="dedupStatuses"
                 :dragged-file-ids="draggedFileIds"
+                :grid-size="gridSize"
                 @item-clicked="handleItemClicked"
                 @item-dblclicked="handleItemDblClicked"
                 @item-select-toggled="handleItemSelectToggled"
@@ -216,6 +217,7 @@
                 @visible-range-update="handleVisibleRangeUpdate"
                 @scroll="handleGridScroll"
                 @layout-update="handleLayoutUpdate"
+                @grid-size-change="setGridSize"
                 @item-drag-start="markContentInternalDrag"
                 @item-drag="updateContentDragPosition"
                 @item-drag-end="clearContentInternalDrag"
@@ -566,6 +568,11 @@
     @cancel="cancelExternalOpen"
   />
 
+  <ExternalAppsDialog
+    v-if="showExternalAppsDialog"
+    @cancel="showExternalAppsDialog = false"
+  />
+
   <!-- tag -->
   <TaggingDialog 
     v-if="showTaggingDialog"
@@ -688,6 +695,12 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
          listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, addTagToFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
+import {
+  gridSizeFromPosition,
+  gridSizePositionFromGridSize,
+  normalizeGridSizePosition,
+  thumbnailProfile,
+} from '@/common/thumbnailProfiles';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import { getSmartTagById } from '@/common/smartTags';
 import { clearFolderFileCounts, setFolderFileCount } from '@/composables/useAlbumSelection';
@@ -713,6 +726,7 @@ import MoveTo from '@/components/MoveTo.vue';
 import TButton from '@/components/TButton.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
 import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
+import ExternalAppsDialog from '@/components/ExternalAppsDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -1848,6 +1862,7 @@ let fileConflictResolver: ((result: { policy: FileConflictPolicy; applyAll: bool
 const showTrashMsgbox = ref(false);
 const showTrashFailedMsgbox = ref(false);
 const showExternalOpenWarningMsgbox = ref(false);
+const showExternalAppsDialog = ref(false);
 const pendingExternalOpen = ref<{ paths: string[]; appPath: string } | null>(null);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -2252,14 +2267,30 @@ function scheduleLayoutRefresh() {
   }, 120);
 }
 const gap = 8;                    // Gap between items (must match GridView)
+const gridSizeProfile = computed(() => thumbnailProfile(config.settings.thumbnailSize));
+const gridSize = computed(() =>
+  gridSizeFromPosition(config.settings.grid.sizePosition, config.settings.thumbnailSize),
+);
+const gridSizePosition = computed({
+  get: () => Math.round(normalizeGridSizePosition(config.settings.grid.sizePosition) * 100),
+  set: (value) => {
+    config.settings.grid.sizePosition = normalizeGridSizePosition(Number(value) / 100);
+  },
+});
+
+function setGridSize(value: unknown) {
+  const profile = gridSizeProfile.value;
+  const size = Math.min(profile.maxGridSize, Math.max(profile.minGridSize, Number(value) || profile.minGridSize));
+  config.settings.grid.sizePosition = gridSizePositionFromGridSize(size, config.settings.thumbnailSize);
+}
 
 const itemWidth = computed(() => {
   if (config.settings.grid.style === 0) {
-    return config.settings.grid.size + 20; // size + padding/border/gap(20)
+    return gridSize.value + 20; // size + padding/border/gap(20)
   } else if (config.settings.grid.style === 1) {
-    return config.settings.grid.size;
+    return gridSize.value;
   } else if (isGeometryGridStyle.value) {
-    return config.settings.grid.size; // Approximation for geometry layouts
+    return gridSize.value; // Approximation for geometry layouts
   }
   return 0;
 });
@@ -2269,11 +2300,11 @@ const itemSize = computed(() => {
     let labelHeight = 0
     if (config.settings.grid.labelPrimary > 0 ) labelHeight += 16;      // height of text-sm
     if (config.settings.grid.labelSecondary > 0 ) labelHeight += 16;    // height of text-xs
-    return config.settings.grid.size + 20 + labelHeight; // size + padding/border/gap(20) + labels
+    return gridSize.value + 20 + labelHeight; // size + padding/border/gap(20) + labels
   } else if (config.settings.grid.style === 1) {
     return itemWidth.value + gap / 2;
   } else if (isGeometryGridStyle.value) {
-    return config.settings.grid.size;
+    return gridSize.value;
   }
   return 0;
 });
@@ -3618,6 +3649,10 @@ function handleItemAction(payload: { action: string, index: number }) {
     void openInExternalApp(action.slice('open-external-app:'.length));
     return;
   }
+  if (action === 'manage-external-apps') {
+    showExternalAppsDialog.value = true;
+    return;
+  }
 
   const actionMap = {
     'open': () => openImageViewer(selectedItemIndex.value, true),
@@ -4024,14 +4059,14 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   if (getActivePreviewMode() === 'none' && matchesShortcut('view.zoomIn', event, shortcutPlatform) && event.key === '=') {
     if (!isContentInteractionActive()) return;
     event.preventDefault();
-    config.settings.grid.size = Math.min(360, Number(config.settings.grid.size || 160) + 10);
+    setGridSize(gridSize.value + 10);
     return;
   }
 
   if (getActivePreviewMode() === 'none' && matchesShortcut('view.zoomOut', event, shortcutPlatform) && event.key === '-') {
     if (!isContentInteractionActive()) return;
     event.preventDefault();
-    config.settings.grid.size = Math.max(120, Number(config.settings.grid.size || 160) - 10);
+    setGridSize(gridSize.value - 10);
     return;
   }
 
@@ -4194,9 +4229,9 @@ function handleContentWheel(event: WheelEvent) {
   event.preventDefault();
   event.stopPropagation();
 
-  const currentSize = Number(config.settings.grid.size || 160);
+  const currentSize = gridSize.value;
   const delta = event.deltaY < 0 ? 10 : -10;
-  config.settings.grid.size = Math.max(120, Math.min(360, currentSize + delta));
+  setGridSize(currentSize + delta);
 }
 
 function isTextInputFocused() {
@@ -5401,7 +5436,7 @@ function disablePreviewModes() {
   stopSlideShow();
 }
 
-watch(() => config.settings.grid.size, (newSize, oldSize) => {
+watch(gridSize, (newSize, oldSize) => {
   if (newSize === oldSize) return;
   if (showQuickView.value || isSlideShow.value) {
     disablePreviewModes();

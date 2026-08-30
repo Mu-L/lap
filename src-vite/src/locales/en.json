@@ -619,6 +619,7 @@
       "compare_selected_images": "Compare",
       "open_selected_videos_in_app": "Open videos in {app}...",
       "open_in_app": "Open in external app...",
+      "manage_app": "Manage apps...",
       "find_similar_images": "Find related photos",
       "find_person_images": "Find this person",
       "print": "Print...",
@@ -1268,10 +1269,10 @@
       ],
       "navigator_view__size": "Navigator size",
       "navigator_view_size_options": [
-        "Small(160px)",
-        "Medium(240px)",
-        "Large(320px)",
-        "Extra Large(400px)"
+        "Small (160 px)",
+        "Medium (240 px)",
+        "Large (320 px)",
+        "Extra Large (400 px)"
       ],
       "section_view": "View",
       "view_background": "Background",
@@ -1401,7 +1402,20 @@
     },
     "advanced": {
       "title": "Advanced",
+      "section_thumbnail_cache": "Thumbnail cache",
+      "thumbnail_quality": "Thumbnail quality",
+      "thumbnail_quality_hint": "Sets the resolution of generated thumbnails. Higher settings look sharper but take longer to generate and use more disk space",
+      "clean_unused_thumbnails": "Clean unused thumbnail cache",
+      "clean_unused_thumbnails_hint": "Removes cached thumbnails that are no longer associated with files in this library",
+      "clean": "Clean",
+      "thumbnail_cache_cleaned": "Cleaned {count} thumbnails, freed {size}.",
+      "thumbnail_quality_options": [
+        "Low (256 px)",
+        "Standard (512 px)",
+        "High (1024 px)"
+      ],
       "section_external_apps": "External apps",
+      "manage_external_apps": "Manage external apps",
       "external_image_editor": "Open photo in",
       "external_video_app": "Open video in",
       "external_app_not_selected": "No app selected",

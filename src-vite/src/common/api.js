@@ -1189,6 +1189,24 @@ export async function getFileThumb(fileId, filePath, fileType, orientation, thum
   return null;
 }
 
+export async function cleanUnusedThumbnailCache() {
+  try {
+    return await invoke('clean_unused_thumbnail_cache');
+  } catch (error) {
+    console.error('Failed to clean unused thumbnail cache:', error);
+    throw error;
+  }
+}
+
+export async function refreshFolderThumbnails(albumId, folderPath) {
+  try {
+    return await invoke('refresh_folder_thumbnails', { albumId, folderPath });
+  } catch (error) {
+    console.error('Failed to refresh folder thumbnails:', error);
+    throw error;
+  }
+}
+
 export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = false) {
   try {
     const result = await invoke('get_file_thumb_by_id', { fileId, thumbnailSize, forceRegenerate });
