@@ -84,7 +84,7 @@
                   @click.stop="increasePreviewScale"
                 />
               </div>
-              <div class="absolute inset-0">
+              <div class="absolute inset-0 cursor-pointer" @click.stop="$emit('openViewer')">
                 <img
                   v-if="fileInfo?.thumbnail"
                   :src="fileInfo.thumbnail"
@@ -156,7 +156,7 @@
           @leave="onLeave"
         >
           <div v-if="showBasicInfoPanel" class="overflow-hidden">
-            <div class="pl-4 grid grid-cols-[84px_1fr] gap-y-1.5 gap-x-4 text-xs">
+            <div class="pl-4 grid grid-cols-[84px_minmax(0,1fr)] gap-y-1.5 gap-x-4 text-xs">
             <!-- Name -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.name') }}</div>
             <div class="group/field flex items-center gap-1">
@@ -350,11 +350,17 @@
           <div v-if="showMetadataPanel" class="pl-4 grid grid-cols-[84px_1fr] gap-y-1.5 gap-x-4 text-xs overflow-hidden">
             <!-- Camera -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.camera') }}</div>
-            <div class="flex items-center text-[12px] text-base-content/75">{{ formatCameraInfo(fileInfo?.e_make, fileInfo?.e_model) }}</div>
+            <div
+              :class="['flex items-center text-[12px] text-base-content/75', hasCamera ? 'cursor-pointer hover:text-primary' : '']"
+              @click.stop="navigateCamera"
+            >{{ formatCameraInfo(fileInfo?.e_make, fileInfo?.e_model) }}</div>
 
             <!-- Lens -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.lens') }}</div>
-            <div class="flex items-center text-[12px] text-base-content/75">{{ fileInfo?.e_lens_model }}</div>
+            <div
+              :class="['flex items-center text-[12px] text-base-content/75', hasLens ? 'cursor-pointer hover:text-primary' : '']"
+              @click.stop="navigateLens"
+            >{{ fileInfo?.e_lens_model }}</div>
 
             <!-- Capture Settings -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.capture_settings') }}</div>
@@ -382,7 +388,10 @@
 
             <!-- Geo Location -->
             <div class="flex items-center text-[11px] text-base-content/45 h-6">{{ $t('file_info.geo_location') }}</div>
-            <div class="flex items-center text-[12px] text-base-content/75">{{ formatGeoLocation() }}</div>
+            <div
+              :class="['flex items-center text-[12px] text-base-content/75', hasLocation ? 'cursor-pointer hover:text-primary' : '']"
+              @click.stop="navigateLocation"
+            >{{ formatGeoLocation() }}</div>
           </div>
         </Transition>
       </div>
@@ -499,6 +508,8 @@ const emit = defineEmits([
   'quickEditCollection',
   'quickEditComment',
   'navigateFolder',
+  'openViewer',
+  'navigateMetadata',
 ]);
 
 const toast = useToast();
@@ -894,6 +905,26 @@ function formatGeoLocation() {
   ];
 
   return fields.filter(Boolean).join(", ");
+}
+
+// Clickable metadata values: jump to the corresponding sidebar view.
+const hasCamera = computed(() => !!(props.fileInfo?.e_make || props.fileInfo?.e_model));
+const hasLens = computed(() => !!props.fileInfo?.e_lens_model);
+const hasLocation = computed(() => !!(props.fileInfo?.geo_cc || props.fileInfo?.geo_admin1 || props.fileInfo?.geo_name));
+
+function navigateCamera() {
+  if (!hasCamera.value) return;
+  emit('navigateMetadata', { type: 'camera', make: props.fileInfo?.e_make || null, model: props.fileInfo?.e_model || null });
+}
+
+function navigateLens() {
+  if (!hasLens.value) return;
+  emit('navigateMetadata', { type: 'lens', lensMake: props.fileInfo?.e_lens_make || null, lensModel: props.fileInfo?.e_lens_model || null });
+}
+
+function navigateLocation() {
+  if (!hasLocation.value) return;
+  emit('navigateMetadata', { type: 'location', cc: props.fileInfo?.geo_cc || null, admin1: props.fileInfo?.geo_admin1 || null, name: props.fileInfo?.geo_name || null });
 }
 
 const onBeforeEnter = (el: any) => {

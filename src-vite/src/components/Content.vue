@@ -465,6 +465,8 @@
             @quick-edit-collection="clickAddToCollection"
             @quick-edit-comment="openCommentEditor"
             @navigate-folder="handleInfoNavigateFolder"
+            @open-viewer="openSelectedInViewer"
+            @navigate-metadata="handleNavigateMetadata"
           />
         </div>
       </div>
@@ -2014,6 +2016,64 @@ const checkUnsavedChanges = (action: () => void) => {
   }
 };
 
+// Open the currently selected file in a new image viewer window (from FileInfo preview click).
+function openSelectedInViewer() {
+  if (selectedItemIndex.value < 0) return;
+  checkUnsavedChanges(() => {
+    openImageViewer(selectedItemIndex.value, true);
+  });
+}
+
+// Open a temporary view filtered by the clicked metadata (camera/lens/location).
+// Like "find related photos", the back button returns to the previous view.
+function enterMetadataTempView(
+  mode: 'camera' | 'lens' | 'location',
+  title: string,
+  params: Record<string, any>,
+) {
+  if (tempViewMode.value === 'none') {
+    backupState.value = createViewBackup();
+  }
+  currentThumbRequestId++;
+  tempViewMode.value = mode;
+  showQuickView.value = false;
+  contentTitle.value = title;
+  const requestId = ++currentContentRequestId;
+  showLoadingContent(requestId);
+  scrollPosition.value = 0;
+  selectedItemIndex.value = 0;
+  if (gridViewRef.value) {
+    gridViewRef.value.scrollToPosition(0);
+  }
+  getFileList(params, requestId);
+}
+
+function handleNavigateMetadata(payload: { type: string; [key: string]: any }) {
+  switch (payload?.type) {
+    case 'camera': {
+      const make = payload.make || '';
+      const model = payload.model || '';
+      enterMetadataTempView('camera', [make, model].filter(Boolean).join(' '), {
+        make, model, searchFileType: 0,
+      });
+      break;
+    }
+    case 'lens': {
+      enterMetadataTempView('lens', payload.lensModel || payload.lensMake || '', {
+        lensMake: payload.lensMake || '', lensModel: payload.lensModel || '', searchFileType: 0,
+      });
+      break;
+    }
+    case 'location': {
+      const title = [payload.name, payload.admin1, payload.cc].filter(Boolean).join(', ');
+      enterMetadataTempView('location', title, {
+        locationAdmin1: payload.admin1 || '', locationName: payload.name || '', searchFileType: 0,
+      });
+      break;
+    }
+  }
+}
+
 async function removeFileFromCurrentCollection(index: number) {
   const file = fileList.value[index];
   if (!file || !currentCollectionId.value) return;
@@ -2977,7 +3037,7 @@ function showLoadingContent(requestId: number) {
 }
 
 // Similar Search Mode State
-const tempViewMode = ref<'none' | 'similar' | 'album' | 'person'>('none');
+const tempViewMode = ref<'none' | 'similar' | 'album' | 'person' | 'camera' | 'lens' | 'location'>('none');
 let suppressPersonContextRefresh = false;
 const dedupQueryParams = computed(() => {
   return { ...currentQueryParams.value };
@@ -3047,6 +3107,9 @@ const currentTitleIcon = computed(() => {
     case 'similar': return IconPhotoSearch;
     case 'album': return IconFolderSearch;
     case 'person': return IconPersonSearch;
+    case 'camera': return IconCamera;
+    case 'lens': return IconCameraAperture;
+    case 'location': return IconLocation;
     default: return null;
   }
 });
@@ -7166,6 +7229,9 @@ function exitTempViewMode() {
 function handleTitleClick() {
   switch (tempViewMode.value) {
     case 'similar':
+    case 'camera':
+    case 'lens':
+    case 'location':
       exitTempViewMode();
       break;
     case 'person':
