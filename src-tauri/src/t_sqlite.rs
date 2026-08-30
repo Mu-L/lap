@@ -7632,6 +7632,47 @@ impl Person {
         Ok(persons)
     }
 
+    /// Get a single person's face thumbnail by id (Base64).
+    /// Prefers the pre-stored thumbnail; generates it on-the-fly if missing.
+    pub fn get_thumbnail(person_id: i64) -> Result<Option<String>, String> {
+        let conn = open_conn()?;
+
+        // Prefer the pre-stored thumbnail.
+        let stored: Option<Vec<u8>> = conn
+            .query_row(
+                "SELECT thumbnail FROM persons WHERE id = ?1",
+                params![person_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+
+        if let Some(data) = stored {
+            return Ok(Some(general_purpose::STANDARD.encode(data)));
+        }
+
+        // Fallback: generate from the person's best face (e.g. the thumbnail
+        // was never computed during clustering, or the cover file was missing).
+        let cover_face_id: Option<i64> = conn
+            .query_row(
+                "SELECT cover_face_id FROM persons WHERE id = ?1",
+                params![person_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?
+            .flatten();
+
+        let generated = Self::generate_thumbnail(&conn, person_id, cover_face_id)?;
+        if let Some(data) = &generated {
+            let _ = conn.execute(
+                "UPDATE persons SET thumbnail = ?1 WHERE id = ?2",
+                params![data, person_id],
+            );
+        }
+        Ok(generated.map(|data| general_purpose::STANDARD.encode(data)))
+    }
+
     pub fn get_page(sort: i64, offset: usize, limit: usize, search: &str) -> Result<PersonPage, String> {
         let conn = open_conn()?;
         let limit = limit.clamp(1, 100);

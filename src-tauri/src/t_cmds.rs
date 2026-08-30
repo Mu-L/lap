@@ -2834,6 +2834,13 @@ pub fn get_faces_for_file(file_id: i64) -> Result<Vec<t_sqlite::Face>, String> {
         .map_err(|e| format!("Error while getting faces for file: {}", e))
 }
 
+/// Get a single person's face thumbnail (Base64 encoded).
+#[tauri::command]
+pub fn get_person_thumbnail(person_id: i64) -> Result<Option<String>, String> {
+    t_sqlite::Person::get_thumbnail(person_id)
+        .map_err(|e| format!("Error while getting person thumbnail: {}", e))
+}
+
 // ----------------------------------------------------------------------------
 // Deduplication Commands
 // ----------------------------------------------------------------------------

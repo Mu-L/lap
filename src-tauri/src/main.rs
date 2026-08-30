@@ -399,6 +399,7 @@ async fn main() {
             t_cmds::rename_person,
             t_cmds::delete_person,
             t_cmds::get_faces_for_file,
+            t_cmds::get_person_thumbnail,
             // dedup
             t_cmds::dedup_start_scan,
             t_cmds::dedup_get_scan_status,

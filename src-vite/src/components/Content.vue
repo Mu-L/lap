@@ -467,6 +467,7 @@
             @navigate-folder="handleInfoNavigateFolder"
             @open-viewer="openSelectedInViewer"
             @navigate-metadata="handleNavigateMetadata"
+            @navigate-person="handleNavigatePerson"
           />
         </div>
       </div>
@@ -7088,6 +7089,14 @@ async function enterPersonSearchMode(file: any) {
      return;
   }
 
+  await enterPersonTempView(Number(face.person_id), face.person_name || '');
+}
+
+// Open a temporary view of all photos of a specific person. Used by both
+// "find this person" and clicking a person name in the file info panel.
+async function enterPersonTempView(personId: number, personName: string) {
+  if (!config.settings.face.enabled || !personId || personId <= 0) return;
+
   // Increment request ID to cancel any previous thumbnail generation and reset queue
   currentThumbRequestId++;
   // 1. Backup current state
@@ -7099,28 +7108,33 @@ async function enterPersonSearchMode(file: any) {
   tempViewMode.value = 'person';
   showQuickView.value = false;
 
-  // 3. Update libConfig.person to reflect the found person
+  // 3. Update libConfig.person to reflect the selected person
   suppressPersonContextRefresh = true;
-  libConfig.person.id = face.person_id;
-  libConfig.person.name = face.person_name || null;
+  libConfig.person.id = personId;
+  libConfig.person.name = personName || null;
   await nextTick();
   suppressPersonContextRefresh = false;
 
   // 4. Update Title to indicate context
-  contentTitle.value = face.person_name || localeMsg.value.sidebar.people;
+  contentTitle.value = personName || localeMsg.value.sidebar.people;
 
   // 5. Perform Search
   const requestId = ++currentContentRequestId;
   showLoadingContent(requestId);
-  
+
   // Reset scroll and selection
   scrollPosition.value = 0;
   selectedItemIndex.value = 0;
   if (gridViewRef.value) {
     gridViewRef.value.scrollToPosition(0);
   }
-  
-  getFileList({ personId: face.person_id, searchFileType: 0 }, requestId);
+
+  getFileList({ personId, searchFileType: 0 }, requestId);
+}
+
+// Click a person name in the file info panel → "find this person".
+function handleNavigatePerson(payload: { personId: number; personName: string }) {
+  void enterPersonTempView(Number(payload?.personId || 0), payload?.personName || '');
 }
 
 function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {

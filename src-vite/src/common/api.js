@@ -2046,3 +2046,13 @@ export async function getFacesForFile(fileId) {
   }
   return null;
 }
+
+// get a single person's face thumbnail (Base64)
+export async function getPersonThumbnail(personId) {
+  try {
+    return await invoke('get_person_thumbnail', { personId });
+  } catch (error) {
+    console.error('Failed to get person thumbnail:', error);
+  }
+  return null;
+}
