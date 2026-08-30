@@ -374,6 +374,11 @@ fn apply_orientation(img: DynamicImage, orientation: i32) -> DynamicImage {
     }
 }
 
+/// Minimum short edge as a fraction of `thumbnail_size` (1/4).
+const MIN_SHORT_EDGE_DIVISOR: u32 = 4;
+
+/// Computes thumbnail dimensions, keeping the short edge >= `thumbnail_size / 4`
+/// (never upscaling); the long edge may exceed `thumbnail_size`.
 fn compute_thumbnail_dimensions(width: u32, height: u32, thumbnail_size: u32) -> (u32, u32) {
     if width == 0 || height == 0 || thumbnail_size == 0 {
         return (1, 1);
@@ -383,8 +388,17 @@ fn compute_thumbnail_dimensions(width: u32, height: u32, thumbnail_size: u32) ->
         return (width.max(1), height.max(1));
     }
 
-    let max_edge = width.max(height) as f32;
-    let scale = thumbnail_size as f32 / max_edge;
+    let long = width.max(height) as f32;
+    let short = width.min(height) as f32;
+    let min_short_edge = (thumbnail_size / MIN_SHORT_EDGE_DIVISOR).max(1) as f32;
+    let fit_scale = thumbnail_size as f32 / long;
+    let fit_short = short * fit_scale;
+    // Keep the short edge at least min_short_edge, but never upscale it.
+    let scale = if fit_short < min_short_edge {
+        (short.min(min_short_edge)) / short
+    } else {
+        fit_scale
+    };
     let dst_w = ((width as f32) * scale).round().max(1.0) as u32;
     let dst_h = ((height as f32) * scale).round().max(1.0) as u32;
     (dst_w, dst_h)
