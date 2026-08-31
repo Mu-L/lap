@@ -1218,6 +1218,11 @@
         "Preencher",
         "Esticar"
       ],
+      "thumbnail_corners": "Cantos das miniaturas",
+      "thumbnail_corner_options": [
+        "Seguir o tema",
+        "Quadrados"
+      ],
       "label_primary": "Rótulo principal de visualização em cartões",
       "label_secondary": "Rótulo secundário de visualização em cartões",
       "label_options": [

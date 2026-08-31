@@ -129,6 +129,9 @@ if (isMainWindow) {
   listen('settings-gridScaling-changed', (event) => {
     config.setGridScaling(event.payload)
   })
+  listen('settings-gridThumbnailCorners-changed', (event) => {
+    config.setGridThumbnailCorners(event.payload)
+  })
   listen('settings-gridLabelPrimary-changed', (event) => {
     config.setGridLabelPrimary(event.payload)
   })

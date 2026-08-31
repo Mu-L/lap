@@ -1218,6 +1218,11 @@
         "Remplir",
         "Étirer"
       ],
+      "thumbnail_corners": "Coins des miniatures",
+      "thumbnail_corner_options": [
+        "Suivre le thème",
+        "Carrés"
+      ],
       "label_primary": "Étiquette princ. vue carte",
       "label_secondary": "Étiquette sec. vue carte",
       "label_options": [

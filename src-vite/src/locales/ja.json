@@ -1218,6 +1218,11 @@
         "埋める",
         "引き伸ばす"
       ],
+      "thumbnail_corners": "サムネイルの角",
+      "thumbnail_corner_options": [
+        "テーマに従う",
+        "角丸なし"
+      ],
       "label_primary": "カード表示メインラベル",
       "label_secondary": "カード表示サブラベル",
       "label_options": [

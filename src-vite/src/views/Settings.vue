@@ -134,6 +134,14 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.browse.thumbnail_corners') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailCorners">
+                <option v-for="option in thumbnailCornerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.browse.show_thumbnail_badges') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailBadge">
@@ -854,6 +862,11 @@ const gridScalingOptions = computed(() => {
   return result;
 });
 
+const thumbnailCornerOptions = computed(() => {
+  const options = localeMsg.value.settings.browse.thumbnail_corner_options;
+  return options.map((label: string, index: number) => ({ label, value: index }));
+});
+
 // Define the grid style options
 const gridStyleOptions = computed(() => {
   const options = localeMsg.value.settings.browse.style_options;
@@ -1387,6 +1400,9 @@ watch(() => config.settings.grid.style, (newValue) => {
 });
 watch(() => config.settings.grid.scaling, (newValue) => {
   emit('settings-gridScaling-changed', newValue);
+});
+watch(() => config.settings.grid.thumbnailCorners, (newValue) => {
+  emit('settings-gridThumbnailCorners-changed', newValue);
 });
 watch(() => config.settings.grid.labelPrimary, (newValue) => {
   emit('settings-gridLabelPrimary-changed', newValue);

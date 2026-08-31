@@ -1218,6 +1218,11 @@
         "裁剪填充",
         "拉伸填充"
       ],
+      "thumbnail_corners": "缩略图圆角",
+      "thumbnail_corner_options": [
+        "跟随主题",
+        "直角"
+      ],
       "label_primary": "卡片视图主标签",
       "label_secondary": "卡片视图副标签",
       "label_options": [

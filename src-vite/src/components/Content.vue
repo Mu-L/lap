@@ -2643,11 +2643,11 @@ function createDragGhost(
   const height = Math.max(1, Math.round(sourceRect.height * scale));
   dragGhostHotspotX = width * hotspot.xRatio;
   dragGhostHotspotY = height * hotspot.yRatio;
-  const thumbnailElement = sourceElement.querySelector('.rounded-box') as HTMLElement | null;
+  const thumbnailElement = sourceElement.querySelector('[data-thumbnail-container]') as HTMLElement | null;
   const computedRadius = Number.parseFloat(
     getComputedStyle(thumbnailElement || sourceElement).borderTopLeftRadius,
   );
-  const radius = Math.max(6, Math.round((Number.isFinite(computedRadius) ? computedRadius : 8) * scale));
+  const radius = Math.round((Number.isFinite(computedRadius) ? computedRadius : 8) * scale);
   const clipPath = `inset(0 round ${radius}px)`;
   front.style.width = `${sourceRect.width}px`;
   front.style.height = `${sourceRect.height}px`;

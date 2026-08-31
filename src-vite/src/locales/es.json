@@ -1218,6 +1218,11 @@
         "Recortar para llenar",
         "Estirar"
       ],
+      "thumbnail_corners": "Esquinas de miniaturas",
+      "thumbnail_corner_options": [
+        "Seguir el tema",
+        "Rectas"
+      ],
       "label_primary": "Etiqueta primaria de vista de tarjeta",
       "label_secondary": "Etiqueta secundaria de vista de tarjeta",
       "label_options": [

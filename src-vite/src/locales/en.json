@@ -1218,6 +1218,11 @@
         "Crop to fill",
         "Stretch to fill"
       ],
+      "thumbnail_corners": "Thumbnail corners",
+      "thumbnail_corner_options": [
+        "Follow theme",
+        "Square"
+      ],
       "label_primary": "Card view primary label",
       "label_secondary": "Card view secondary label",
       "label_options": [

@@ -1218,6 +1218,11 @@
         "채우기",
         "늘리기"
       ],
+      "thumbnail_corners": "미리보기 모서리",
+      "thumbnail_corner_options": [
+        "테마 따르기",
+        "직각"
+      ],
       "label_primary": "카드 보기 주 라벨",
       "label_secondary": "카드 보기 보조 라벨",
       "label_options": [

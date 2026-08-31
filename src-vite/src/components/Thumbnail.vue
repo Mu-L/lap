@@ -1,7 +1,8 @@
 <template>
   <div
     :class="[
-      'border-2 rounded-box flex flex-col items-center cursor-pointer group',
+      'border-2 flex flex-col items-center cursor-pointer group',
+      thumbnailCornerClass,
       isTransitionDisabled ? 'transition-none' : 'transition-[background-color,color] ease-in-out duration-150 ',
       config.settings.grid.style === 0 ? 'p-1 w-fit h-fit' : 'w-full h-full',
       isActive
@@ -15,7 +16,8 @@
   >
     <div
       ref="containerRef"
-      class="rounded-box relative flex items-center justify-center overflow-hidden bg-base-200/70"
+      data-thumbnail-container
+      :class="[thumbnailCornerClass, 'relative flex items-center justify-center overflow-hidden bg-base-200/70']"
       :style="layoutStyle"
       @pointerenter="startMediaPreview"
       @pointerleave="stopMediaPreview"
@@ -326,6 +328,9 @@ const animatedImagePreviewSrc = computed(() => getAssetSrc(props.file?.file_path
 const canPreviewAnimatedImage = computed(() => isAnimatableImageFile.value && !!animatedImagePreviewSrc.value);
 const isGeometryGridStyle = computed(() => config.settings.grid.style === 2 || config.settings.grid.style === 3);
 const shouldScaleThumbnail = computed(() => config.settings.grid.style === 1 || isGeometryGridStyle.value);
+const thumbnailCornerClass = computed(() => (
+  config.settings.grid.thumbnailCorners === 1 ? 'rounded-none' : 'rounded-box'
+));
 const thumbnailSrc = ref(props.file.thumbnail || '');
 const isThumbnailLoaded = ref(false);
 let thumbnailRetryCount = 0;

@@ -1218,6 +1218,11 @@
         "Füllen",
         "Strecken"
       ],
+      "thumbnail_corners": "Miniaturansicht-Ecken",
+      "thumbnail_corner_options": [
+        "Dem Design folgen",
+        "Eckig"
+      ],
       "label_primary": "Kartenansicht Hauptlabel",
       "label_secondary": "Kartenansicht Sekundärlabel",
       "label_options": [

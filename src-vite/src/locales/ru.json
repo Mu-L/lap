@@ -1218,6 +1218,11 @@
         "Обрезка",
         "Растягивание"
       ],
+      "thumbnail_corners": "Углы миниатюр",
+      "thumbnail_corner_options": [
+        "Следовать теме",
+        "Прямые"
+      ],
       "label_primary": "1-я подпись карточек",
       "label_secondary": "2-я подпись карточек",
       "label_options": [
