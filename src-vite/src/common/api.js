@@ -1659,15 +1659,12 @@ export async function getLocationInfo(sort = 0) {
   return null;
 }
 
-// get GPS coordinates aggregated into grid cells for heatmap rendering
-export async function getGpsHeatmapPoints() {
+// get GPS coordinates and representative thumbnails for the current media query
+export async function getGpsMapPoints(params) {
   try {
-    const points = await invoke('get_gps_heatmap_points');
-    if (points) {
-      return points;
-    }
+    return await invoke('get_gps_map_points', { params });
   } catch (error) {
-    console.error('Failed to get GPS heatmap points:', error);
+    console.error('Failed to get GPS map points:', error);
   }
   return [];
 }

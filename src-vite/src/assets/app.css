@@ -160,3 +160,55 @@ html, body {
   background: color-mix(in srgb, var(--color-warning) 22%, black 48%);
   color: color-mix(in srgb, white 88%, var(--color-warning) 12%);
 }
+
+.map-photo-marker-wrapper {
+  background: transparent;
+  border: 0;
+}
+
+.map-photo-marker {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: visible;
+}
+
+.map-photo-marker::after {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid white;
+  border-right: 7px solid transparent;
+  border-left: 7px solid transparent;
+  content: '';
+  transform: translateX(-50%);
+}
+
+.map-photo-marker img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  aspect-ratio: 1;
+  border: 2px solid white;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 2px 7px rgb(0 0 0 / 35%);
+}
+
+.map-photo-marker span {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border: 1px solid white;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}

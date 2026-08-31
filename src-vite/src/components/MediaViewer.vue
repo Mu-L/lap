@@ -289,8 +289,7 @@
       <!-- Previous Button (Overlay, media-area anchored) -->
       <button
         v-if="!isSlideShow && showOverlayNav"
-        class="absolute left-2 -translate-y-1/2 z-70 p-2 rounded-full bg-base-100/30 backdrop-blur-md transition-opacity duration-200"
-        :style="{ top: navButtonsTop }"
+        class="absolute left-2 top-1/2 -translate-y-1/2 z-70 p-2 rounded-full bg-base-100/30 backdrop-blur-md transition-opacity duration-200"
         :class="[
           isHoverLeft ? (hasPrevious ? 'opacity-100 pointer-events-auto hover:text-base-content hover:bg-base-100/80 cursor-pointer' : 'opacity-30 cursor-default') : 'opacity-0 pointer-events-none'
         ]"
@@ -304,8 +303,7 @@
       <!-- Next Button (Overlay, media-area anchored) -->
       <button
         v-if="!isSlideShow && showOverlayNav"
-        class="absolute right-2 -translate-y-1/2 z-70 p-2 rounded-full bg-base-100/30 backdrop-blur-md transition-opacity duration-200"
-        :style="{ top: navButtonsTop }"
+        class="absolute right-2 top-1/2 -translate-y-1/2 z-70 p-2 rounded-full bg-base-100/30 backdrop-blur-md transition-opacity duration-200"
         :class="[
           isHoverRight ? (hasNext ? 'opacity-100 pointer-events-auto hover:text-base-content hover:bg-base-100/80 cursor-pointer' : 'opacity-30 cursor-default') : 'opacity-0 pointer-events-none'
         ]"
@@ -673,7 +671,6 @@ const isHoverTop = ref(false);
 const isHoverBottom = ref(false);
 const toolbarPosition = ref<'top' | 'bottom'>('top');
 const hasOpenMenu = ref(false);
-const navButtonsTop = ref('50%');
 
 // Responsive toolbar
 const containerWidth = ref(0);
@@ -920,20 +917,6 @@ const showWindowControlsBar = computed(() => {
   return props.showToolbar && !(showDesktopWindowControls && props.mode === 2 && props.isFullScreen);
 });
 let resizeObserver: ResizeObserver | null = null;
-const updateNavButtonsTop = () => {
-  if (!containerRef.value || !mediaAreaRef.value) {
-    navButtonsTop.value = '50%';
-    return;
-  }
-  const containerRect = containerRef.value.getBoundingClientRect();
-  const mediaRect = mediaAreaRef.value.getBoundingClientRect();
-  if (containerRect.height <= 0 || mediaRect.height <= 0) {
-    navButtonsTop.value = '50%';
-    return;
-  }
-  const centerY = mediaRect.top - containerRect.top + mediaRect.height / 2;
-  navButtonsTop.value = `${Math.round(centerY)}px`;
-};
 
 onMounted(() => {
   resizeObserver = new ResizeObserver((entries) => {
@@ -944,24 +927,17 @@ onMounted(() => {
         buttonsWidth.value = entry.contentRect.width;
       }
     }
-    updateNavButtonsTop();
   });
 
   if (containerRef.value) {
     resizeObserver.observe(containerRef.value);
   }
-  if (mediaAreaRef.value) {
-    resizeObserver.observe(mediaAreaRef.value);
-  }
   if (buttonsRef.value) {
     resizeObserver.observe(buttonsRef.value);
   }
-  updateNavButtonsTop();
-  window.addEventListener('resize', updateNavButtonsTop);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateNavButtonsTop);
   if (resizeObserver) {
     resizeObserver.disconnect();
   }

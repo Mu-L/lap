@@ -156,7 +156,6 @@
           showDesktopTitleBar ? 'rounded-tl-box' : '',
         ]"
       >
-        <!-- <MapHeatmapView v-if="config.main.sidebarIndex === SIDEBAR.MAP" /> -->
         <Content ref="contentRef" :key="libraryVersion" :titlebar="activeSidebarButton.text" :libraryEmpty="libraryEmpty"/>
       </div>
     </div>
@@ -202,7 +201,6 @@ import Calendar from '@/components/Calendar.vue';
 import Location from '@/components/Location.vue';
 import Person from '@/components/Person.vue';
 import Camera from '@/components/Camera.vue';
-// import MapHeatmapView from '@/components/MapHeatmapView.vue';
 
 import TitleBar from '@/components/TitleBar.vue';
 import TButton from '@/components/TButton.vue';
@@ -362,7 +360,6 @@ const buttons = computed(() =>  [
   { index: SIDEBAR.PERSON, icon: IconPerson, component: Person, text: localeMsg.value.sidebar.people, hidden: !config.settings.face.enabled },
   { index: SIDEBAR.LOCATION, icon: IconLocation, component: Location, text: localeMsg.value.sidebar.location },
   { index: SIDEBAR.CAMERA, icon: IconCamera, component: Camera, text: localeMsg.value.sidebar.camera },
-  // { icon: IconMapDefault, component: null, text: localeMsg.value.sidebar.map },
 ]);
 
 const activeSidebarButton = computed(() =>
@@ -597,12 +594,6 @@ const onManageLibrariesUpdated = async () => {
 function clickSidebar(index: number) {
   activateMainPanel();
   if (libraryEmpty.value && index !== SIDEBAR.ALBUM) return;
-  if (index === SIDEBAR.MAP) {
-    // map view has no filter panel - give it the full content area
-    showPanel.value = false;
-    config.main.sidebarIndex = index;
-    return;
-  }
   if (config.main.sidebarIndex === index) {
     showPanel.value = !showPanel.value;
   } else {

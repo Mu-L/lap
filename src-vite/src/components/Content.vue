@@ -108,6 +108,7 @@
           <div class="flex flex-row items-center gap-2 px-2 shrink-0 group">
             <SliderInput v-model="gridSizePosition"
               :min="0" :max="100" :step="1" label="" :slider_width="80"
+              :disabled="isMapView"
             />
           </div>
 
@@ -118,6 +119,7 @@
               transform: `rotate(${config.settings.grid.style === 3 ? 90 : 0}deg)`,
             }"
             :tooltip="localeMsg.settings.browse.style_options[config.settings.grid.style]"
+            :disabled="isMapView"
             @click="cycleGridStyle"
           />
 
@@ -130,7 +132,15 @@
             }" 
             :tooltip="localeMsg.settings.browse.filmstrip_view.title"
             :selected="config.settings.grid.showFilmStrip"
+            :disabled="isMapView"
             @click="toggleFilmstripView"
+          />
+
+          <TButton
+            :icon="IconMapDefault"
+            :tooltip="$t('sidebar.map')"
+            :selected="isMapView"
+            @click="toggleMapView"
           />
 
           <IconSeparator class="t-icon-size text-base-content/15" />
@@ -172,7 +182,19 @@
     <!-- content view -->
     <div ref="contentViewDiv" class="relative flex-1 flex flex-row overflow-hidden">
       <div class="relative flex-1 flex flex-row overflow-hidden">
-        <div ref="gridViewDiv" 
+        <PhotoMapView
+          v-if="isMapView"
+          class="mt-12 flex-1 min-w-0"
+          :class="config.settings.showStatusBar ? 'mb-8' : 'mb-1'"
+          :query-params="mapQueryParams"
+          :query-source="currentQuerySource"
+          :collection-id="currentCollectionId"
+          :file-ids="currentSearchFileIds"
+          :restore-view="mapTempViewState"
+          @open-cluster="openMapClusterTempView"
+          @restored="mapTempViewState = null"
+        />
+        <div v-if="!isMapView" ref="gridViewDiv"
           :class="[
             'flex-1 flex',
             gridViewLayoutClass,
@@ -291,7 +313,7 @@
         </div> <!-- grid view -->
 
         <!-- custom scrollbar -->
-        <div v-if="!showWelcomeContent && !config.settings.grid.showFilmStrip && fileList.length > 0"
+        <div v-if="!isMapView && !showWelcomeContent && !config.settings.grid.showFilmStrip && fileList.length > 0"
           class="mt-12 shrink-0" 
           :class="[ config.settings.showStatusBar ? 'mb-8' : 'mb-1' ]"
         >
@@ -716,6 +738,7 @@ import { isWin, isMac, isLinux, setTheme, separator,
 import DropDownSelect from '@/components/DropDownSelect.vue';
 import ProgressBar from '@/components/ProgressBar.vue';
 import GridView  from '@/components/GridView.vue';
+import PhotoMapView from '@/components/PhotoMapView.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import { useFileMenuItems } from '@/common/fileMenu';
 import Welcome from '@/components/Welcome.vue';
@@ -753,6 +776,7 @@ import {
   IconTile,
   IconJustified,
   IconFilmstrip,
+  IconMapDefault,
   IconSelection,
   IconInformation,
   IconSearch,
@@ -2957,9 +2981,16 @@ const currentQueryParams = ref({
   personId: 0,
 });
 const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('query');
+const isMapView = computed(() => config.settings.grid.viewMode === 'map');
+const mapTempViewState = ref<{ lat: number; lon: number; zoom: number } | null>(null);
 const currentSmartQueryParams = ref<any | null>(null);
 const currentCollectionId = ref<number | null>(null);
 const currentSearchFileIds = ref<number[]>([]);
+const mapQueryParams = computed(() => (
+  currentQuerySource.value === 'smart' && currentSmartQueryParams.value
+    ? currentSmartQueryParams.value
+    : currentQueryParams.value
+));
 const dedupSmartFileIds = ref<number[] | null>(null);
 
 type SaveAsContext = {
@@ -3069,7 +3100,7 @@ function showLoadingContent(requestId: number) {
 }
 
 // Similar Search Mode State
-const tempViewMode = ref<'none' | 'similar' | 'album' | 'person' | 'camera' | 'lens' | 'location'>('none');
+const tempViewMode = ref<'none' | 'similar' | 'album' | 'person' | 'camera' | 'lens' | 'location' | 'map'>('none');
 let suppressPersonContextRefresh = false;
 const dedupQueryParams = computed(() => {
   return { ...currentQueryParams.value };
@@ -5452,6 +5483,59 @@ function toggleFilmstripView() {
   }
 }
 
+function toggleMapView() {
+  showQuickView.value = false;
+  if (tempViewMode.value === 'map') {
+    exitTempViewMode();
+    return;
+  }
+  config.settings.grid.viewMode = isMapView.value ? 'grid' : 'map';
+}
+
+function openMapClusterTempView(payload: { minLat: number; maxLat: number; minLon: number; maxLon: number; count: number; view: { lat: number; lon: number; zoom: number } }) {
+  if (tempViewMode.value === 'none') backupState.value = createViewBackup();
+  mapTempViewState.value = payload.view;
+  currentThumbRequestId++;
+  tempViewMode.value = 'map';
+  showQuickView.value = false;
+  contentTitle.value = t('map.photos_in_view', { count: payload.count });
+  config.settings.grid.viewMode = 'grid';
+  const requestId = ++currentContentRequestId;
+  showLoadingContent(requestId);
+  scrollPosition.value = 0;
+  selectedItemIndex.value = 0;
+  const gpsParams = {
+    ...currentQueryParams.value,
+    gpsMinLat: payload.minLat,
+    gpsMaxLat: payload.maxLat,
+    gpsMinLon: payload.minLon,
+    gpsMaxLon: payload.maxLon,
+  };
+
+  if (currentQuerySource.value === 'search') {
+    void getMapSearchClusterFileList(currentSearchFileIds.value, gpsParams, requestId);
+    return;
+  }
+
+  if (currentQuerySource.value === 'smart' && currentSmartQueryParams.value) {
+    void getFileList(gpsParams, requestId, {
+      source: 'smart',
+      smartParams: {
+        ...currentSmartQueryParams.value,
+        gpsMinLat: payload.minLat,
+        gpsMaxLat: payload.maxLat,
+        gpsMinLon: payload.minLon,
+        gpsMaxLon: payload.maxLon,
+      },
+    });
+    return;
+  }
+
+  void getFileList(gpsParams, requestId, currentQuerySource.value === 'collection'
+    ? { source: 'collection', collectionId: currentCollectionId.value }
+    : null);
+}
+
 function cycleGridStyle() {
   showQuickView.value = false;
   // Cycle between card, tile, justified, and masonry.
@@ -6145,13 +6229,18 @@ async function getFileList(
     rating = -1,
     cullingFlag = -1,
     tagId = 0,
-    personId = 0
+    personId = 0,
+    gpsMinLat = null,
+    gpsMaxLat = null,
+    gpsMinLon = null,
+    gpsMaxLon = null
   } = {},
-  requestId: number, 
+  requestId: number,
+  sourceContext: { source: 'collection' | 'smart'; collectionId?: number | null; smartParams?: any } | null = null,
 ) { 
-  currentQuerySource.value = 'query';
-  currentSmartQueryParams.value = null;
-  currentCollectionId.value = null;
+  currentQuerySource.value = sourceContext?.source || 'query';
+  currentSmartQueryParams.value = sourceContext?.source === 'smart' ? sourceContext.smartParams : null;
+  currentCollectionId.value = sourceContext?.source === 'collection' ? sourceContext.collectionId || null : null;
   currentSearchFileIds.value = [];
 
   // Update current query params with all fields
@@ -6178,7 +6267,15 @@ async function getFileList(
     cullingFlag,
     tagId,
     personId,
+    gpsMinLat,
+    gpsMaxLat,
+    gpsMinLon,
+    gpsMaxLon,
   };
+
+  if (sourceContext?.source === 'smart') {
+    void refreshDedupSmartFileIds(requestId, currentSmartQueryParams.value);
+  }
 
   // Set loading state
   isLoading.value = true;
@@ -6235,6 +6332,53 @@ async function getFileList(
     }
   } finally {
     // Only clear loading state if this is still the active request
+    if (requestId === currentContentRequestId) {
+      isLoading.value = false;
+      hasLoadedInitialResult.value = true;
+      contentReady.value = true;
+    }
+  }
+}
+
+async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<string, any>, requestId: number) {
+  currentQuerySource.value = 'search';
+  currentSmartQueryParams.value = null;
+  currentCollectionId.value = null;
+  currentQueryParams.value = gpsParams;
+  isLoading.value = true;
+
+  try {
+    const files = await getFilesByIds(fileIds);
+    if (requestId !== currentContentRequestId) return;
+
+    const inCluster = (files || []).filter((file: any) => {
+      const lat = Number(file.gps_latitude);
+      const lon = Number(file.gps_longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+      const lonMatches = gpsParams.gpsMinLon <= gpsParams.gpsMaxLon
+        ? lon >= gpsParams.gpsMinLon && lon <= gpsParams.gpsMaxLon
+        : lon >= gpsParams.gpsMinLon || lon <= gpsParams.gpsMaxLon;
+      return lat >= gpsParams.gpsMinLat && lat <= gpsParams.gpsMaxLat && lonMatches;
+    });
+
+    clearSelectionForFileListUpdate();
+    resetGroupingState();
+    fileList.value = preserveLoadedThumbnails(inCluster);
+    currentSearchFileIds.value = inCluster
+      .map((file: any) => Number(file.id))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
+    totalFileCount.value = inCluster.length;
+    totalFileSize.value = inCluster.reduce((total: number, file: any) => total + Number(file.size || 0), 0);
+    timelineData.value = [];
+    markDedupSourceUpdated(requestId);
+    restoreInitialSelectionIfNeeded();
+    openImageViewer(0, false, true);
+    lastVisibleRange = { start: -1, end: -1 };
+    visibleRangeSeqId++;
+  } catch (error) {
+    console.error('getMapSearchClusterFileList error:', error);
+    if (requestId === currentContentRequestId) showEmptyContent(requestId);
+  } finally {
     if (requestId === currentContentRequestId) {
       isLoading.value = false;
       hasLoadedInitialResult.value = true;
@@ -7220,6 +7364,8 @@ function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
 
 function exitTempViewMode() {
   if (!backupState.value) return;
+
+  if (tempViewMode.value === 'map') config.settings.grid.viewMode = 'map';
 
   const state = backupState.value;
   

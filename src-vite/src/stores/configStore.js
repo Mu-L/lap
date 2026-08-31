@@ -125,6 +125,7 @@ export const useConfigStore = defineStore('configStore', {
         sizePosition: 0,         // grid size slider position (0-1)
         style: 0,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
         showFilmStrip: false,    // show filmstrip view
+        viewMode: 'grid',        // grid | map
         scaling: 1,              // 0: Fit Entire Image, 1: Crop to Fill, 2: Stretch to Fill
         thumbnailCorners: 0,     // 0: Follow theme, 1: Square
         labelPrimary: 1,         // card view: primary label (1: Name)

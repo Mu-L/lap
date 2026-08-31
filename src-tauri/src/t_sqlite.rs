@@ -1909,6 +1909,14 @@ pub struct SmartQueryParams {
     pub category_sort: i64,
     #[serde(default)]
     pub group_by: i64,
+    #[serde(default)]
+    pub gps_min_lat: Option<f64>,
+    #[serde(default)]
+    pub gps_max_lat: Option<f64>,
+    #[serde(default)]
+    pub gps_min_lon: Option<f64>,
+    #[serde(default)]
+    pub gps_max_lon: Option<f64>,
 }
 
 fn default_smart_query_version() -> i32 {
@@ -5437,6 +5445,27 @@ impl AFile {
         conditions.push(Self::search_exclusion_condition("b"));
         conditions.push(Self::live_photo_companion_exclusion_condition().to_string());
 
+        if let (Some(min_lat), Some(max_lat), Some(min_lon), Some(max_lon)) = (
+            params.gps_min_lat,
+            params.gps_max_lat,
+            params.gps_min_lon,
+            params.gps_max_lon,
+        ) {
+            conditions.push("a.gps_latitude BETWEEN ? AND ?".to_string());
+            sql_params.push(Box::new(min_lat));
+            sql_params.push(Box::new(max_lat));
+
+            if min_lon <= max_lon {
+                conditions.push("a.gps_longitude BETWEEN ? AND ?".to_string());
+                sql_params.push(Box::new(min_lon));
+                sql_params.push(Box::new(max_lon));
+            } else {
+                conditions.push("(a.gps_longitude >= ? OR a.gps_longitude <= ?)".to_string());
+                sql_params.push(Box::new(min_lon));
+                sql_params.push(Box::new(max_lon));
+            }
+        }
+
         let joiner = if params.r#match == "any" {
             " OR "
         } else {
@@ -8694,47 +8723,47 @@ impl ALocation {
     }
 }
 
-/// A grid cell of aggregated GPS density, used for heatmap rendering.
-/// `lat`/`lon` are the average coordinates of the photos within that
-/// cell (cells are ~1.1km, grouped by rounded coordinates), `count` is
-/// the number of photos within that cell.
+/// A map thumbnail cluster. `file_id` identifies a representative image for
+/// the cluster, while `count` contains every matching photo in the cell.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AGpsHeatPoint {
+pub struct AGpsMapPoint {
     pub lat: f64,
     pub lon: f64,
     pub count: i64,
+    pub file_id: i64,
 }
 
-impl AGpsHeatPoint {
-    /// Aggregate all GPS coordinates into grid cells on the backend, so the
-    /// frontend never has to handle one row per photo (important for large libraries).
-    pub fn get_heatmap_from_db() -> Result<Vec<Self>, String> {
+impl AGpsMapPoint {
+    pub fn get_map_points_from_db(params: &QueryParams) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
-
-        let mut stmt = conn
-            .prepare(
-                "SELECT AVG(gps_latitude) AS lat, AVG(gps_longitude) AS lon, COUNT(*) AS cnt
+        let (joins, where_clause, sql_params) = AFile::build_search_query_parts(params);
+        let query = format!(
+            "SELECT AVG(gps_latitude) AS lat, AVG(gps_longitude) AS lon, COUNT(*) AS cnt, MIN(id) AS file_id
+             FROM (
+                 SELECT a.id, a.gps_latitude, a.gps_longitude
                  FROM afiles a
-                 WHERE gps_latitude IS NOT NULL AND gps_longitude IS NOT NULL
-                    AND a.id NOT IN (
-                        SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                    )
-                 GROUP BY ROUND(gps_latitude, 2), ROUND(gps_longitude, 2)",
-            )
-            .map_err(|e| e.to_string())?;
-
+                 LEFT JOIN afolders b ON a.folder_id = b.id
+                 LEFT JOIN albums c ON b.album_id = c.id
+                 {}{} AND a.gps_latitude IS NOT NULL AND a.gps_longitude IS NOT NULL
+                 GROUP BY a.id
+             )
+             GROUP BY ROUND(gps_latitude, 2), ROUND(gps_longitude, 2)",
+            joins, where_clause,
+        );
+        let final_params: Vec<&dyn ToSql> = sql_params.iter().map(|p| p.as_ref()).collect();
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
         let points = stmt
-            .query_map(params![], |row| {
+            .query_map(final_params.as_slice(), |row| {
                 Ok(Self {
                     lat: row.get(0)?,
                     lon: row.get(1)?,
                     count: row.get(2)?,
+                    file_id: row.get(3)?,
                 })
             })
             .map_err(|e| e.to_string())?
             .filter_map(|r| r.ok())
             .collect();
-
         Ok(points)
     }
 }
@@ -8986,6 +9015,15 @@ fn create_db_internal() -> Result<(), String> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_afiles_taken_date ON afiles(taken_date)",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
+    // Map viewport queries filter by both coordinates. Keep non-geotagged media
+    // out of this index so large libraries stay responsive while panning.
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_afiles_gps_coordinates
+         ON afiles(gps_latitude, gps_longitude)
+         WHERE gps_latitude IS NOT NULL AND gps_longitude IS NOT NULL",
         [],
     )
     .map_err(|e| e.to_string())?;
