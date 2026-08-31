@@ -3,8 +3,9 @@
 #
 # 1. Remove the bundled libwayland-client.so.0 so the host's ABI-compatible copy
 #    is resolved instead (required for EGL/Mesa on pure-Wayland systems).
-# 2. Remove GStreamer plugin path overrides, since the AppImage does not bundle
-#    GStreamer plugins (fixes "GStreamer element appsink not found").
+# 2. Disable AppImageKit's GStreamer plugin-path override, since the AppImage
+#    does not bundle GStreamer plugins (fixes "GStreamer element appsink not
+#    found").
 # 3. Optionally embed update information and generate a .zsync delta file.
 #
 # Usage:
@@ -88,17 +89,38 @@ for appimage in "${APPIMAGES[@]}"; do
   echo "==> Removing bundled libwayland-client.so.0 from ${image_name}"
   rm -f "$wayland_client"
 
-  # Remove GStreamer plugin path overrides (tauri#15665). The AppImage does not
-  # bundle GStreamer plugins, so these overrides point at a non-existent
-  # directory and break plugin discovery ("GStreamer element appsink not found").
+  # AppImageKit's AppRun.wrapped unconditionally sets
+  # GST_PLUGIN_SYSTEM_PATH_1_0, even when Tauri's bundleMediaFramework is false
+  # (tauri#15665). The bundled path does not exist, which prevents GStreamer
+  # from finding host plugins such as appsink.
+  #
+  # AppRun.wrapped is an ELF binary, so line-oriented tools such as sed corrupt
+  # it. Replace the environment-variable name with a same-length, app-specific
+  # unused name. This is binary-safe and leaves the executable layout intact.
   apprun_wrapped="$image_work_dir/squashfs-root/AppRun.wrapped"
-  if [ -f "$apprun_wrapped" ]; then
-    sed -i '/GST_PLUGIN_SYSTEM_PATH/d; /GST_PLUGIN_PATH/d' "$apprun_wrapped"
+  if [ ! -f "$apprun_wrapped" ]; then
+    echo "AppRun.wrapped not found in ${image_name}" >&2
+    exit 1
   fi
-  for hook in "$image_work_dir/squashfs-root/apprun-hooks/"*.sh; do
-    [ -f "$hook" ] || continue
-    sed -i '/GST_PLUGIN_SYSTEM_PATH/d; /GST_PLUGIN_PATH/d' "$hook"
-  done
+  gst_path_var='GST_PLUGIN_SYSTEM_PATH_1_0'
+  disabled_gst_path_var='LAP_IGNORE_GST_PLUGIN_PATH'
+  if [ "${#gst_path_var}" -ne "${#disabled_gst_path_var}" ]; then
+    echo "Internal error: replacement GStreamer variable has a different length" >&2
+    exit 1
+  fi
+  if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped"; then
+    echo "==> Disabling AppImageKit GStreamer plugin-path override in ${image_name}"
+    LC_ALL=C perl -0777 -i -pe "s/${gst_path_var}/${disabled_gst_path_var}/g" "$apprun_wrapped"
+    if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped" || \
+      ! LC_ALL=C grep -aq "$disabled_gst_path_var" "$apprun_wrapped"; then
+      echo "Failed to disable GStreamer plugin path override in ${image_name}" >&2
+      exit 1
+    fi
+  else
+    # Upstream (Tauri/linuxdeploy) may stop hardcoding this variable in a future
+    # version; treat its absence as a no-op rather than failing the build.
+    echo "GStreamer plugin path override not found in ${image_name}; nothing to do" >&2
+  fi
 
   repack_args=(--no-appstream)
   if [ -n "$UPDATE_INFO" ]; then
