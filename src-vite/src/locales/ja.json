@@ -1028,7 +1028,7 @@
     "satellite": "衛星",
     "heatmap": "ヒートマップ",
     "photo_count": "{count} 枚の写真",
-    "no_photos_in_view": "この範囲に写真はありません",
+    "no_photos_in_view": "写真はありません",
     "photos_in_view": "この範囲に {count} 枚の写真",
     "photos_in_view_limited": "最初の {count} 枚を表示中 - さらに拡大すると絞り込めます"
   },

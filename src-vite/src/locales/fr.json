@@ -1028,7 +1028,7 @@
     "satellite": "Satellite",
     "heatmap": "Carte thermique",
     "photo_count": "{count} photos",
-    "no_photos_in_view": "Aucune photo dans cette zone",
+    "no_photos_in_view": "Aucune photo",
     "photos_in_view": "{count} photos dans cette zone",
     "photos_in_view_limited": "Affichage des {count} premières photos - zoomez pour plus"
   },

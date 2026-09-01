@@ -139,7 +139,7 @@
           <TButton
             :icon="IconMapDefault"
             :tooltip="$t('sidebar.map')"
-            :selected="isMapView"
+            :selected="isMapContext"
             @click="toggleMapView"
           />
 
@@ -149,7 +149,7 @@
             :icon="IconSelection"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
-            :disabled="isScanStreamingMode"
+            :disabled="isScanStreamingMode || isMapView"
             @click="handleSelectMode(!selectMode)"
           />
 
@@ -183,18 +183,22 @@
     <div ref="contentViewDiv" class="relative flex-1 flex flex-row overflow-hidden">
       <div class="relative flex-1 flex flex-row overflow-hidden">
         <PhotoMapView
-          v-if="isMapView"
+          v-if="mapViewMounted"
+          v-show="isMapContentVisible"
           class="mt-12 flex-1 min-w-0"
           :class="config.settings.showStatusBar ? 'mb-8' : 'mb-1'"
+          :active="isMapContentVisible"
           :query-params="mapQueryParams"
           :query-source="currentQuerySource"
           :collection-id="currentCollectionId"
           :file-ids="currentSearchFileIds"
           :restore-view="mapTempViewState"
           @open-cluster="openMapClusterTempView"
+          @select-file="selectMapFile"
+          @preview-file="openMapPreviewFile"
           @restored="mapTempViewState = null"
         />
-        <div v-if="!isMapView" ref="gridViewDiv"
+        <div v-if="!isMapContentVisible" ref="gridViewDiv"
           :class="[
             'flex-1 flex',
             gridViewLayoutClass,
@@ -329,7 +333,7 @@
         </div>
 
         <!-- Quick View Overlay -->
-        <div v-if="showQuickView && fileList[selectedItemIndex]" 
+        <div v-if="showQuickView && fileList[selectedItemIndex]"
           class="absolute inset-0 z-60 flex items-center justify-center bg-base-200/95 backdrop-blur-lg overflow-hidden"
           :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12' ]"
         >
@@ -511,6 +515,7 @@
       :show-update-icon="statusBarShowUpdateIcon"
       :is-update-animating="statusBarIsUpdateAnimating"
       :update-icon="statusBarUpdateIcon"
+      :empty-message="statusBarEmptyMessage"
     />
   </div>
 
@@ -2982,6 +2987,8 @@ const currentQueryParams = ref({
 });
 const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('query');
 const isMapView = computed(() => config.settings.grid.viewMode === 'map');
+const isMapVisible = computed(() => isMapView.value && !showQuickView.value);
+const mapViewMounted = ref(isMapView.value);
 const mapTempViewState = ref<{ lat: number; lon: number; zoom: number } | null>(null);
 const currentSmartQueryParams = ref<any | null>(null);
 const currentCollectionId = ref<number | null>(null);
@@ -2992,6 +2999,9 @@ const mapQueryParams = computed(() => (
     : currentQueryParams.value
 ));
 const dedupSmartFileIds = ref<number[] | null>(null);
+watch(isMapView, (active) => {
+  if (active) mapViewMounted.value = true;
+});
 
 type SaveAsContext = {
   folderId?: number;
@@ -3055,6 +3065,7 @@ watch(contentReady, (ready) => {
 });
 
 const showWelcomeContent = computed(() => props.libraryEmpty && libraryChecked.value);
+const isMapContentVisible = computed(() => isMapVisible.value && !showWelcomeContent.value);
 
 const gridViewLayoutClass = computed(() => {
   const pos = config.settings.grid.previewPosition || 0;
@@ -3101,6 +3112,7 @@ function showLoadingContent(requestId: number) {
 
 // Similar Search Mode State
 const tempViewMode = ref<'none' | 'similar' | 'album' | 'person' | 'camera' | 'lens' | 'location' | 'map'>('none');
+const isMapContext = computed(() => isMapView.value || tempViewMode.value === 'map');
 let suppressPersonContextRefresh = false;
 const dedupQueryParams = computed(() => {
   return { ...currentQueryParams.value };
@@ -3933,6 +3945,11 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
+  if (isMapView.value && (event.key === 'Space' || event.key === ' ')) {
+    event.preventDefault();
+    return;
+  }
+
   if (event.key === 'Shift') {
     if (selectedItemIndex.value >= 0) {
       keyboardSelectionAnchorIndex.value = selectedItemIndex.value;
@@ -4287,6 +4304,10 @@ const handleKeyDown = (e: any) => {
 
   const event = e.payload;
   const { key } = event;
+
+  if (isMapView.value && (key === 'Space' || key === ' ')) {
+    return;
+  }
 
   // Disable global shortcuts during slideshow except close for safety.
   if (isSlideShow.value && !matchesShortcut('view.close', event, shortcutPlatform)) {
@@ -5484,11 +5505,15 @@ function toggleFilmstripView() {
 }
 
 function toggleMapView() {
-  showQuickView.value = false;
+  if (showQuickView.value) {
+    closeQuickPreview();
+    return;
+  }
   if (tempViewMode.value === 'map') {
     exitTempViewMode();
     return;
   }
+  if (!isMapView.value && selectMode.value) handleSelectMode(false);
   config.settings.grid.viewMode = isMapView.value ? 'grid' : 'map';
 }
 
@@ -5534,6 +5559,22 @@ function openMapClusterTempView(payload: { minLat: number; maxLat: number; minLo
   void getFileList(gpsParams, requestId, currentQuerySource.value === 'collection'
     ? { source: 'collection', collectionId: currentCollectionId.value }
     : null);
+}
+
+let mapPreviewRequestId = 0;
+let mapSelectionRequestId = 0;
+async function selectMapFile(fileId: number) {
+  const requestId = ++mapSelectionRequestId;
+  const index = await resolveFileIndexForDedup(fileId);
+  if (requestId !== mapSelectionRequestId || index < 0) return;
+  handleItemClicked(index);
+}
+
+async function openMapPreviewFile(fileId: number) {
+  const requestId = ++mapPreviewRequestId;
+  const index = await resolveFileIndexForDedup(fileId);
+  if (requestId !== mapPreviewRequestId || index < 0) return;
+  handleItemDblClicked(index);
 }
 
 function cycleGridStyle() {
@@ -6352,6 +6393,7 @@ async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<
     if (requestId !== currentContentRequestId) return;
 
     const inCluster = (files || []).filter((file: any) => {
+      if (file.gps_latitude == null || file.gps_longitude == null || file.gps_latitude === '' || file.gps_longitude === '') return false;
       const lat = Number(file.gps_latitude);
       const lon = Number(file.gps_longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
@@ -8934,6 +8976,10 @@ const handleSelectMode = (value: any) => {
   }
 };
 
+watch(isMapView, (active) => {
+  if (active && selectMode.value) handleSelectMode(false);
+});
+
 const handleInfoNavigateFolder = (folderPath: string) => {
   const targetFile = fileList.value[selectedItemIndex.value];
   if (!folderPath || !targetFile?.album_id) return;
@@ -8986,6 +9032,16 @@ const emptyFilesHint = computed(() => {
   if (!config.settings.showSubfolderFiles) return notFound.folder_files_hint || '';
   return '';
 });
+
+const statusBarEmptyMessage = computed(() => (
+  contentReady.value
+  && !isLoading.value
+  && !showWelcomeContent.value
+  && fileList.value.length === 0
+  && totalFileCount.value === 0
+    ? localeMsg.value.tooltip.not_found.files
+    : ''
+));
 
 const smartAlbumFileTypeMask = computed(() => {
   if (!isSmartAlbumView.value) return 0;
@@ -9140,7 +9196,7 @@ async function resolveGroupedFileIndex(fileId: number): Promise<number | null> {
 }
 
 async function resolveFileIndexForDedup(fileId: number): Promise<number> {
-  const loadedIndex = fileList.value.findIndex(file => file.id === fileId);
+  const loadedIndex = fileList.value.findIndex(file => Number(file?.id) === Number(fileId));
   if (loadedIndex !== -1) return loadedIndex;
 
   const position = groupedModeActive.value

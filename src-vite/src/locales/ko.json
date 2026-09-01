@@ -1028,7 +1028,7 @@
     "satellite": "위성",
     "heatmap": "히트맵",
     "photo_count": "사진 {count}장",
-    "no_photos_in_view": "이 영역에 사진이 없습니다",
+    "no_photos_in_view": "사진이 없습니다",
     "photos_in_view": "이 영역에 사진 {count}장",
     "photos_in_view_limited": "처음 {count}장 표시 중 - 더 보려면 확대하세요"
   },

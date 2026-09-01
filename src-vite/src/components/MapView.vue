@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group/map relative w-full h-full min-h-[300px] border border-base-content/30 rounded-box overflow-hidden"
+    class="file-info-map-view group/map relative w-full h-full min-h-[300px] border border-base-content/30 rounded-box overflow-hidden"
     @mouseenter="uiStore.setMapActive(true)"
     @mouseleave="uiStore.setMapActive(false)"
   >

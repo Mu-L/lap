@@ -1028,7 +1028,7 @@
     "satellite": "Satellite",
     "heatmap": "Heatmap",
     "photo_count": "{count} photos",
-    "no_photos_in_view": "No photos in this area",
+    "no_photos_in_view": "No photos",
     "photos_in_view": "{count} photos in this area",
     "photos_in_view_limited": "Showing first {count} photos - zoom in for more"
   },

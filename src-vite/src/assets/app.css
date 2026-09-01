@@ -212,3 +212,26 @@ html, body {
   line-height: 14px;
   text-align: center;
 }
+
+.photo-map-view .leaflet-control-scale {
+  margin: 0 0 10px 10px;
+}
+
+.photo-map-view .leaflet-control-scale-line {
+  border: 1px solid color-mix(in srgb, var(--color-base-content) 45%, transparent);
+  border-radius: var(--radius-box);
+  background: color-mix(in srgb, var(--color-base-100) 72%, transparent);
+  color: var(--color-base-content);
+  text-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+/* Trigger Chromium to composite map tiles consistently without resizing them. */
+.photo-map-view .leaflet-tile,
+.file-info-map-view .leaflet-tile {
+  outline: 1px solid transparent;
+}
+
+.leaflet-container {
+  background: transparent !important;
+}
