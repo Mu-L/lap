@@ -2431,6 +2431,7 @@ const acceptDrops = computed(() =>
 let domDragEnter: ((e: DragEvent) => void) | null = null;
 let domDragLeave: ((e: DragEvent) => void) | null = null;
 let domDragOver: ((e: DragEvent) => void) | null = null;
+let domDragEnd: ((e: DragEvent) => void) | null = null;
 let domDrop: ((e: DragEvent) => void) | null = null;
 let dragGhost: HTMLElement | null = null;
 let dragGhostAction: HTMLElement | null = null;
@@ -2484,7 +2485,8 @@ function getExternalFileDropPaths(uris: string[]) {
 }
 
 function hasExternalDomDrop(event: DragEvent) {
-  return hasExternalDragIntent(event);
+  return hasExternalDragIntent(event)
+    || getExternalDropUris(event.dataTransfer).some(uri => fileUrlToPath(uri) || /^https?:\/\//.test(uri));
 }
 
 function hasExternalDragIntent(event: DragEvent) {
@@ -2495,8 +2497,12 @@ function hasExternalDragIntent(event: DragEvent) {
   return dt.files.length > 0
     || types.includes('Files')
     || types.includes('text/uri-list')
-    || types.includes('text/x-moz-url')
-    || types.includes('text/plain');
+    || types.includes('text/x-moz-url');
+}
+
+function clearDropOverlay() {
+  dragOverCount.value = 0;
+  isDragOver.value = false;
 }
 
 function isInternalReorderActive() {
@@ -4874,7 +4880,10 @@ onMounted( async() => {
   // Drag-drop file import. Tauri native drag/drop is disabled so internal
   // HTML5 drag interactions (e.g. sortable lists) keep their drop events.
   domDragEnter = (e: DragEvent) => {
-    if (isInternalReorderActive()) return;
+    if (isInternalReorderActive()) {
+      clearDropOverlay();
+      return;
+    }
     if (!hasExternalDragIntent(e)) return;
     e.preventDefault();
     if (acceptDrops.value) {
@@ -4883,26 +4892,35 @@ onMounted( async() => {
     }
   };
   domDragLeave = (e: DragEvent) => {
-    if (isInternalReorderActive()) return;
+    if (isInternalReorderActive()) {
+      clearDropOverlay();
+      return;
+    }
     if (!hasExternalDragIntent(e)) return;
     e.preventDefault();
     dragOverCount.value = Math.max(0, dragOverCount.value - 1);
     if (dragOverCount.value === 0) isDragOver.value = false;
   };
   domDragOver = (e: DragEvent) => {
-    if (isInternalReorderActive()) return;
+    if (isInternalReorderActive()) {
+      clearDropOverlay();
+      return;
+    }
     if (!hasExternalDragIntent(e)) return;
     e.preventDefault();
   };
   domDrop = async (e: DragEvent) => {
     if (isInternalReorderActive() || isContentInternalDrag.value) {
+      clearDropOverlay();
       clearContentInternalDrag();
       return;
     }
-    if (!hasExternalDomDrop(e)) return;
+    if (!hasExternalDomDrop(e)) {
+      clearDropOverlay();
+      return;
+    }
     e.preventDefault();
-    dragOverCount.value = 0;
-    isDragOver.value = false;
+    clearDropOverlay();
     if (!acceptDrops.value) {
       showDropWarning.value = true;
       return;
@@ -4969,9 +4987,11 @@ onMounted( async() => {
     }
     toast.warning(t('msgbox.drop_import.no_files'));
   };
+  domDragEnd = () => clearDropOverlay();
   document.addEventListener('dragenter', domDragEnter);
   document.addEventListener('dragleave', domDragLeave);
   document.addEventListener('dragover', domDragOver);
+  document.addEventListener('dragend', domDragEnd);
   document.addEventListener('drop', domDrop);
 
   unlistenImageViewer = await listen('message-from-image-viewer', async (event) => {
@@ -5304,6 +5324,7 @@ onBeforeUnmount(() => {
   if (domDragEnter) document.removeEventListener('dragenter', domDragEnter);
   if (domDragLeave) document.removeEventListener('dragleave', domDragLeave);
   if (domDragOver) document.removeEventListener('dragover', domDragOver);
+  if (domDragEnd) document.removeEventListener('dragend', domDragEnd);
   if (domDrop) document.removeEventListener('drop', domDrop);
   removeDragGhost();
 });
