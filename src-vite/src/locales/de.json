@@ -549,6 +549,10 @@
       "success": "Cover gesetzt",
       "failed": "Fehler beim Setzen des Covers"
     },
+    "set_desktop_wallpaper": {
+      "success": "Desktop-Hintergrund aktualisiert",
+      "failed": "Desktop-Hintergrund konnte nicht festgelegt werden"
+    },
     "copy_image": {
       "success": "{count} Datei(en) in die Zwischenablage kopiert",
       "limit": "Es können höchstens {count} Dateien gleichzeitig kopiert werden.",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "Im Explorer anzeigen...",
       "refresh_file_info": "Dateiinformationen aktualisieren",
       "set_album_cover": "Als Albumcover setzen",
+      "set_as": "Festlegen als",
+      "set_desktop_wallpaper": "Als Desktop-Hintergrund festlegen",
       "show_info": "Info anzeigen",
       "remove_from_collection": "Aus Sammlung entfernen"
     },

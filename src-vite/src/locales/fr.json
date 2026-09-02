@@ -549,6 +549,10 @@
       "success": "Couverture définie",
       "failed": "Échec définition couverture"
     },
+    "set_desktop_wallpaper": {
+      "success": "Fond d'écran mis à jour",
+      "failed": "Impossible de définir le fond d'écran"
+    },
     "copy_image": {
       "success": "{count} fichier(s) copié(s) dans le presse-papiers",
       "limit": "Vous pouvez copier jusqu'à {count} fichiers à la fois.",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "Afficher dans l'Explorateur...",
       "refresh_file_info": "Actualiser les informations du fichier",
       "set_album_cover": "Définir comme couverture",
+      "set_as": "Définir comme",
+      "set_desktop_wallpaper": "Définir comme fond d'écran",
       "show_info": "Afficher info",
       "remove_from_collection": "Retirer de la collection"
     },

@@ -549,6 +549,10 @@
       "success": "Album cover set successfully",
       "failed": "Failed to set album cover"
     },
+    "set_desktop_wallpaper": {
+      "success": "Desktop wallpaper updated",
+      "failed": "Failed to set desktop wallpaper"
+    },
     "copy_image": {
       "success": "{count} file(s) copied to clipboard",
       "limit": "You can copy up to {count} files at a time.",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "Reveal in File Explorer...",
       "refresh_file_info": "Refresh file info",
       "set_album_cover": "Set as album cover",
+      "set_as": "Set as",
+      "set_desktop_wallpaper": "Set as desktop wallpaper",
       "show_info": "Show info",
       "remove_from_collection": "Remove from Collection"
     },

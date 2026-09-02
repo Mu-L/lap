@@ -549,6 +549,10 @@
       "success": "Capa definida",
       "failed": "Falha ao definir capa"
     },
+    "set_desktop_wallpaper": {
+      "success": "Papel de parede atualizado",
+      "failed": "Falha ao definir o papel de parede"
+    },
     "copy_image": {
       "success": "{count} arquivo(s) copiado(s) para a área de transferência",
       "limit": "Você pode copiar até {count} arquivos por vez.",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "Mostrar no Explorer...",
       "refresh_file_info": "Atualizar informações do arquivo",
       "set_album_cover": "Definir como capa",
+      "set_as": "Definir como",
+      "set_desktop_wallpaper": "Definir como papel de parede",
       "show_info": "Mostrar info",
       "remove_from_collection": "Remover da coleção"
     },

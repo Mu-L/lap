@@ -549,6 +549,10 @@
       "success": "相册封面设置成功",
       "failed": "无法设置相册封面"
     },
+    "set_desktop_wallpaper": {
+      "success": "桌面壁纸已更新",
+      "failed": "无法设置桌面壁纸"
+    },
     "copy_image": {
       "success": "已复制 {count} 个文件到剪贴板",
       "limit": "每次最多复制 {count} 个文件。",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "在文件资源管理器中显示...",
       "refresh_file_info": "刷新文件信息",
       "set_album_cover": "设置为相册封面",
+      "set_as": "设为",
+      "set_desktop_wallpaper": "设为桌面壁纸",
       "show_info": "显示信息",
       "remove_from_collection": "从合集移除"
     },

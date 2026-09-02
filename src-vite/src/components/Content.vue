@@ -716,7 +716,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
          copyImages, renameFile, moveFile, moveFileOutsideLibrary, copyFile, deleteFile, deleteFilePermanently, batchDeleteFiles, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
          setFileRotate, setFileFavorite, setFileRating, setFileCullingFlag, batchUpdateFileMetadata, getTagsForFile, searchSimilarImages, generateEmbedding,
-         revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
+         revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover, setDesktopWallpaper,
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
@@ -3663,6 +3663,21 @@ async function clickSetAlbumCover() {
   }
 }
 
+async function clickSetDesktopWallpaper() {
+  const file = fileList.value[selectedItemIndex.value];
+  if (!file?.file_path) return;
+  const companionPath = file.media_subtype === 'raw_jpeg_pair'
+    ? String(file.live_photo_video_path || '')
+    : null;
+  try {
+    await setDesktopWallpaper(file.file_path, companionPath || null);
+    toast.success(localeMsg.value.tooltip.set_desktop_wallpaper.success);
+  } catch (error) {
+    console.error('Failed to set desktop wallpaper:', error);
+    toast.error(localeMsg.value.tooltip.set_desktop_wallpaper.failed);
+  }
+}
+
 function handleItemAction(payload: { action: string, index: number }) {
   if (isSlideShow.value) return;
 
@@ -3743,6 +3758,7 @@ function handleItemAction(payload: { action: string, index: number }) {
       enterPersonSearchMode(fileList.value[selectedItemIndex.value]);
     },
     'set-album-cover': clickSetAlbumCover,
+    'set-desktop-wallpaper': () => void clickSetDesktopWallpaper(),
   };
 
   if ((actionMap as any)[action]) {

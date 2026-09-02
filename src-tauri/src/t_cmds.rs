@@ -738,6 +738,143 @@ pub fn open_external_url(url: &str) -> Result<(), String> {
     opener::open(url).map_err(|e| e.to_string())
 }
 
+/// Set a displayable photo as the desktop wallpaper using the operating
+/// system's default layout. A RAW+JPEG pair supplies its JPEG/HEIC companion.
+#[tauri::command]
+pub async fn set_desktop_wallpaper(
+    app_handle: AppHandle,
+    file_path: &str,
+    companion_path: Option<String>,
+) -> Result<(), String> {
+    let source_path = companion_path
+        .filter(|path| !path.trim().is_empty() && Path::new(path).is_file())
+        .unwrap_or_else(|| file_path.to_string());
+    if !Path::new(&source_path).is_file() {
+        return Err("Wallpaper source file does not exist".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        app_handle
+            .run_on_main_thread(move || {
+                use objc2::MainThreadMarker;
+                use objc2::runtime::AnyObject;
+                use objc2_app_kit::{NSScreen, NSWorkspace, NSWorkspaceDesktopImageOptionKey};
+                use objc2_foundation::{NSDictionary, NSString, NSURL};
+
+                let result = (|| {
+                    let main_thread = MainThreadMarker::new().ok_or_else(|| {
+                        "macOS wallpaper updates must run on the main thread".to_string()
+                    })?;
+                    let screen = NSScreen::mainScreen(main_thread)
+                        .ok_or_else(|| "macOS could not find the primary display".to_string())?;
+                    let path = NSString::from_str(&source_path);
+                    let url = NSURL::fileURLWithPath(&path);
+                    let options: objc2::rc::Retained<
+                        NSDictionary<NSWorkspaceDesktopImageOptionKey, AnyObject>,
+                    > = NSDictionary::new();
+                    unsafe {
+                        NSWorkspace::sharedWorkspace()
+                            .setDesktopImageURL_forScreen_options_error(&url, &screen, &options)
+                    }
+                    .map_err(|error| {
+                        format!(
+                            "macOS could not set the desktop wallpaper: {}",
+                            error.localizedDescription()
+                        )
+                    })
+                })();
+                let _ = sender.send(result);
+            })
+            .map_err(|error| format!("Failed to schedule macOS wallpaper update: {error}"))?;
+        receiver
+            .await
+            .map_err(|_| "macOS wallpaper update was cancelled".to_string())??;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use windows::core::HSTRING;
+        use windows::Win32::System::Com::{
+            CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+            CoTaskMemFree, CoUninitialize,
+        };
+        use windows::Win32::UI::Shell::{DesktopWallpaper, IDesktopWallpaper};
+
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {
+            let result = (|| unsafe {
+                CoInitializeEx(None, COINIT_APARTMENTTHREADED)
+                    .map_err(|error| format!("Failed to initialize Windows COM: {error}"))?;
+                let update = (|| {
+                    let wallpaper: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)
+                        .map_err(|error| format!("Windows desktop wallpaper service is unavailable: {error}"))?;
+                    let monitor_count = wallpaper.GetMonitorDevicePathCount()
+                        .map_err(|error| format!("Failed to enumerate Windows displays: {error}"))?;
+                    let primary_monitor = (0..monitor_count)
+                        .find_map(|index| {
+                            let monitor = wallpaper.GetMonitorDevicePathAt(index).ok()?;
+                            let monitor_id = monitor.to_hstring();
+                            CoTaskMemFree(Some(monitor.0 as *const std::ffi::c_void));
+                            let rect = wallpaper.GetMonitorRECT(&monitor_id).ok()?;
+                            (rect.left <= 0 && rect.right > 0 && rect.top <= 0 && rect.bottom > 0)
+                                .then_some(monitor_id)
+                        })
+                        .ok_or_else(|| "Windows could not find the primary display".to_string())?;
+                    let path = HSTRING::from(source_path);
+                    wallpaper.SetWallpaper(&primary_monitor, &path)
+                        .map_err(|error| format!("Windows could not set the desktop wallpaper: {error}"))
+                })();
+                CoUninitialize();
+                update
+            })();
+            let _ = sender.send(result);
+        });
+        receiver.await.map_err(|_| "Windows wallpaper update was cancelled".to_string())??;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
+
+        const URI_PATH_ENCODE_SET: &AsciiSet = &CONTROLS
+            .add(b' ')
+            .add(b'"')
+            .add(b'#')
+            .add(b'%')
+            .add(b'<')
+            .add(b'>')
+            .add(b'?')
+            .add(b'[')
+            .add(b'\\')
+            .add(b']')
+            .add(b'^')
+            .add(b'`')
+            .add(b'{')
+            .add(b'|')
+            .add(b'}');
+
+        let file_uri = format!("file://{}", utf8_percent_encode(&source_path, URI_PATH_ENCODE_SET));
+        let set_key = |key: &str| Command::new("gsettings")
+            .args(["set", "org.gnome.desktop.background", key, &file_uri])
+            .output();
+        let output = set_key("picture-uri")
+            .map_err(|error| format!("Failed to start GNOME wallpaper service: {error}"))?;
+        if !output.status.success() {
+            return Err(
+                "This Linux desktop environment does not support setting wallpapers from Lap"
+                    .to_string(),
+            );
+        }
+        // GNOME 42+ can use a separate dark wallpaper. Older schemas simply
+        // reject this key, which is safe to ignore after picture-uri succeeds.
+        let _ = set_key("picture-uri-dark");
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn get_external_app_display_name(app_path: &str) -> Result<String, String> {
     t_utils::get_external_app_display_name(app_path)

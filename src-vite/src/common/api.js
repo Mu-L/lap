@@ -441,6 +441,10 @@ export async function openExternalUrl(url) {
   }
 }
 
+export async function setDesktopWallpaper(filePath, companionPath = null) {
+  return invoke('set_desktop_wallpaper', { filePath, companionPath });
+}
+
 // open a file with a specific external app
 export async function openFileWithApp(filePath, appPath) {
   try {

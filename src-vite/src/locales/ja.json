@@ -549,6 +549,10 @@
       "success": "アルバムの表紙を設定しました",
       "failed": "表紙の設定に失敗しました"
     },
+    "set_desktop_wallpaper": {
+      "success": "デスクトップの壁紙を更新しました",
+      "failed": "デスクトップの壁紙を設定できませんでした"
+    },
     "copy_image": {
       "success": "{count} 件のファイルをクリップボードにコピーしました",
       "limit": "一度にコピーできるファイルは最大 {count} 件です。",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "エクスプローラーで表示...",
       "refresh_file_info": "ファイル情報を更新",
       "set_album_cover": "アルバムの表紙に設定",
+      "set_as": "設定",
+      "set_desktop_wallpaper": "デスクトップの壁紙に設定",
       "show_info": "情報を表示",
       "remove_from_collection": "コレクションから削除"
     },

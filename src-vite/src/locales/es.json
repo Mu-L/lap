@@ -549,6 +549,10 @@
       "success": "Portada establecida",
       "failed": "Fallo al establecer portada"
     },
+    "set_desktop_wallpaper": {
+      "success": "Fondo de escritorio actualizado",
+      "failed": "No se pudo establecer el fondo de escritorio"
+    },
     "copy_image": {
       "success": "{count} archivo(s) copiado(s) al portapapeles",
       "limit": "Puedes copiar hasta {count} archivos a la vez.",
@@ -636,6 +640,8 @@
       "reveal_in_file_explorer": "Mostrar en Explorador...",
       "refresh_file_info": "Actualizar información del archivo",
       "set_album_cover": "Establecer como portada",
+      "set_as": "Establecer como",
+      "set_desktop_wallpaper": "Establecer como fondo de escritorio",
       "show_info": "Ver info",
       "remove_from_collection": "Quitar de la colección"
     },

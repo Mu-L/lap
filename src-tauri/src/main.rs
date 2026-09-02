@@ -272,6 +272,7 @@ async fn main() {
             t_cmds::delete_folder_permanently,
             t_cmds::reveal_path,
             t_cmds::open_external_url,
+            t_cmds::set_desktop_wallpaper,
             t_cmds::get_external_app_display_name,
             t_cmds::open_file_with_app,
             t_cmds::open_files_with_app,
