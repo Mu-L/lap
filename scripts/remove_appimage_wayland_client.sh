@@ -6,7 +6,9 @@
 # 2. Disable AppImageKit's GStreamer plugin-path override, since the AppImage
 #    does not bundle GStreamer plugins (fixes "GStreamer element appsink not
 #    found").
-# 3. Optionally embed update information and generate a .zsync delta file.
+# 3. Remove bundled GStreamer libraries when plugins are not bundled. This keeps
+#    the core, plugins, and scanner from the host on the same ABI version.
+# 4. Optionally embed update information and generate a .zsync delta file.
 #
 # Usage:
 #   remove_appimage_wayland_client.sh <appimage-directory>
@@ -120,6 +122,30 @@ for appimage in "${APPIMAGES[@]}"; do
     # Upstream (Tauri/linuxdeploy) may stop hardcoding this variable in a future
     # version; treat its absence as a no-op rather than failing the build.
     echo "GStreamer plugin path override not found in ${image_name}; nothing to do" >&2
+  fi
+
+  # linuxdeploy follows WebKitGTK's ELF dependencies and copies GStreamer's
+  # core/support libraries, even though bundleMediaFramework is disabled. It
+  # does not, however, discover GStreamer's runtime-loaded plugins or its
+  # plugin scanner. Keeping only the bundled core makes host plugins fail with
+  # ABI errors on newer distributions. Remove the partial stack so GStreamer
+  # consistently resolves from the host, matching the documented Linux setup.
+  gst_lib_patterns=(
+    'libgst*.so*'
+    'libgstreamer-*.so*'
+    'liborc-*.so*'
+  )
+  gst_libs=()
+  for gst_lib_pattern in "${gst_lib_patterns[@]}"; do
+    while IFS= read -r -d '' gst_lib; do
+      gst_libs+=("$gst_lib")
+    done < <(find "$image_work_dir/squashfs-root/usr/lib" -maxdepth 1 -type f -name "$gst_lib_pattern" -print0)
+  done
+  if [ "${#gst_libs[@]}" -gt 0 ]; then
+    echo "==> Removing partial bundled GStreamer stack from ${image_name}"
+    rm -f "${gst_libs[@]}"
+  else
+    echo "No bundled GStreamer libraries found in ${image_name}; nothing to do" >&2
   fi
 
   repack_args=(--no-appstream)
