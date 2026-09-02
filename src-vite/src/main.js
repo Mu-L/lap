@@ -123,6 +123,9 @@ if (isMainWindow) {
   listen('settings-thumbnailSize-changed', (event) => {
     config.setThumbnailSize(event.payload)
   })
+  listen('settings-rawThumbnailSource-changed', (event) => {
+    config.setRawThumbnailSource(event.payload)
+  })
   listen('settings-gridStyle-changed', (event) => {
     config.setGridStyle(event.payload)
   })

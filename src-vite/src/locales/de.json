@@ -1409,9 +1409,15 @@
       "title": "Erweitert",
       "section_thumbnail_cache": "Miniaturansichts-Cache",
       "thumbnail_quality": "Miniaturansichtsqualität",
-      "thumbnail_quality_hint": "Legt die Auflösung generierter Miniaturansichten fest. Höhere Einstellungen sehen schärfer aus, benötigen aber mehr Zeit zur Erstellung und mehr Speicherplatz.",
+      "thumbnail_quality_hint": "Legt die Auflösung generierter Miniaturansichten fest. Höhere Einstellungen sehen schärfer aus, benötigen aber mehr Zeit zur Erstellung und mehr Speicherplatz",
+      "raw_thumbnail_source": "RAW-Miniaturansichtsquelle",
+      "raw_thumbnail_source_hint": "Wählen Sie, wie Miniaturansichten für RAW-Dateien erstellt werden",
+      "raw_thumbnail_source_options": [
+        "RAW-Rendering (Standard)",
+        "Eingebettete Vorschau (schneller)"
+      ],
       "clean_unused_thumbnails": "Nicht verwendeten Miniaturansichts-Cache bereinigen",
-      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind.",
+      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind",
       "clean": "Bereinigen",
       "thumbnail_cache_cleaned": "{count} Miniaturansichten bereinigt, {size} freigegeben.",
       "thumbnail_quality_options": [

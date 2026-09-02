@@ -9853,7 +9853,13 @@ async function printImage(index: number) {
 
   try {
     printImageSrc.value = shouldUseBackendPreview(selectedFile.file_path, fileType)
-      ? getPreviewUrl(fileId, selectedFile.file_path, false, Number(selectedFile.modified_at || 0))
+      ? getPreviewUrl(
+        fileId,
+        selectedFile.file_path,
+        false,
+        Number(selectedFile.modified_at || 0),
+        config.settings.rawThumbnailSource,
+      )
       : getAssetSrc(selectedFile.file_path, Number(selectedFile.modified_at || 0));
     await waitForPrintImage();
     // Defer to let the context menu / UI close before the synchronous print dialog opens

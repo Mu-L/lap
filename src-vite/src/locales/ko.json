@@ -1409,9 +1409,15 @@
       "title": "고급",
       "section_thumbnail_cache": "썸네일 캐시",
       "thumbnail_quality": "썸네일 품질",
-      "thumbnail_quality_hint": "생성된 썸네일의 해상도를 설정합니다. 높은 설정일수록 더 선명하지만 생성 시간이 길고 디스크 공간을 더 사용합니다.",
+      "thumbnail_quality_hint": "생성된 썸네일의 해상도를 설정합니다. 높은 설정일수록 더 선명하지만 생성 시간이 길고 디스크 공간을 더 사용합니다",
+      "raw_thumbnail_source": "RAW 썸네일 소스",
+      "raw_thumbnail_source_hint": "RAW 파일의 썸네일 생성 방식을 선택합니다",
+      "raw_thumbnail_source_options": [
+        "RAW 렌더링(기본값)",
+        "내장 미리보기(더 빠름)"
+      ],
       "clean_unused_thumbnails": "사용하지 않는 썸네일 캐시 정리",
-      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다.",
+      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다",
       "clean": "정리",
       "thumbnail_cache_cleaned": "{count}개의 썸네일을 정리하여 {size}을(를) 확보했습니다.",
       "thumbnail_quality_options": [

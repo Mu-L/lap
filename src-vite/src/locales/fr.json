@@ -1409,9 +1409,15 @@
       "title": "Avancé",
       "section_thumbnail_cache": "Cache des miniatures",
       "thumbnail_quality": "Qualité des miniatures",
-      "thumbnail_quality_hint": "Définit la résolution des miniatures générées. Des réglages plus élevés offrent un aperçu plus net, mais nécessitent plus de temps de génération et d’espace disque.",
+      "thumbnail_quality_hint": "Définit la résolution des miniatures générées. Des réglages plus élevés offrent un aperçu plus net, mais nécessitent plus de temps de génération et d’espace disque",
+      "raw_thumbnail_source": "Source des miniatures RAW",
+      "raw_thumbnail_source_hint": "Choisissez comment les miniatures des fichiers RAW sont générées",
+      "raw_thumbnail_source_options": [
+        "Rendu RAW (par défaut)",
+        "Aperçu intégré (plus rapide)"
+      ],
       "clean_unused_thumbnails": "Nettoyer le cache de miniatures inutilisé",
-      "clean_unused_thumbnails_hint": "Supprime les miniatures mises en cache qui ne sont plus associées à des fichiers de cette bibliothèque.",
+      "clean_unused_thumbnails_hint": "Supprime les miniatures mises en cache qui ne sont plus associées à des fichiers de cette bibliothèque",
       "clean": "Nettoyer",
       "thumbnail_cache_cleaned": "Nettoyage de {count} miniatures terminé, {size} libérés.",
       "thumbnail_quality_options": [

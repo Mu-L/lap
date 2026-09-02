@@ -2529,6 +2529,7 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
                 orientation,
                 FOLDER_SYNC_THUMBNAIL_SIZE,
                 false,
+                false,
                 None,
                 None,
             )
@@ -3009,6 +3010,7 @@ struct ThumbnailTask {
     file_type: i64,
     orientation: i32,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     file_size: u64,
     duration: Option<u64>,
     is_heavy: bool,
@@ -3218,6 +3220,7 @@ fn index_single_file(
     path_str: &str,
     ftype: i64,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     last_scan_time: i64,
 ) -> Option<FileIndexOutcome> {
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
@@ -3235,7 +3238,11 @@ fn index_single_file(
                     if let Some(file_id) = file.id {
                         let has_thumbnail = file.has_thumbnail.unwrap_or(false);
                         let needs_thumbnail_regeneration = has_thumbnail
-                            && crate::t_sqlite::AThumb::needs_size_regeneration(file_id, thumbnail_size);
+                            && crate::t_sqlite::AThumb::needs_thumbnail_regeneration(
+                                file_id,
+                                thumbnail_size,
+                                prefer_embedded_raw_thumbnail,
+                            );
                         let thumbnail_ready = has_thumbnail && !needs_thumbnail_regeneration;
                         let has_embedding = file.has_embedding.unwrap_or(false);
                         let processed_immediately = thumbnail_ready;
@@ -3258,6 +3265,7 @@ fn index_single_file(
                                 file_type: ftype,
                                 orientation: file.e_orientation.unwrap_or(1) as i32,
                                 thumbnail_size,
+                                prefer_embedded_raw_thumbnail,
                                 file_size: file.size.max(0) as u64,
                                 duration: file.duration.map(|d| d as u64),
                                 is_heavy: should_use_heavy_lane(
@@ -3325,6 +3333,7 @@ async fn process_thumbnail_task(
             task_for_thumb.file_type,
             task_for_thumb.orientation,
             task_for_thumb.thumbnail_size,
+            task_for_thumb.prefer_embedded_raw_thumbnail,
             task_for_thumb.force_regenerate,
             task_for_thumb.duration,
             None,
@@ -3412,6 +3421,7 @@ pub async fn index_album_worker(
     cancellation_token: Arc<Mutex<HashMap<i64, bool>>>,
     album_id: i64,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     skip_file_path: Option<String>,
     group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
@@ -3587,6 +3597,7 @@ pub async fn index_album_worker(
                     &path_str,
                     ftype,
                     thumbnail_size,
+                    prefer_embedded_raw_thumbnail,
                     current_scan_time,
                 ) {
                     let file_size = outcome

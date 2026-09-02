@@ -446,6 +446,7 @@ pub fn index_album(
     state: State<IndexCancellation>,
     album_id: i64,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     skip_file_path: Option<String>,
     group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
@@ -459,6 +460,7 @@ pub fn index_album(
             cancellation_token,
             album_id,
             thumbnail_size,
+            raw_thumbnail_source == "embedded",
             skip_file_path,
             group_raw_jpeg_pairs,
         )
@@ -2048,6 +2050,7 @@ pub async fn get_file_thumb(
     file_type: i64,
     orientation: i32,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
     thumbnail_seek_percent: Option<u8>,
 ) -> Result<Option<AThumb>, String> {
@@ -2056,6 +2059,7 @@ pub async fn get_file_thumb(
         file_path,
         thumbnail_size,
         orientation,
+        raw_thumbnail_source == "embedded",
         force_regenerate,
     )
     .map_err(|e| format!("Error while getting thumbnail: {}", e))?
@@ -2075,6 +2079,7 @@ pub async fn get_file_thumb(
         file_type,
         orientation,
         thumbnail_size,
+        raw_thumbnail_source == "embedded",
         album_id,
         force_regenerate,
         thumbnail_seek_percent,
@@ -2089,6 +2094,7 @@ pub async fn get_file_thumb_by_id(
     app_handle: tauri::AppHandle,
     file_id: i64,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
 ) -> Result<Option<AThumb>, String> {
     let Some(file) = AFile::get_file_info(file_id)
@@ -2109,6 +2115,7 @@ pub async fn get_file_thumb_by_id(
         &file_path,
         thumbnail_size,
         orientation,
+        raw_thumbnail_source == "embedded",
         force_regenerate,
     )
     .map_err(|e| format!("Error while getting thumbnail: {}", e))?
@@ -2123,6 +2130,7 @@ pub async fn get_file_thumb_by_id(
         file_type,
         orientation,
         thumbnail_size,
+        raw_thumbnail_source == "embedded",
         file.album_id.unwrap_or(0),
         force_regenerate,
         None,
@@ -2137,6 +2145,7 @@ pub async fn get_file_thumbs(
     app_handle: tauri::AppHandle,
     files: Vec<ThumbRequest>,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
 ) -> Result<Vec<Option<AThumb>>, String> {
     let mut thumbs = Vec::with_capacity(files.len());
@@ -2197,6 +2206,7 @@ pub async fn get_file_thumbs(
                 &file_path,
                 thumbnail_size,
                 orientation,
+                raw_thumbnail_source == "embedded",
                 force_regenerate,
             )
             .map_err(|e| format!("Error while getting thumbnail: {}", e))?
@@ -2213,6 +2223,7 @@ pub async fn get_file_thumbs(
             file_type,
             orientation,
             thumbnail_size,
+            raw_thumbnail_source == "embedded",
             album_id,
             force_regenerate,
             None,

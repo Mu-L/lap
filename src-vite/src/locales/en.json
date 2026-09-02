@@ -1410,6 +1410,12 @@
       "section_thumbnail_cache": "Thumbnail cache",
       "thumbnail_quality": "Thumbnail quality",
       "thumbnail_quality_hint": "Sets the resolution of generated thumbnails. Higher settings look sharper but take longer to generate and use more disk space",
+      "raw_thumbnail_source": "RAW thumbnail source",
+      "raw_thumbnail_source_hint": "Choose how thumbnails are generated for RAW files",
+      "raw_thumbnail_source_options": [
+        "RAW Rendering (default)",
+        "Embedded preview (faster)"
+      ],
       "clean_unused_thumbnails": "Clean unused thumbnail cache",
       "clean_unused_thumbnails_hint": "Removes cached thumbnails that are no longer associated with files in this library",
       "clean": "Clean",

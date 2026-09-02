@@ -486,6 +486,15 @@
             </div>
             <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.raw_thumbnail_source') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.raw_thumbnail_source_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40 shrink-0" :value="config.settings.rawThumbnailSource" @change="onRawThumbnailSourceChange">
+                <option v-for="option in rawThumbnailSourceOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.advanced.clean_unused_thumbnails') }}</div>
                 <div class="text-xs text-base-content/30">{{ $t('settings.advanced.clean_unused_thumbnails_hint') }}</div>
               </div>
@@ -827,10 +836,27 @@ const thumbnailQualityOptions = computed(() => {
   ];
 });
 
+const rawThumbnailSourceOptions = computed(() => {
+  const labels = localeMsg.value.settings.advanced.raw_thumbnail_source_options || [
+    'RAW Rendering (default)',
+    'Embedded preview (faster)',
+  ];
+  return [
+    { value: 'processed', label: labels[0] },
+    { value: 'embedded', label: labels[1] },
+  ];
+});
+
 function onThumbnailSizeChange(event: Event) {
   const next = normalizeThumbnailSize((event.target as HTMLSelectElement).value);
   if (normalizeThumbnailSize(config.settings.thumbnailSize) === next) return;
   config.settings.thumbnailSize = next;
+}
+
+function onRawThumbnailSourceChange(event: Event) {
+  config.settings.rawThumbnailSource = (event.target as HTMLSelectElement).value === 'embedded'
+    ? 'embedded'
+    : 'processed';
 }
 
 async function cleanUnusedThumbnailCache() {
@@ -1394,6 +1420,9 @@ watch(() => config.settings.groupRawJpegPairs, (newValue) => {
 // grid view settings
 watch(() => config.settings.thumbnailSize, (newValue) => {
   emit('settings-thumbnailSize-changed', newValue);
+});
+watch(() => config.settings.rawThumbnailSource, (newValue) => {
+  emit('settings-rawThumbnailSource-changed', newValue);
 });
 watch(() => config.settings.grid.style, (newValue) => {
   emit('settings-gridStyle-changed', newValue);

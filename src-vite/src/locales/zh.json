@@ -1409,9 +1409,15 @@
       "title": "高级",
       "section_thumbnail_cache": "缩略图缓存",
       "thumbnail_quality": "缩略图质量",
-      "thumbnail_quality_hint": "控制生成缩略图的分辨率。更高设置更清晰，但生成更慢且占用更多磁盘空间。",
+      "thumbnail_quality_hint": "控制生成缩略图的分辨率。更高设置更清晰，但生成更慢且占用更多磁盘空间",
+      "raw_thumbnail_source": "RAW 缩略图来源",
+      "raw_thumbnail_source_hint": "选择 RAW 文件的缩略图生成方式",
+      "raw_thumbnail_source_options": [
+        "RAW 渲染（默认）",
+        "嵌入式预览（更快）"
+      ],
       "clean_unused_thumbnails": "清理未使用的缩略图缓存",
-      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图。",
+      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图",
       "clean": "清理",
       "thumbnail_cache_cleaned": "已清理 {count} 个缩略图，释放 {size}。",
       "thumbnail_quality_options": [

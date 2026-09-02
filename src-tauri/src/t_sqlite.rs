@@ -6359,6 +6359,7 @@ impl AThumb {
         thumbnail_size: u32,
         source_mtime: Option<i64>,
         orientation: i32,
+        raw_thumbnail_source: Option<bool>,
     ) -> String {
         let mut hasher = blake3::Hasher::new();
         hasher.update(b"lap-thumb-v1");
@@ -6367,7 +6368,15 @@ impl AThumb {
         hasher.update(&thumbnail_size.to_le_bytes());
         hasher.update(&orientation.to_le_bytes());
         hasher.update(&source_mtime.unwrap_or_default().to_le_bytes());
-        hasher.finalize().to_hex().to_string()
+        if let Some(prefer_embedded) = raw_thumbnail_source {
+            hasher.update(if prefer_embedded { b"raw-embedded" } else { b"raw-rendered" });
+        }
+        let hash = hasher.finalize().to_hex().to_string();
+        match raw_thumbnail_source {
+            Some(true) => format!("e{}", hash),
+            Some(false) => format!("r{}", hash),
+            None => hash,
+        }
     }
 
     fn get_file_album_id(file_id: i64) -> Result<Option<i64>, String> {
@@ -6629,6 +6638,7 @@ impl AThumb {
         file_type: i64,
         orientation: i32,
         thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
         library_id: &str,
         known_duration: Option<u64>,
         seek_percent: Option<u8>,
@@ -6683,7 +6693,12 @@ impl AThumb {
             }
             3 => {
                 // raw image
-                match t_image::get_raw_thumbnail(file_path, orientation, thumbnail_size) {
+                match t_image::get_raw_thumbnail(
+                    file_path,
+                    orientation,
+                    thumbnail_size,
+                    prefer_embedded_raw_thumbnail,
+                ) {
                     Ok(Some(data)) => (Some(data), 0),
                     Ok(None) => (None, 1),
                     Err(_) => (None, 1),
@@ -6700,6 +6715,7 @@ impl AThumb {
                 thumbnail_size,
                 thumb_mtime,
                 orientation,
+                (file_type == 3).then_some(prefer_embedded_raw_thumbnail),
             )
         });
 
@@ -6878,14 +6894,42 @@ impl AThumb {
     }
 
     /// Whether an explicit album re-scan should regenerate this thumbnail at
-    /// the currently selected quality.
-    pub fn needs_size_regeneration(file_id: i64, thumbnail_size: u32) -> bool {
+    /// the currently selected size and RAW thumbnail source.
+    pub fn needs_thumbnail_regeneration(
+        file_id: i64,
+        thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
+    ) -> bool {
         Self::fetch(file_id)
             .ok()
             .flatten()
             .is_some_and(|thumbnail| {
-                thumbnail.error_code != 2
-                    && thumbnail.thumb_size != Some(thumbnail_size as i64)
+                if thumbnail.error_code == 2 {
+                    return false;
+                }
+
+                let size_changed = thumbnail.thumb_size != Some(thumbnail_size as i64);
+
+                let Ok(Some(file)) = AFile::get_file_info(file_id) else {
+                    return size_changed;
+                };
+                if file.file_type.unwrap_or(0) != 3 {
+                    return size_changed;
+                }
+
+                if size_changed {
+                    return true;
+                }
+
+                let expected_key = Self::build_thumb_key(
+                    &Self::get_current_library_id(),
+                    file_id,
+                    thumbnail_size,
+                    file.file_path.as_deref().and_then(Self::get_source_mtime),
+                    file.e_orientation.unwrap_or(1) as i32,
+                    Some(prefer_embedded_raw_thumbnail),
+                );
+                thumbnail.thumb_key.as_deref() != Some(expected_key.as_str())
             })
     }
 
@@ -6923,6 +6967,7 @@ impl AThumb {
                 thumbnail_size,
                 thumb_mtime,
                 orientation,
+                None,
             )
         });
 
@@ -6987,6 +7032,7 @@ impl AThumb {
         file_type: i64,
         orientation: i32,
         thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
         library_id: &str,
         known_duration: Option<u64>,
         seek_percent: Option<u8>,
@@ -7013,6 +7059,7 @@ impl AThumb {
             file_type,
             orientation,
             thumbnail_size,
+            prefer_embedded_raw_thumbnail,
             library_id,
             known_duration,
             seek_percent,
@@ -7051,6 +7098,7 @@ impl AThumb {
         file_type: i64,
         orientation: i32,
         thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
         known_duration: Option<u64>,
         seek_percent: Option<u8>,
     ) -> Result<Option<Self>, String> {
@@ -7061,6 +7109,7 @@ impl AThumb {
             file_type,
             orientation,
             thumbnail_size,
+            prefer_embedded_raw_thumbnail,
             &library_id,
             known_duration,
             seek_percent,
@@ -7072,6 +7121,7 @@ impl AThumb {
         file_path: &str,
         thumbnail_size: u32,
         orientation: i32,
+        _prefer_embedded_raw_thumbnail: bool,
         force_regenerate: bool,
     ) -> Result<Option<Self>, String> {
         if force_regenerate {
@@ -7113,6 +7163,7 @@ impl AThumb {
         file_path: &str,
         thumbnail_size: u32,
         orientation: i32,
+        _prefer_embedded_raw_thumbnail: bool,
         force_regenerate: bool,
     ) -> Result<Option<Self>, String> {
         if force_regenerate {
@@ -7153,6 +7204,7 @@ impl AThumb {
         file_type: i64,
         orientation: i32,
         thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
         album_id: i64,
         force_regenerate: bool,
         seek_percent: Option<u8>,
@@ -7186,6 +7238,7 @@ impl AThumb {
                     file_type,
                     orientation,
                     thumbnail_size,
+                    prefer_embedded_raw_thumbnail,
                     force_regenerate,
                     duration,
                     seek_percent,
@@ -7214,6 +7267,7 @@ impl AThumb {
         file_type: i64,
         orientation: i32,
         thumbnail_size: u32,
+        prefer_embedded_raw_thumbnail: bool,
         force_regenerate: bool,
         known_duration: Option<u64>,
         seek_percent: Option<u8>,
@@ -7221,7 +7275,14 @@ impl AThumb {
         if force_regenerate {
             let _ = Self::delete(file_id);
         } else if let Some(thumb) =
-            Self::get_thumb_if_available(file_id, file_path, thumbnail_size, orientation, false)?
+            Self::get_thumb_if_available(
+                file_id,
+                file_path,
+                thumbnail_size,
+                orientation,
+                prefer_embedded_raw_thumbnail,
+                false,
+            )?
         {
             if thumb.error_code != 1 {
                 return Ok(Some(thumb));
@@ -7236,6 +7297,7 @@ impl AThumb {
                 file_path,
                 thumbnail_size,
                 orientation,
+                prefer_embedded_raw_thumbnail,
                 false,
             )? {
                 if hydrated.error_code != 1 {
@@ -7250,6 +7312,7 @@ impl AThumb {
             file_type,
             orientation,
             thumbnail_size,
+            prefer_embedded_raw_thumbnail,
             known_duration,
             seek_percent,
         )
@@ -7289,6 +7352,10 @@ impl AThumb {
             let file_type = file.file_type.unwrap_or(0);
             let orientation = file.e_orientation.unwrap_or(1) as i32;
             let thumbnail_size = thumb.thumb_size.unwrap_or(200).max(1) as u32;
+            let prefer_embedded_raw_thumbnail = thumb
+                .thumb_key
+                .as_deref()
+                .is_some_and(|key| key.starts_with('e'));
 
             return Ok(Self::create_cache_backed_thumb_for_library(
                 file_id,
@@ -7296,6 +7363,7 @@ impl AThumb {
                 file_type,
                 orientation,
                 thumbnail_size,
+                prefer_embedded_raw_thumbnail,
                 library_id,
                 file.duration.map(|d| d as u64),
                 None,
