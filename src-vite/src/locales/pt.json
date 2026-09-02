@@ -1416,6 +1416,18 @@
         "Renderização RAW (padrão)",
         "Pré-visualização incorporada (mais rápida)"
       ],
+      "section_map": "Mapa",
+      "map_provider": "Provedor de mapas",
+      "map_provider_hint": "Escolha o serviço de mapas para a vista de mapa",
+      "map_provider_options": [
+        "Global (padrão)",
+        "China (Tianditu)"
+      ],
+      "tianditu_token": "Token de API do Tianditu",
+      "tianditu_token_hint": "Necessário para blocos do Tianditu",
+      "tianditu_token_placeholder": "Cole seu token",
+      "tianditu_token_status_saved": "Guardado",
+      "tianditu_token_status_empty": "Não configurado",
       "clean_unused_thumbnails": "Limpar cache de miniaturas não utilizado",
       "clean_unused_thumbnails_hint": "Remove miniaturas em cache que não estão mais associadas a arquivos nesta biblioteca",
       "clean": "Limpar",

@@ -1416,6 +1416,18 @@
         "Rendu RAW (par défaut)",
         "Aperçu intégré (plus rapide)"
       ],
+      "section_map": "Carte",
+      "map_provider": "Fournisseur de cartes",
+      "map_provider_hint": "Choisissez le service de cartes pour la vue Carte",
+      "map_provider_options": [
+        "Global (par défaut)",
+        "Chine (Tianditu)"
+      ],
+      "tianditu_token": "Jeton API Tianditu",
+      "tianditu_token_hint": "Requis pour les tuiles Tianditu",
+      "tianditu_token_placeholder": "Collez votre jeton",
+      "tianditu_token_status_saved": "Enregistré",
+      "tianditu_token_status_empty": "Non configuré",
       "clean_unused_thumbnails": "Nettoyer le cache de miniatures inutilisé",
       "clean_unused_thumbnails_hint": "Supprime les miniatures mises en cache qui ne sont plus associées à des fichiers de cette bibliothèque",
       "clean": "Nettoyer",

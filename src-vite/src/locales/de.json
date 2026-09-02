@@ -1416,6 +1416,18 @@
         "RAW-Rendering (Standard)",
         "Eingebettete Vorschau (schneller)"
       ],
+      "section_map": "Karte",
+      "map_provider": "Kartendienst",
+      "map_provider_hint": "Wählt den Kartendienst für die Kartenansicht",
+      "map_provider_options": [
+        "Global (Standard)",
+        "China (Tianditu)"
+      ],
+      "tianditu_token": "Tianditu-API-Token",
+      "tianditu_token_hint": "Für Tianditu-Kacheln erforderlich",
+      "tianditu_token_placeholder": "Token einfügen",
+      "tianditu_token_status_saved": "Gespeichert",
+      "tianditu_token_status_empty": "Nicht konfiguriert",
       "clean_unused_thumbnails": "Nicht verwendeten Miniaturansichts-Cache bereinigen",
       "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind",
       "clean": "Bereinigen",

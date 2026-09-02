@@ -1416,6 +1416,18 @@
         "Рендеринг RAW (по умолчанию)",
         "Встроенный предпросмотр (быстрее)"
       ],
+      "section_map": "Карта",
+      "map_provider": "Поставщик карт",
+      "map_provider_hint": "Выберите картографический сервис для просмотра карты",
+      "map_provider_options": [
+        "Глобальный (по умолчанию)",
+        "Китай (Tianditu)"
+      ],
+      "tianditu_token": "Токен API Tianditu",
+      "tianditu_token_hint": "Требуется для тайлов Tianditu",
+      "tianditu_token_placeholder": "Вставьте токен",
+      "tianditu_token_status_saved": "Сохранено",
+      "tianditu_token_status_empty": "Не настроено",
       "clean_unused_thumbnails": "Очистить неиспользуемый кэш миниатюр",
       "clean_unused_thumbnails_hint": "Удаляет кэшированные миниатюры, которые больше не связаны с файлами в этой библиотеке",
       "clean": "Очистить",

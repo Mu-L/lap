@@ -1416,6 +1416,18 @@
         "RAW 渲染（默认）",
         "嵌入式预览（更快）"
       ],
+      "section_map": "地图",
+      "map_provider": "地图服务提供者",
+      "map_provider_hint": "选择地图视图使用的地图服务",
+      "map_provider_options": [
+        "全球（默认）",
+        "中国（天地图）"
+      ],
+      "tianditu_token": "天地图 API Token",
+      "tianditu_token_hint": "使用天地图瓦片时需要提供",
+      "tianditu_token_placeholder": "粘贴你的 Token",
+      "tianditu_token_status_saved": "已保存",
+      "tianditu_token_status_empty": "未配置",
       "clean_unused_thumbnails": "清理未使用的缩略图缓存",
       "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图",
       "clean": "清理",

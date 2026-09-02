@@ -22,10 +22,6 @@
     <div v-if="isQueryMap && !loading" class="absolute top-2 right-2 z-500 pointer-events-none rounded-box bg-base-100/60 px-2 py-1 text-xs text-base-content/70">
       {{ points.length > 0 ? t('map.photo_count', { count: totalCount.toLocaleString() }) : t('map.no_photos_in_view') }}
     </div>
-    <div v-if="isQueryMap && !loading && points.length === 0" class="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-base-content/30">
-      <span class="text-center text-sm">{{ $t('tooltip.not_found.location_hint') }}</span>
-    </div>
-
   </div>
 </template>
 
@@ -36,6 +32,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import { config } from '@/common/config'
+import { createTileLayerGroup, getGlobalMapTheme, getMapTheme } from '@/common/mapProviders'
 import {
   getCollectionQueryFileIds,
   getFilesByIds,
@@ -93,11 +90,6 @@ let visibleFiles = []
 let sourceFiles = null
 let needsRefresh = false
 
-const mapThemes = [
-  { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: 'OpenStreetMap', maxZoom: 19 },
-  { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Powered by Esri', maxZoom: 17 },
-]
-
 onMounted(async () => {
   map = L.map(mapEl.value, { center: [20, 0], zoom: 2, keyboard: false, zoomControl: false, maxZoom: activeMaxZoom.value })
   map.attributionControl.setPrefix('')
@@ -125,7 +117,7 @@ onBeforeUnmount(() => {
   map?.remove()
 })
 
-watch(() => config.infoPanel.mapTheme, updateTheme)
+watch(() => [config.infoPanel.mapTheme, config.settings.mapProvider, config.settings.tiandituToken], updateTheme)
 watch(() => [props.queryParams, props.querySource, props.collectionId, props.fileIds], () => {
   if (!props.active) {
     needsRefresh = true
@@ -365,19 +357,29 @@ function addPhotoMarker(lat, lon, fileId, count, cluster = null) {
 }
 
 function updateTheme() {
+  const theme = getMapTheme(config.settings.mapProvider, config.settings.tiandituToken, config.infoPanel.mapTheme)
+  applyTheme(theme, false)
+}
+
+function applyTheme(theme, isFallback) {
   if (!map) return
   if (tileLayer) map.removeLayer(tileLayer)
-  const theme = mapThemes[Number(config.infoPanel.mapTheme)] || mapThemes[0]
   activeMaxZoom.value = theme.maxZoom
   map.setMaxZoom(theme.maxZoom)
   if (map.getZoom() > theme.maxZoom) map.setZoom(theme.maxZoom)
-  tileErrorFallbackTriggered = false
-  tileLayer = L.tileLayer(theme.url, { attribution: theme.attribution, maxZoom: theme.maxZoom }).addTo(map)
-  tileLayer.on('tileerror', () => {
-    if (!tileErrorFallbackTriggered && Number(config.infoPanel.mapTheme) !== 0) {
+  if (!isFallback) tileErrorFallbackTriggered = false
+
+  const created = createTileLayerGroup(L, theme)
+  const activeLayer = created.layer
+  tileLayer = activeLayer.addTo(map)
+  created.tileLayers.forEach(layer => {
+    layer.on('tileerror', () => {
+      // Requests from a removed layer can still fail after a provider switch.
+      // Ignore them so an old OSM request cannot replace the new provider.
+      if (tileLayer !== activeLayer || tileErrorFallbackTriggered || isFallback) return
       tileErrorFallbackTriggered = true
-      config.infoPanel.mapTheme = 0
-    }
+      applyTheme(getGlobalMapTheme(config.infoPanel.mapTheme), true)
+    })
   })
 }
 

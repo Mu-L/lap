@@ -126,6 +126,12 @@ if (isMainWindow) {
   listen('settings-rawThumbnailSource-changed', (event) => {
     config.setRawThumbnailSource(event.payload)
   })
+  listen('settings-mapProvider-changed', (event) => {
+    config.setMapProvider(event.payload)
+  })
+  listen('settings-tiandituToken-changed', (event) => {
+    config.setTiandituToken(event.payload)
+  })
   listen('settings-gridStyle-changed', (event) => {
     config.setGridStyle(event.payload)
   })

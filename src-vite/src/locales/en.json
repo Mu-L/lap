@@ -1416,6 +1416,18 @@
         "RAW Rendering (default)",
         "Embedded preview (faster)"
       ],
+      "section_map": "Map",
+      "map_provider": "Map provider",
+      "map_provider_hint": "Choose the map service for Map view",
+      "map_provider_options": [
+        "Global (default)",
+        "China (Tianditu)"
+      ],
+      "tianditu_token": "Tianditu API token",
+      "tianditu_token_hint": "Required for Tianditu map tiles",
+      "tianditu_token_placeholder": "Paste your token",
+      "tianditu_token_status_saved": "Saved",
+      "tianditu_token_status_empty": "Not configured",
       "clean_unused_thumbnails": "Clean unused thumbnail cache",
       "clean_unused_thumbnails_hint": "Removes cached thumbnails that are no longer associated with files in this library",
       "clean": "Clean",

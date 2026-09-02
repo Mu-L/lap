@@ -1416,6 +1416,18 @@
         "RAW 렌더링(기본값)",
         "내장 미리보기(더 빠름)"
       ],
+      "section_map": "지도",
+      "map_provider": "지도 서비스",
+      "map_provider_hint": "지도 보기에 사용할 지도 서비스를 선택합니다",
+      "map_provider_options": [
+        "글로벌(기본값)",
+        "중국(톈디투)"
+      ],
+      "tianditu_token": "톈디투 API 토큰",
+      "tianditu_token_hint": "톈디투 타일에 필요합니다",
+      "tianditu_token_placeholder": "토큰 붙여넣기",
+      "tianditu_token_status_saved": "저장됨",
+      "tianditu_token_status_empty": "설정되지 않음",
       "clean_unused_thumbnails": "사용하지 않는 썸네일 캐시 정리",
       "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다",
       "clean": "정리",

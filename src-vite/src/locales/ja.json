@@ -1416,6 +1416,18 @@
         "RAW レンダリング（デフォルト）",
         "埋め込みプレビュー（高速）"
       ],
+      "section_map": "地図",
+      "map_provider": "地図サービス",
+      "map_provider_hint": "地図ビューで使用する地図サービスを選択します",
+      "map_provider_options": [
+        "グローバル（デフォルト）",
+        "中国（天地图）"
+      ],
+      "tianditu_token": "天地图 API トークン",
+      "tianditu_token_hint": "天地图のタイルに必要です",
+      "tianditu_token_placeholder": "トークンを貼り付け",
+      "tianditu_token_status_saved": "保存済み",
+      "tianditu_token_status_empty": "未設定",
       "clean_unused_thumbnails": "未使用のサムネイルキャッシュを削除",
       "clean_unused_thumbnails_hint": "このライブラリのファイルに関連付けられていないキャッシュ済みサムネイルを削除します",
       "clean": "削除",

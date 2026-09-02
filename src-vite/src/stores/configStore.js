@@ -122,6 +122,8 @@ export const useConfigStore = defineStore('configStore', {
       // grid view settings
       thumbnailSize: 512,         // gallery thumbnail quality: 256, 512, or 1024
       rawThumbnailSource: 'processed', // processed | embedded
+      mapProvider: 'global',      // global | tianditu
+      tiandituToken: '',
       grid: {
         sizePosition: 0,         // grid size slider position (0-1)
         style: 0,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
@@ -281,6 +283,12 @@ export const useConfigStore = defineStore('configStore', {
     },
     setRawThumbnailSource(rawThumbnailSource) {
       this.settings.rawThumbnailSource = rawThumbnailSource === 'embedded' ? 'embedded' : 'processed';
+    },
+    setMapProvider(mapProvider) {
+      this.settings.mapProvider = mapProvider === 'tianditu' ? 'tianditu' : 'global';
+    },
+    setTiandituToken(tiandituToken) {
+      this.settings.tiandituToken = String(tiandituToken || '').trim();
     },
     setGridStyle(gridStyle) {
       this.settings.grid.style = gridStyle;
