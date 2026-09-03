@@ -306,10 +306,10 @@ export async function getSmartQueryFilePosition(params, fileId) {
 // albums
 
 // get all albums
-export async function getAllAlbums() {
+export async function getAllAlbums(refreshAccessibility = false) {
   try {
     let albums = [];
-    const fetchedAlbums = await invoke('get_all_albums');
+    const fetchedAlbums = await invoke('get_all_albums', { refreshAccessibility });
     console.log('get_all_albums', fetchedAlbums);
     if (fetchedAlbums) {
       albums = fetchedAlbums.map(album => ({
@@ -366,6 +366,15 @@ export async function getAlbum(albumId) {
     console.error('getAlbum...', error);
   }
   return null;
+}
+
+export async function checkAlbumAccessibility(albumId) {
+  try {
+    return Boolean(await invoke('check_album_accessibility', { albumId }));
+  } catch (error) {
+    console.error('checkAlbumAccessibility error:', error);
+    return false;
+  }
 }
 
 // recount files for an album and return updated album
@@ -1223,9 +1232,9 @@ export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = 
   return null;
 }
 
-export async function getFileThumbs(files, thumbnailSize, forceRegenerate = false) {
+export async function getFileThumbs(files, thumbnailSize, forceRegenerate = false, trustCached = false) {
   try {
-    return await invoke('get_file_thumbs', { files, thumbnailSize, rawThumbnailSource: config.settings.rawThumbnailSource || 'processed', forceRegenerate });
+    return await invoke('get_file_thumbs', { files, thumbnailSize, rawThumbnailSource: config.settings.rawThumbnailSource || 'processed', forceRegenerate, trustCached });
   } catch (error) {
     console.log('Failed to get file thumbs:', error);
   }

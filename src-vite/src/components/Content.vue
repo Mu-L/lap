@@ -720,7 +720,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
-         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, addTagToFile } from '@/common/api';
+         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import {
   gridSizeFromPosition,
@@ -7112,9 +7112,21 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
       getAlbum(libConfig.album.id).then(async album => {
         if (requestId !== currentContentRequestId) return;
         if(album) {
+          const wasInaccessible = album.is_accessible === false;
+          album.is_accessible = await checkAlbumAccessibility(album.id);
+          if (requestId !== currentContentRequestId) return;
+          if (wasInaccessible && album.is_accessible !== false) {
+            trustCachedThumbnailRequestId = currentThumbRequestId;
+          }
           if(libConfig.album.selected) {     
             // album is selected, show all files including subfolders
             contentTitle.value = album.name;
+            if (album.is_accessible === false) {
+              if (requestId !== currentContentRequestId) return;
+              isCurrentFolderMissing.value = true;
+              showEmptyContent(requestId);
+              return;
+            }
             getFileList({ searchAllSubfolders: libConfig.album.folderPath }, requestId);
           } else {                        
             // folder is selected, show files in the folder
@@ -9052,7 +9064,7 @@ function normalizeFileTypeMask(mask: number): number {
 }
 
 const emptyFilesMessage = computed(() => {
-  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.title;
+  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_unavailable.title;
   if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed;
   if (imageSearchLanguageUnsupported.value) return localeMsg.value.tooltip.not_found.image_search_language_unsupported;
   // if (currentQuerySource.value === 'collection') {
@@ -9073,7 +9085,7 @@ const emptyFilesMessage = computed(() => {
 });
 
 const emptyFilesHint = computed(() => {
-  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_not_found.description;
+  if (isCurrentFolderMissing.value) return localeMsg.value.album.folder_unavailable.description;
   if (imageSearchError.value) return localeMsg.value.tooltip.not_found.image_search_failed_hint;
   if (imageSearchLanguageUnsupported.value) return localeMsg.value.tooltip.not_found.image_search_language_unsupported_hint;
   if (!showFolderFiles.value) return '';
@@ -9534,6 +9546,9 @@ const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
 
 // Track current thumbnail request to enable cancellation when switching folders
 let currentThumbRequestId = 0;
+// A reconnected album can safely show its existing local thumbnail cache first.
+// A later scan/sync remains responsible for detecting files changed while offline.
+let trustCachedThumbnailRequestId = -1;
 
 function preserveLoadedThumbnails(files: any[]) {
   const thumbnailsById = new Map<number, string>();
@@ -9602,7 +9617,12 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, 
     }));
 
     try {
-      const thumbs = await getFileThumbs(requests, thumbnailSize, false);
+      const thumbs = await getFileThumbs(
+        requests,
+        thumbnailSize,
+        false,
+        requestId === trustCachedThumbnailRequestId,
+      );
 
       if (requestId !== currentThumbRequestId) return;
 

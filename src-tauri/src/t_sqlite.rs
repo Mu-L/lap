@@ -140,6 +140,12 @@ pub struct Album {
     pub merged_count: Option<u64>,  // companions merged into logical items
     pub merged_size: Option<u64>,   // total size of merged companions
     pub last_scan_time: Option<i64>,   // last scan time
+    #[serde(default = "default_album_accessible")]
+    pub is_accessible: bool,
+}
+
+fn default_album_accessible() -> bool {
+    true
 }
 
 #[derive(Debug, Deserialize)]
@@ -171,6 +177,7 @@ impl Album {
             merged_count: Some(0),
             merged_size: Some(0),
             last_scan_time: Some(0),
+            is_accessible: true,
         })
     }
 
@@ -194,6 +201,7 @@ impl Album {
             merged_count: row.get(14)?,
             merged_size: row.get(15)?,
             last_scan_time: row.get(16)?,
+            is_accessible: true,
         })
     }
 
@@ -1998,6 +2006,17 @@ pub struct ImageSearchParams {
 }
 
 impl AFile {
+    fn inaccessible_album_filter(folder_alias: &str) -> String {
+        match t_utils::inaccessible_album_ids().as_slice() {
+            [] => String::new(),
+            ids => format!(
+                " AND {}.album_id NOT IN ({})",
+                folder_alias,
+                ids.iter().map(i64::to_string).collect::<Vec<_>>().join(",")
+            ),
+        }
+    }
+
     /// Exclude files whose folder path is the excluded folder itself or one of its children.
     /// The caller must pass the alias for the file's joined afolders row.
     fn search_exclusion_condition(folder_alias: &str) -> String {
@@ -3479,9 +3498,16 @@ impl AFile {
                 .collect::<Vec<_>>()
                 .join(",");
             let sql = format!(
-                "{} WHERE a.id IN ({})",
+                "{} WHERE a.id IN ({}){}",
                 Self::build_base_query(),
-                placeholders
+                placeholders,
+                match t_utils::inaccessible_album_ids().as_slice() {
+                    [] => String::new(),
+                    ids => format!(
+                        " AND b.album_id NOT IN ({})",
+                        ids.iter().map(i64::to_string).collect::<Vec<_>>().join(",")
+                    ),
+                }
             );
             let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
             let rows = stmt
@@ -4218,13 +4244,15 @@ impl AFile {
         let query = format!(
             "SELECT {} AS group_date, COUNT(1)
             FROM afiles a
-            WHERE {} IS NOT NULL AND {} >= 86400 AND {}
+            JOIN afolders b ON a.folder_id = b.id
+            WHERE {} IS NOT NULL AND {} >= 86400 AND {}{}
             GROUP BY {}
             ORDER BY group_date {}",
             date_expr,
             date_col,
             date_col,
             Self::live_photo_companion_exclusion_condition(),
+            Self::inaccessible_album_filter("b"),
             date_expr,
             order_clause
         );
@@ -4261,6 +4289,18 @@ impl AFile {
         let mut conditions: Vec<String> =
             vec![Self::live_photo_companion_exclusion_condition().to_string()];
         let mut sql_params: Vec<Box<dyn ToSql>> = Vec::new();
+
+        let inaccessible_album_ids = t_utils::inaccessible_album_ids();
+        if !inaccessible_album_ids.is_empty() {
+            conditions.push(format!(
+                "b.album_id NOT IN ({})",
+                inaccessible_album_ids
+                    .iter()
+                    .map(i64::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
 
         if !params.search_file_name.is_empty() {
             conditions.push("(a.name LIKE ? COLLATE NOCASE OR a.comments LIKE ? COLLATE NOCASE)".to_string());
@@ -5442,6 +5482,18 @@ impl AFile {
             )?);
         }
 
+        let inaccessible_album_ids = t_utils::inaccessible_album_ids();
+        if !inaccessible_album_ids.is_empty() {
+            conditions.push(format!(
+                "b.album_id NOT IN ({})",
+                inaccessible_album_ids
+                    .iter()
+                    .map(i64::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
+
         conditions.push(Self::search_exclusion_condition("b"));
         conditions.push(Self::live_photo_companion_exclusion_condition().to_string());
 
@@ -6132,6 +6184,18 @@ impl AFile {
 
         query.push_str(" AND ");
         query.push_str(&Self::search_exclusion_condition("b"));
+
+        let inaccessible_album_ids = t_utils::inaccessible_album_ids();
+        if !inaccessible_album_ids.is_empty() {
+            query.push_str(&format!(
+                " AND b.album_id NOT IN ({})",
+                inaccessible_album_ids
+                    .iter()
+                    .map(i64::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
 
         if let Some(ft_condition) = Self::build_file_type_condition(params.file_type) {
             query.push_str(" AND ");
@@ -7165,6 +7229,7 @@ impl AThumb {
         orientation: i32,
         _prefer_embedded_raw_thumbnail: bool,
         force_regenerate: bool,
+        trust_cached: bool,
     ) -> Result<Option<Self>, String> {
         if force_regenerate {
             let _ = Self::delete(thumbnail.file_id);
@@ -7183,7 +7248,7 @@ impl AThumb {
             return Ok(Some(thumbnail));
         }
 
-        if thumbnail.is_stale(file_path, thumbnail_size) {
+        if !trust_cached && thumbnail.is_stale(file_path, thumbnail_size) {
             let _ = Self::delete(thumbnail.file_id);
             return Ok(None);
         }
@@ -8564,15 +8629,15 @@ impl ACamera {
     // get all camera makes and models from db
     pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
-        let query = "SELECT UPPER(a.e_make), a.e_model, count(a.id) as count
+        let query = format!("SELECT UPPER(a.e_make), a.e_model, count(a.id) as count
             FROM afiles a
+            JOIN afolders b ON a.folder_id = b.id
             WHERE a.e_make IS NOT NULL AND a.e_model IS NOT NULL
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                )
+                ){}
             GROUP BY UPPER(a.e_make), a.e_model
-            ORDER BY UPPER(a.e_make), a.e_model"
-            .to_string();
+            ORDER BY UPPER(a.e_make), a.e_model", AFile::inaccessible_album_filter("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
@@ -8642,15 +8707,15 @@ impl ALens {
     // get all lens makes and models from db
     pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
-        let query = "SELECT UPPER(a.e_lens_make), a.e_lens_model, count(a.id) as count
+        let query = format!("SELECT UPPER(a.e_lens_make), a.e_lens_model, count(a.id) as count
             FROM afiles a
+            JOIN afolders b ON a.folder_id = b.id
             WHERE a.e_lens_make IS NOT NULL AND a.e_lens_model IS NOT NULL
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                )
+                ){}
             GROUP BY UPPER(a.e_lens_make), a.e_lens_model
-            ORDER BY UPPER(a.e_lens_make), a.e_lens_model"
-            .to_string();
+            ORDER BY UPPER(a.e_lens_make), a.e_lens_model", AFile::inaccessible_album_filter("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
@@ -8722,15 +8787,15 @@ impl ALocation {
     pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
 
-        let query = "SELECT COALESCE(a.geo_cc, ''), a.geo_admin1, a.geo_name, count(a.id) as count
+        let query = format!("SELECT COALESCE(a.geo_cc, ''), a.geo_admin1, a.geo_name, count(a.id) as count
             FROM afiles a
+            JOIN afolders b ON a.folder_id = b.id
             WHERE COALESCE(a.geo_admin1, '') <> '' AND COALESCE(a.geo_name, '') <> ''
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                )
+                ){}
             GROUP BY a.geo_cc, a.geo_admin1, a.geo_name
-            ORDER BY a.geo_cc, a.geo_admin1, a.geo_name"
-            .to_string();
+            ORDER BY a.geo_cc, a.geo_admin1, a.geo_name", AFile::inaccessible_album_filter("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 

@@ -298,6 +298,7 @@ pub fn remove_library(id: &str) -> Result<(), String> {
 pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         t_config::switch_library(&id)?;
+        t_utils::clear_album_accessibility();
         t_sqlite::clear_conn_pool();
         t_sqlite::create_db()?;
         Ok(())
@@ -306,6 +307,14 @@ pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<
     .map_err(|e| format!("Failed to join switch library task: {}", e))??;
 
     t_utils::restore_album_scopes(&app_handle)?;
+    tauri::async_runtime::spawn_blocking(|| -> Result<(), String> {
+        let mut albums = Album::get_all_albums()
+            .map_err(|e| format!("Error while checking albums after switching library: {}", e))?;
+        t_utils::refresh_all_album_accessibility(&mut albums);
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("Failed to join album accessibility check: {}", e))??;
     t_utils::start_folder_mtime_sync(app_handle);
     Ok(())
 }
@@ -340,8 +349,17 @@ pub fn get_current_library_state() -> Result<LibraryState, String> {
 
 /// get all albums
 #[tauri::command]
-pub fn get_all_albums() -> Result<Vec<Album>, String> {
-    Album::get_all_albums().map_err(|e| format!("Error while getting all albums: {}", e))
+pub fn get_all_albums(refresh_accessibility: bool) -> Result<Vec<Album>, String> {
+    let mut albums = Album::get_all_albums()
+        .map_err(|e| format!("Error while getting all albums: {}", e))?;
+    if refresh_accessibility {
+        t_utils::refresh_all_album_accessibility(&mut albums);
+    } else {
+        for album in &mut albums {
+            t_utils::apply_album_accessibility(album);
+        }
+    }
+    Ok(albums)
 }
 
 /// Get the indexed folder records used by the album sidebar search.
@@ -363,7 +381,19 @@ pub fn generate_directory_thumbnails(
 /// get one album
 #[tauri::command]
 pub fn get_album(album_id: i64) -> Result<Album, String> {
-    Album::get_album_by_id(album_id).map_err(|e| format!("Error while getting one album: {}", e))
+    let mut album = Album::get_album_by_id(album_id)
+        .map_err(|e| format!("Error while getting one album: {}", e))?;
+    t_utils::apply_album_accessibility(&mut album);
+    Ok(album)
+}
+
+/// Recheck one album root when the user selects that album or one of its folders.
+#[tauri::command]
+pub fn check_album_accessibility(album_id: i64) -> Result<bool, String> {
+    let mut album = Album::get_album_by_id(album_id)
+        .map_err(|e| format!("Error while checking album accessibility: {}", e))?;
+    t_utils::refresh_album_accessibility(&mut album);
+    Ok(album.is_accessible)
 }
 
 /// recount files for an album and return updated album
@@ -2287,6 +2317,7 @@ pub async fn get_file_thumbs(
     thumbnail_size: u32,
     raw_thumbnail_source: String,
     force_regenerate: bool,
+    trust_cached: bool,
 ) -> Result<Vec<Option<AThumb>>, String> {
     let mut thumbs = Vec::with_capacity(files.len());
     let file_ids: Vec<i64> = files
@@ -2348,6 +2379,7 @@ pub async fn get_file_thumbs(
                 orientation,
                 raw_thumbnail_source == "embedded",
                 force_regenerate,
+                trust_cached,
             )
             .map_err(|e| format!("Error while getting thumbnail: {}", e))?
             {

@@ -160,16 +160,12 @@
               </div>
             </div>
 
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col overflow-hidden" :class="album.is_accessible === false ? 'opacity-50' : ''">
               <div class="overflow-hidden whitespace-pre text-ellipsis">
                 {{ album.name }}
               </div>
               <div
-                v-if="album.is_accessible === false"
-                class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-warning/70"
-              >{{ $t('album.folder_unavailable.title') }}</div>
-              <div
-                v-else-if="album.description"
+                v-if="album.description"
                 class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-base-content/50"
               >{{ album.description }}</div>
             </div>
@@ -209,21 +205,11 @@
               v-if="(isFolderFiltering ? shouldShowFilteredFolderTree(album.id) : album.is_expanded) && getAlbumQueueIndex(album.id, libConfig.index.albumQueue as any[]) === -1"
               class="ml-6 mr-2 my-1 p-1 rounded-box bg-base-300/30 border border-base-content/5 shadow-sm"
             >
-              <div
-                v-if="album.is_accessible === false"
-                class="px-2 py-3 flex items-start gap-2 text-base-content/50"
-              >
-                <IconFolderError class="mt-0.5 w-4 h-4 shrink-0" />
-                <div class="min-w-0">
-                  <div class="text-sm text-base-content/70">{{ $t('album.folder_unavailable.title') }}</div>
-                  <div class="text-xs">{{ $t('album.folder_unavailable.description') }}</div>
-                </div>
-              </div>
               <AlbumFolder
-                v-else
                 :children="isFolderFiltering ? getFilteredFolderTree(album.id) : album.children"
                 :albumId="album.id"
                 :rootPath="album.path"
+                :unavailable="album.is_accessible === false"
                 :allowContextMenu="isMainPane"
                 :filterVisiblePaths="isFolderFiltering ? getVisibleFolderPaths(album.id) : undefined"
                 :filterMatchedPaths="isFolderFiltering ? getMatchedFolderPaths(album.id) : undefined"
@@ -287,7 +273,7 @@ import {
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { getAllAlbums, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
-         getAlbum, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
+         getAlbum, checkAlbumAccessibility, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
 
@@ -309,7 +295,6 @@ import {
   IconDragHandle,
   IconOrder,
   IconFolders,
-  IconFolderError,
   IconSearch,
   IconClose,
   IconHeart,
@@ -468,6 +453,20 @@ function buildFilteredFolderTree(folders: AlbumFolderRecord[], visiblePaths: str
   return roots;
 }
 
+async function loadCachedAlbumTree(album: Album) {
+  const records = (await getAllAlbumFolders() || [])
+    .filter((folder: AlbumFolderRecord) => Number(folder.album_id) === Number(album.id));
+  const root = records.find((folder: AlbumFolderRecord) => folder.path === album.path) || {
+    id: -Number(album.id),
+    album_id: Number(album.id),
+    name: getFolderName(album.path),
+    path: album.path,
+    has_subfolders: records.length > 0,
+  };
+  const folders = [root, ...records.filter((folder: AlbumFolderRecord) => folder.path !== album.path)];
+  album.children = buildFilteredFolderTree(folders, folders.map((folder: AlbumFolderRecord) => folder.path));
+}
+
 const filteredAlbumResults = computed<FilteredAlbumResult[]>(() => {
   const query = normalizedFolderSearch.value;
   if (!query && !favoriteFoldersOnly.value) {
@@ -616,10 +615,7 @@ const isAlbumScanning = (albumId: number) =>
 const getAlbumIcon = (album: any) => getAlbumScanIcon(getAlbumStatus(album));
 const shouldAnimateAlbumIcon = (album: any) => shouldAnimateAlbumScanIcon(getAlbumStatus(album));
 const refreshAlbumAccess = async (album: Album) => {
-  album.is_accessible = await isDirectoryAccessible(album.path);
-  if (!album.is_accessible) {
-    album.children = undefined;
-  }
+  album.is_accessible = await checkAlbumAccessibility(album.id);
   return album.is_accessible;
 };
 
@@ -717,7 +713,7 @@ const loadAlbumCovers = async () => {
 onMounted( async () => {
   document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   if (albums.value.length === 0) {
-    albums.value = await getAllAlbums();
+    albums.value = await getAllAlbums(true);
     await loadAlbumCovers();
     isLoading.value = false;
 
@@ -1081,7 +1077,9 @@ const clickAlbum = async (album: Album) => {
   requestAnimationFrame(() => {
     setTimeout(async () => {
       const isAccessible = await refreshAlbumAccess(album);
-      if (isAccessible && !album.children) {
+      if (!isAccessible) {
+        if (!album.children) await loadCachedAlbumTree(album);
+      } else if (!album.children) {
         const subFolders = await fetchFolder(album.path, false, config.settings.folderSort);
         if (subFolders) {
           album.children = [subFolders];
@@ -1108,7 +1106,9 @@ const expandAlbum = async (album: any, forceRefresh = false) => {
 
   album.is_expanded = willExpand; 
   
-  if (album.is_expanded && !(await refreshAlbumAccess(album))) {
+  await refreshAlbumAccess(album);
+  if (album.is_expanded && album.is_accessible === false) {
+    if (!album.children || forceRefresh) await loadCachedAlbumTree(album);
     return;
   }
   if (album.is_expanded && (!album.children || forceRefresh)) {

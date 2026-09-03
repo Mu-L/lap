@@ -14,8 +14,8 @@
       :class="{ 'pl-4': child.path !== rootPath }"
     >
       <div v-if="child.id != 0 || selection.folderPath.value == rootPath"
-        :data-file-drop-path="child.path"
-        :data-file-drop-album-id="albumId"
+        :data-file-drop-path="unavailable ? undefined : child.path"
+        :data-file-drop-album-id="unavailable ? undefined : albumId"
         :class="folderClass(child)"
         @click="clickFolder(albumId, child)"
         @dblclick="!isFolderFiltering && expandFolder(child)"
@@ -73,7 +73,7 @@
             >
               {{ getFolderFileCount(child.path).toLocaleString() }}
             </span>
-            <ContextMenu v-if="allowContextMenu && !isRenamingFolder && !isCreatingFolder"
+            <ContextMenu v-if="allowContextMenu && !unavailable && !isRenamingFolder && !isCreatingFolder"
               v-show="shouldShowFolderMenu(child)"
               :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
               :iconMenu="IconMore"
@@ -89,6 +89,7 @@
         :albumId="albumId"
         :rootPath="rootPath"
         :allowContextMenu="allowContextMenu"
+        :unavailable="unavailable"
         :treeRoot="false"
         :filterVisiblePaths="filterVisiblePaths"
         :filterMatchedPaths="filterMatchedPaths"
@@ -196,6 +197,7 @@ const props = withDefaults(defineProps<{
   treeRoot?: boolean;       // only root tree listens to keyboard
   filterVisiblePaths?: string[];
   filterMatchedPaths?: string[];
+  unavailable?: boolean;
 }>(), {
   treeRoot: true,
 });
@@ -246,6 +248,7 @@ const folderClass = (folder: Folder) => {
       : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
     folder.is_excluded_from_search ? 'text-base-content/30! hover:text-base-content/30!' : '',
     matched ? 'text-primary/70' : isFolderFiltering.value && !selected ? 'text-base-content/60' : '',
+    props.unavailable ? 'opacity-45' : '',
   ];
 };
 const shouldShowFilteredChildren = (folder: Folder) =>

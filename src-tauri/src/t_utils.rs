@@ -1689,6 +1689,8 @@ fn is_path_not_found(err: &str) -> bool {
 /// starts the previous one is cancelled (its generation is invalidated).
 static FOLDER_SYNC_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static ACTIVE_ALBUM_SCANS: Lazy<Mutex<HashSet<i64>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+static INACCESSIBLE_ALBUM_IDS: Lazy<Mutex<HashSet<i64>>> =
+    Lazy::new(|| Mutex::new(HashSet::new()));
 static ALBUM_SYNC_LOCKS: Lazy<Mutex<HashMap<i64, Arc<Mutex<()>>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
@@ -2953,6 +2955,45 @@ struct ThumbnailReadyPayload {
     album_id: i64,
     file_ids: Vec<i64>,
     invalidate: bool,
+}
+
+pub fn inaccessible_album_ids() -> Vec<i64> {
+    INACCESSIBLE_ALBUM_IDS.lock().unwrap().iter().copied().collect()
+}
+
+pub fn refresh_album_accessibility(album: &mut Album) {
+    album.is_accessible = directory_accessible(&album.path);
+    if let Some(album_id) = album.id {
+        let mut inaccessible = INACCESSIBLE_ALBUM_IDS.lock().unwrap();
+        if album.is_accessible {
+            inaccessible.remove(&album_id);
+        } else {
+            inaccessible.insert(album_id);
+        }
+    }
+}
+
+pub fn apply_album_accessibility(album: &mut Album) {
+    album.is_accessible = album
+        .id
+        .is_none_or(|album_id| !INACCESSIBLE_ALBUM_IDS.lock().unwrap().contains(&album_id));
+}
+
+pub fn refresh_all_album_accessibility(albums: &mut [Album]) {
+    let mut inaccessible = HashSet::new();
+    for album in albums {
+        album.is_accessible = directory_accessible(&album.path);
+        if !album.is_accessible {
+            if let Some(album_id) = album.id {
+                inaccessible.insert(album_id);
+            }
+        }
+    }
+    *INACCESSIBLE_ALBUM_IDS.lock().unwrap() = inaccessible;
+}
+
+pub fn clear_album_accessibility() {
+    INACCESSIBLE_ALBUM_IDS.lock().unwrap().clear();
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
