@@ -5169,13 +5169,26 @@ onMounted( async() => {
   });
 
   unlistenThumbnailReady = await listen('thumbnail_ready', async (event: any) => {
-    const { file_ids } = event.payload || {};
+    const { file_ids, invalidate = true } = event.payload || {};
     if (!Array.isArray(file_ids) || file_ids.length === 0) return;
 
     const readyIds = new Set(
       file_ids.map((id: any) => Number(id)).filter((id: number) => Number.isFinite(id) && id > 0)
     );
     if (readyIds.size === 0) return;
+
+    // A normal scan emits this event when the thumbnail first becomes ready.
+    // The streaming list is already fetching that image, so clearing it here
+    // would turn a successful first paint into a second, visible load. Only
+    // invalidation events represent an existing thumbnail being replaced.
+    if (!invalidate) {
+      if (fileList.value.length === 0) return;
+      const missingFiles = fileList.value.filter(
+        (file: any) => file && !file.isPlaceholder && !file.thumbnail && readyIds.has(Number(file.id || 0))
+      );
+      if (missingFiles.length > 0) getFileListThumb(missingFiles);
+      return;
+    }
 
     // The backend has just replaced these thumbnails after detecting a changed
     // file. Drop their data-URL entries even when this view is empty, so a

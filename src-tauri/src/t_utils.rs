@@ -1666,6 +1666,7 @@ struct SyncedFileTask {
     file_type: i64,
     orientation: i32,
     album_id: i64,
+    invalidate_thumbnail: bool,
 }
 
 #[derive(Default)]
@@ -2142,6 +2143,7 @@ fn sync_folder_direct_files(
                             file_type: ftype,
                             orientation: updated_file.e_orientation.unwrap_or(1) as i32,
                             album_id,
+                            invalidate_thumbnail: false,
                         });
                     }
                 }
@@ -2170,6 +2172,7 @@ fn sync_folder_direct_files(
                                     file_type: ftype,
                                     orientation: file.e_orientation.unwrap_or(1) as i32,
                                     album_id,
+                                    invalidate_thumbnail: status == 2,
                                 });
                             }
                         }
@@ -2545,6 +2548,7 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
             serde_json::json!({
                 "album_id": task.album_id,
                 "file_ids": [task.file_id],
+                "invalidate": task.invalidate_thumbnail,
             }),
         );
 
@@ -2948,6 +2952,7 @@ struct FinishedPayload {
 struct ThumbnailReadyPayload {
     album_id: i64,
     file_ids: Vec<i64>,
+    invalidate: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -3364,6 +3369,7 @@ async fn process_thumbnail_task(
         ThumbnailReadyPayload {
             album_id: with_progress_tracker(&tracker, |tracker| tracker.album_id),
             file_ids: vec![task.file_id],
+            invalidate: task.force_regenerate,
         },
     );
 

@@ -7252,6 +7252,7 @@ impl AThumb {
                     serde_json::json!({
                         "album_id": album_id,
                         "file_ids": [file_id],
+                        "invalidate": force_regenerate,
                     }),
                 );
             }
