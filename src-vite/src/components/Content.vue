@@ -202,14 +202,14 @@
           :class="[
             'flex-1 flex',
             gridViewLayoutClass,
-            config.settings.grid.showFilmStrip && !showWelcomeContent ? (config.settings.showStatusBar ? 'mt-12 mb-8' : 'mt-12 mb-1') : ''
+            showFilmstripLayout ? (config.settings.showStatusBar ? 'mt-12 mb-8' : 'mt-12 mb-1') : ''
           ]"
         >
           <div class="relative" 
-            :class="{ 'flex-1': showWelcomeContent || !config.settings.grid.showFilmStrip }"
+            :class="{ 'flex-1': !showFilmstripLayout }"
             :style="{ 
-              height: (config.settings.grid.showFilmStrip && !showWelcomeContent && !isFilmstripVertical) ? itemSize + 'px' : '',
-              width: (config.settings.grid.showFilmStrip && !showWelcomeContent && isFilmstripVertical) ? itemWidth + 'px' : ''
+              height: (showFilmstripLayout && !isFilmstripVertical) ? itemSize + 'px' : '',
+              width: (showFilmstripLayout && isFilmstripVertical) ? itemWidth + 'px' : ''
             }"
           >
             <!-- grid view -->
@@ -249,7 +249,7 @@
                 @item-drag-end="clearContentInternalDrag"
               />
               <!-- Navigation buttons -->
-              <div v-if="!showWelcomeContent && config.settings.grid.showFilmStrip && fileList.length > 0" 
+              <div v-if="showFilmstripLayout"
                 class="absolute z-10 inset-1 flex items-center justify-between pointer-events-none"
                 :class="{ 'flex-col': isFilmstripVertical }"
               >
@@ -277,12 +277,12 @@
             </div>
           </div>
 
-          <div v-if="!showWelcomeContent && config.settings.grid.showFilmStrip" 
+          <div v-if="showFilmstripLayout"
             :class="isFilmstripVertical ? 'w-1 shrink-0' : 'h-1 shrink-0'"
           ></div>
 
           <!-- film strip preview -->
-          <div v-if="!showWelcomeContent && config.settings.grid.showFilmStrip" ref="previewDiv" 
+          <div v-if="showFilmstripLayout" ref="previewDiv"
             class="flex-1 bg-base-200 overflow-hidden"
           >
             <div v-if="selectedItemIndex >= 0 && selectedItemIndex < fileList.length"
@@ -317,7 +317,7 @@
         </div> <!-- grid view -->
 
         <!-- custom scrollbar -->
-        <div v-if="!isMapView && !showWelcomeContent && !config.settings.grid.showFilmStrip && fileList.length > 0"
+        <div v-if="!isMapView && !showWelcomeContent && !showFilmstripLayout && fileList.length > 0"
           class="mt-12 shrink-0" 
           :class="[ config.settings.showStatusBar ? 'mb-8' : 'mb-1' ]"
         >
@@ -508,7 +508,7 @@
       :selected-item-index="selectedItemIndex"
       :total-file-count="totalFileCount"
       :total-file-size="totalFileSize"
-      :show-film-strip="config.settings.grid.showFilmStrip"
+      :show-film-strip="showFilmstripLayout"
       :show-quick-view="showQuickView"
       :image-scale="imageDisplayScale"
       :scan-text="statusBarScanText"
@@ -3071,6 +3071,16 @@ watch(contentReady, (ready) => {
 });
 
 const showWelcomeContent = computed(() => props.libraryEmpty && libraryChecked.value);
+const hasConfirmedEmptyContent = computed(() => (
+  contentReady.value
+  && !isLoading.value
+  && totalFileCount.value === 0
+));
+const showFilmstripLayout = computed(() => (
+  config.settings.grid.showFilmStrip
+  && !showWelcomeContent.value
+  && !hasConfirmedEmptyContent.value
+));
 const isMapContentVisible = computed(() => isMapVisible.value && !showWelcomeContent.value);
 
 const gridViewLayoutClass = computed(() => {
