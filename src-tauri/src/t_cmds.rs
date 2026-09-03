@@ -805,7 +805,10 @@ pub async fn set_desktop_wallpaper(
         let (sender, receiver) = tokio::sync::oneshot::channel();
         std::thread::spawn(move || {
             let result = (|| unsafe {
+                // `CoInitializeEx` returns an HRESULT (rather than a Result) in
+                // windows 0.61, so convert it before attaching application context.
                 CoInitializeEx(None, COINIT_APARTMENTTHREADED)
+                    .ok()
                     .map_err(|error| format!("Failed to initialize Windows COM: {error}"))?;
                 let update = (|| {
                     let wallpaper: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)
