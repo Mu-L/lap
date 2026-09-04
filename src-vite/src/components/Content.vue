@@ -118,7 +118,7 @@
             :iconStyle="{
               transform: `rotate(${config.settings.grid.style === 3 ? 90 : 0}deg)`,
             }"
-            :tooltip="localeMsg.settings.browse.style_options[config.settings.grid.style]"
+            :tooltip="localeMsg.settings.grid.style_options[config.settings.grid.style]"
             :disabled="isMapView"
             @click="cycleGridStyle"
           />
@@ -130,7 +130,7 @@
               transform: `rotate(${config.settings.grid.previewPosition === 0 ? 180 : (config.settings.grid.previewPosition === 2 ? 90 : (config.settings.grid.previewPosition === 3 ? 270 : 0))}deg)`, 
               transition: 'transform 0.3s ease-in-out' 
             }" 
-            :tooltip="localeMsg.settings.browse.filmstrip_view.title"
+            :tooltip="localeMsg.settings.grid.filmstrip_view.title"
             :selected="config.settings.grid.showFilmStrip"
             :disabled="isMapView"
             @click="toggleFilmstripView"

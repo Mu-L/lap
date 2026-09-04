@@ -108,17 +108,17 @@
 
         </div>
 
-        <!-- Browse Tab -->
-        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
+        <!-- Grid Tab -->
+        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
 
           <!-- grid view -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_grid') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_grid') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.style') }}</div>
+                <div>{{ $t('settings.grid.style') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.style">
                 <option v-for="(option, index) in gridStyleOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -126,7 +126,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.scaling') }}</div>
+                <div>{{ $t('settings.grid.scaling') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.scaling" :disabled="config.settings.grid.style !== 0 && config.settings.grid.style !== 1">
                 <option v-for="(option, index) in gridScalingOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -134,7 +134,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.thumbnail_corners') }}</div>
+                <div>{{ $t('settings.grid.thumbnail_corners') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailCorners">
                 <option v-for="option in thumbnailCornerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -142,7 +142,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.show_thumbnail_badges') }}</div>
+                <div>{{ $t('settings.grid.show_thumbnail_badges') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailBadge">
                 <option v-for="option in thumbnailBadgeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -150,7 +150,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.label_primary') }}</div>
+                <div>{{ $t('settings.grid.label_primary') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.labelPrimary" :disabled="config.settings.grid.style !== 0">
                   <option v-for="(option, index) in gridLabelOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -158,7 +158,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.label_secondary') }}</div>
+                <div>{{ $t('settings.grid.label_secondary') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.labelSecondary" :disabled="config.settings.grid.style !== 0">
                   <option v-for="(option, index) in gridLabelOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -169,15 +169,15 @@
           <!-- open -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_open') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_open') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.dbl_click_thumbnail') }}</div>
+                <div>{{ $t('settings.grid.dbl_click_thumbnail') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.dblClickAction">
-                <option value="quickPreview">{{ $t('settings.browse.dbl_click_quick_preview') }}</option>
-                <option value="newWindow">{{ $t('settings.browse.dbl_click_new_window') }}</option>
+                <option value="quickPreview">{{ $t('settings.grid.dbl_click_quick_preview') }}</option>
+                <option value="newWindow">{{ $t('settings.grid.dbl_click_new_window') }}</option>
               </select>
             </div>
           </div>
@@ -185,17 +185,17 @@
           <!-- filmstrip -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.filmstrip_view.title') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.filmstrip_view.title') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.filmstrip_view.enable_filmstrip') }}</div>
+                <div>{{ $t('settings.grid.filmstrip_view.enable_filmstrip') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.showFilmStrip" />
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.filmstrip_view.preview_position') }}</div>
+                <div>{{ $t('settings.grid.filmstrip_view.preview_position') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.previewPosition" :disabled="!config.settings.grid.showFilmStrip">
                 <option v-for="(option, index) in filmStripViewPreviewPositionOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -206,7 +206,7 @@
         </div>
 
         <!-- Viewer Tab -->
-        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
+        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col space-y-2">
 
           <!-- navigation -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -289,7 +289,7 @@
         </div>
 
         <!-- Search Tab -->
-        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col overflow-hidden space-y-2">
+        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col overflow-hidden space-y-2">
 
           <!-- image search -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -400,18 +400,18 @@
           </div>
         </div>
 
-        <!-- Library Tab -->
-        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col space-y-2">
+        <!-- Browse Tab -->
+        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
 
           <!-- album -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_album') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_album') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.show_subfolder_files') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.show_subfolder_files_hint') }}</div>
+                <div>{{ $t('settings.browse.show_subfolder_files') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.show_subfolder_files_hint') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.showSubfolderFiles" />
             </div>
@@ -420,26 +420,42 @@
           <!-- file grouping -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_file_grouping') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_file_grouping') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.group_raw_jpeg_pairs') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.group_raw_jpeg_pairs_hint') }}</div>
+                <div>{{ $t('settings.browse.group_raw_jpeg_pairs') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.group_raw_jpeg_pairs_hint') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
+            </div>
+          </div>
+
+          <!-- calendar -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_calendar') }}</span>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.browse.calendar_view') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.calendar_view_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarDisplayMode">
+                <option v-for="option in calendarDisplayModeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
             </div>
           </div>
 
           <!-- sorting -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_sorting') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_sorting') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.folder_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.folder_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.folder_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.folder_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.folderSort">
                 <option v-for="option in folderSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -447,8 +463,8 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.calendar_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.calendar_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.calendar_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.calendar_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarSort">
                 <option v-for="option in calendarSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -456,8 +472,8 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.category_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.category_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.category_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.category_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.categorySort">
                 <option v-for="option in categorySortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -741,9 +757,9 @@ const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 
 const settingsTabs = [
   'settings.general.title',
   'settings.browse.title',
+  'settings.grid.title',
   'settings.image_view.title',
   'settings.image_search.title',
-  'settings.library.title',
   'settings.advanced.title',
   'settings.shortcuts.title',
   'settings.about.title',
@@ -828,7 +844,7 @@ const scaleOptions = computed(() => {
 });
 
 const folderSortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.folder_sort_options || [];
+  const options = localeMsg.value.settings.browse.folder_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -839,7 +855,7 @@ const folderSortOptions = computed(() => {
 });
 
 const calendarSortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.calendar_sort_options || [];
+  const options = localeMsg.value.settings.browse.calendar_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -849,8 +865,14 @@ const calendarSortOptions = computed(() => {
   return result;
 });
 
+const calendarDisplayModeOptions = computed(() => {
+  const options = localeMsg.value.settings.browse.calendar_display_mode_options || [];
+  const values = ['hierarchy', 'grid'];
+  return values.map((value, index) => ({ label: options[index] ?? value, value }));
+});
+
 const categorySortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.category_sort_options || [];
+  const options = localeMsg.value.settings.browse.category_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -970,7 +992,7 @@ async function cleanUnusedThumbnailCache() {
 
 // Define the grid scaling options
 const gridScalingOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.scaling_options;
+  const options = localeMsg.value.settings.grid.scaling_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -981,13 +1003,13 @@ const gridScalingOptions = computed(() => {
 });
 
 const thumbnailCornerOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.thumbnail_corner_options;
+  const options = localeMsg.value.settings.grid.thumbnail_corner_options;
   return options.map((label: string, index: number) => ({ label, value: index }));
 });
 
 // Define the grid style options
 const gridStyleOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.style_options;
+  const options = localeMsg.value.settings.grid.style_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -999,7 +1021,7 @@ const gridStyleOptions = computed(() => {
 
 // Define the grid label options
 const gridLabelOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.label_options;
+  const options = localeMsg.value.settings.grid.label_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -1010,7 +1032,7 @@ const gridLabelOptions = computed(() => {
 });
 
 const thumbnailBadgeOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.thumbnail_badge_options;
+  const options = localeMsg.value.settings.grid.thumbnail_badge_options;
   const values = [
     THUMBNAIL_BADGE.EMPTY,
     THUMBNAIL_BADGE.FILE_FORMAT,
@@ -1066,7 +1088,7 @@ const slideShowTransitionOptions = computed(() => {
 });
 
 const filmStripViewPreviewPositionOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.filmstrip_view.preview_position_options;
+  const options = localeMsg.value.settings.grid.filmstrip_view.preview_position_options;
   return options.map((label, i) => ({ label, value: i }));
 });
 
@@ -1498,6 +1520,9 @@ watch(() => config.settings.folderSort, (newValue) => {
 });
 watch(() => config.settings.calendarSort, (newValue) => {
   emit('settings-calendarSort-changed', newValue);
+});
+watch(() => config.settings.calendarDisplayMode, (newValue) => {
+  emit('settings-calendarDisplayMode-changed', newValue);
 });
 watch(() => config.settings.categorySort, (newValue) => {
   emit('settings-categorySort-changed', newValue);

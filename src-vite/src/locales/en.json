@@ -1173,9 +1173,13 @@
       "show_status_bar": "Show status bar",
       "auto_check_updates": "Auto-check for updates"
     },
-    "library": {
-      "title": "Library",
+    "browse": {
+      "title": "Browse",
       "section_album": "Album",
+      "section_calendar": "Calendar",
+      "calendar_view": "Display mode",
+      "calendar_view_hint": "Choose how dates are displayed in the Calendar sidebar.",
+      "calendar_display_mode_options": ["Date hierarchy", "Calendar grid"],
       "show_subfolder_files": "Show files from subfolders",
       "show_subfolder_files_hint": "Folder view includes files in child folders",
       "section_file_grouping": "File grouping",
@@ -1209,8 +1213,8 @@
         "Count (High to low)"
       ]
     },
-    "browse": {
-      "title": "Browse",
+    "grid": {
+      "title": "Grid",
       "section_grid": "Grid",
       "section_open": "Open",
       "dbl_click_thumbnail": "Double-click thumbnail",

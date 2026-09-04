@@ -1173,9 +1173,13 @@
       "show_status_bar": "显示状态栏",
       "auto_check_updates": "自动检查更新"
     },
-    "library": {
-      "title": "资料库",
+    "browse": {
+      "title": "浏览",
       "section_album": "相册",
+      "section_calendar": "日历",
+      "calendar_view": "显示方式",
+      "calendar_view_hint": "选择日历侧栏中日期的显示方式。",
+      "calendar_display_mode_options": ["日期层级", "日历网格"],
       "show_subfolder_files": "显示子文件夹中的文件",
       "show_subfolder_files_hint": "文件夹视图包含子文件夹内的文件",
       "section_file_grouping": "文件分组",
@@ -1209,8 +1213,8 @@
         "数量（从高到低）"
       ]
     },
-    "browse": {
-      "title": "浏览",
+    "grid": {
+      "title": "网格",
       "section_grid": "网格",
       "section_open": "打开",
       "dbl_click_thumbnail": "双击缩略图",

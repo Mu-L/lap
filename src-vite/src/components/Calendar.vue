@@ -4,6 +4,7 @@
     <div class="sidebar-panel-header">
       <span class="sidebar-panel-header-title flex-1">{{ calendarTitle }}</span>
       <label
+        v-if="isCalendarGridLayout"
         class="swap swap-flip inline-grid w-6 h-6 place-items-center text-base-content/70 hover:text-base-content"
         :title="config.settings.showToolTip ? calendarToggleTooltip : undefined"
         :aria-label="calendarToggleTooltip"
@@ -22,8 +23,61 @@
     <div ref="scrollable" v-if="Object.keys(calendar_dates).length > 0"
       class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto"
     >
+      <template v-if="isDateHierarchyLayout">
+        <ul>
+          <li v-for="item in calendarTreeItems" :key="item.year">
+            <div
+              :class="[
+                'sidebar-item',
+                isYearSelected(item.year) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+              ]"
+              @click="selectYear(item.year)"
+            >
+              <IconRight
+                :class="['p-1 w-6 h-6 shrink-0 transition-transform', isYearExpanded(item.year) ? 'rotate-90' : '']"
+                @click.stop="toggleYear(item.year)"
+              />
+              <span class="sidebar-item-label">{{ item.year }}</span>
+              <span class="sidebar-item-count">{{ item.count.toLocaleString() }}</span>
+            </div>
+            <ul v-if="isYearExpanded(item.year)">
+              <li v-for="month in item.months" :key="`${item.year}-${month.month}`" class="pl-4">
+                <div
+                  :class="[
+                    'sidebar-item sidebar-item-compact ml-2',
+                    isMonthSelected(item.year, month.month) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                  ]"
+                  @click="selectMonth(item.year, month.month)"
+                >
+                  <IconRight
+                    :class="['p-1 w-6 h-6 shrink-0 transition-transform', isMonthExpanded(item.year, month.month) ? 'rotate-90' : '']"
+                    @click.stop="toggleMonth(item.year, month.month)"
+                  />
+                  <span class="sidebar-item-label">{{ formatMonth(item.year, month.month) }}</span>
+                  <span class="sidebar-item-count">{{ month.count.toLocaleString() }}</span>
+                </div>
+                <ul v-if="isMonthExpanded(item.year, month.month)">
+                  <li v-for="day in month.days" :key="`${item.year}-${month.month}-${day.date}`" class="pl-8">
+                    <div
+                      :class="[
+                        'sidebar-item sidebar-item-compact ml-2',
+                        isDaySelected(item.year, month.month, day.date) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                      ]"
+                      @click="selectDay(item.year, month.month, day.date)"
+                    >
+                      <IconCalendarDay class="mx-1 w-4 h-4 shrink-0" />
+                      <span class="sidebar-item-label">{{ formatDay(item.year, month.month, day.date) }}</span>
+                      <span class="sidebar-item-count">{{ day.count.toLocaleString() }}</span>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </template>
       <div
-        v-if="config.calendar.isMonthly"
+        v-else-if="config.calendar.isMonthly"
         class="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2 px-1"
       >
         <CalendarMonthly
@@ -64,7 +118,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getTakenDates } from '@/common/api';
-import { IconCalendarDay, IconCalendarMonth } from '@/common/icons';
+import { IconCalendarDay, IconCalendarMonth, IconRight } from '@/common/icons';
 
 import CalendarMonthly from '@/components/CalendarMonthly.vue';
 import CalendarDaily from '@/components/CalendarDaily.vue';
@@ -77,8 +131,12 @@ const props = defineProps({
 /// i18n
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
+const isDateHierarchyLayout = computed(() => config.settings.calendarDisplayMode !== 'grid');
+const isCalendarGridLayout = computed(() => !isDateHierarchyLayout.value);
 const calendarTitle = computed(() =>
-  config.calendar.isMonthly
+  isDateHierarchyLayout.value
+    ? props.titlebar || localeMsg.value.calendar.title || 'Calendar'
+    : config.calendar.isMonthly
     ? (localeMsg.value.calendar.month_title || localeMsg.value.calendar.month || 'Month')
     : (localeMsg.value.calendar.day_title || localeMsg.value.calendar.day || 'Day')
 );
@@ -92,6 +150,8 @@ const scrollable = ref<HTMLDivElement | null>(null); // Ref for the scrollable e
 type CalendarDates = Record<number, Record<number, { date: number; count: number }[]>>;
 const calendar_dates = ref<CalendarDates>({});
 const isLoading = ref(true);
+const expandedYears = ref<number[]>([]);
+const expandedMonths = ref<string[]>([]);
 
 function buildHeatmapThresholds(values: number[]): number[] | null {
   const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
@@ -157,6 +217,27 @@ const sorted_daily_items = computed(() => {
   });
 });
 
+const calendarTreeItems = computed(() => {
+  const ascending = config.settings.calendarSort % 2 === 0;
+  return sorted_calendar_items.value.map(({ year, months }) => {
+    const monthItems = Object.keys(months).map(Number)
+      .sort((a, b) => ascending ? a - b : b - a)
+      .map(month => {
+        const days = [...months[month]].sort((a, b) => ascending ? a.date - b.date : b.date - a.date);
+        return {
+          month,
+          days,
+          count: days.reduce((total, day) => total + Number(day.count || 0), 0),
+        };
+      });
+    return {
+      year,
+      months: monthItems,
+      count: monthItems.reduce((total, month) => total + month.count, 0),
+    };
+  });
+});
+
 onMounted(async () => {
   console.log('Calendar.vue mounted');
   await getCalendarDates();
@@ -171,13 +252,21 @@ onMounted(async () => {
   // }
 });
 
-watch(() => [config.calendar.isMonthly, config.settings.calendarSort], () => {
+watch(() => [config.calendar.isMonthly, config.settings.calendarSort, config.settings.calendarDisplayMode], () => {
   scrollToSelected();
 });
 
 watch(() => config.settings.calendarSort, async () => {
   await getCalendarDates();
 });
+
+watch(
+  () => [libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
+  () => {
+    if (isDateHierarchyLayout.value) expandSelectedCalendarPath();
+    scrollToSelected();
+  },
+);
 
 function scrollToSelected() {
   nextTick(() => {
@@ -224,6 +313,69 @@ function toggleCalendarView() {
   }
 }
 
+const monthKey = (year: number, month: number) => `${year}-${month}`;
+const isYearExpanded = (year: number) => expandedYears.value.includes(year);
+const isMonthExpanded = (year: number, month: number) => expandedMonths.value.includes(monthKey(year, month));
+const isYearSelected = (year: number) => libConfig.calendar.year === year && libConfig.calendar.month === -1;
+const isMonthSelected = (year: number, month: number) =>
+  libConfig.calendar.year === year && libConfig.calendar.month === month && libConfig.calendar.date === -1;
+const isDaySelected = (year: number, month: number, day: number) =>
+  libConfig.calendar.year === year && libConfig.calendar.month === month && libConfig.calendar.date === day;
+
+function toggleYear(year: number) {
+  expandedYears.value = isYearExpanded(year)
+    ? expandedYears.value.filter(value => value !== year)
+    : [...expandedYears.value, year];
+}
+
+function toggleMonth(year: number, month: number) {
+  const key = monthKey(year, month);
+  expandedMonths.value = isMonthExpanded(year, month)
+    ? expandedMonths.value.filter(value => value !== key)
+    : [...expandedMonths.value, key];
+}
+
+function selectYear(year: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = -1;
+  libConfig.calendar.date = -1;
+  if (!isYearExpanded(year)) toggleYear(year);
+}
+
+function selectMonth(year: number, month: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = month;
+  libConfig.calendar.date = -1;
+  if (!isMonthExpanded(year, month)) toggleMonth(year, month);
+}
+
+function selectDay(year: number, month: number, day: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = month;
+  libConfig.calendar.date = day;
+}
+
+function formatMonth(_year: number, month: number) {
+  return localeMsg.value.calendar.months_long?.[month - 1]
+    || localeMsg.value.calendar.months?.[month - 1]
+    || String(month);
+}
+
+function formatDay(_year: number, _month: number, day: number) {
+  return String(day);
+}
+
+function expandSelectedCalendarPath() {
+  const year = Number(libConfig.calendar.year);
+  const month = Number(libConfig.calendar.month);
+  if (!Number.isFinite(year) || !calendar_dates.value[year]) return;
+
+  if (!isYearExpanded(year)) expandedYears.value = [...expandedYears.value, year];
+  if (month > 0 && calendar_dates.value[year][month] && !isMonthExpanded(year, month)) {
+    expandedMonths.value = [...expandedMonths.value, monthKey(year, month)];
+  }
+}
+
 /// fetch calendar dates
 async function getCalendarDates() {
   isLoading.value = true;
@@ -231,6 +383,7 @@ async function getCalendarDates() {
     const taken_dates = await getTakenDates(config.settings.calendarSort);
     if (taken_dates) {
       calendar_dates.value = transformArray(taken_dates);
+      if (isDateHierarchyLayout.value) expandSelectedCalendarPath();
     }
   } finally {
     isLoading.value = false;

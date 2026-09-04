@@ -1173,9 +1173,13 @@
       "show_status_bar": "Barre d'état",
       "auto_check_updates": "Rechercher automatiquement les mises à jour"
     },
-    "library": {
-      "title": "Bibliothèque",
+    "browse": {
+      "title": "Parcourir",
       "section_album": "Album",
+      "section_calendar": "Calendrier",
+      "calendar_view": "Mode d’affichage",
+      "calendar_view_hint": "Choisissez comment les dates sont affichées dans la barre latérale du calendrier.",
+      "calendar_display_mode_options": ["Hiérarchie des dates", "Grille du calendrier"],
       "show_subfolder_files": "Afficher les fichiers des sous-dossiers",
       "show_subfolder_files_hint": "La vue dossier inclut les fichiers des sous-dossiers",
       "section_file_grouping": "Regroupement de fichiers",
@@ -1209,8 +1213,8 @@
         "Nombre (Décroissant)"
       ]
     },
-    "browse": {
-      "title": "Parcourir",
+    "grid": {
+      "title": "Grille",
       "section_grid": "Grille",
       "section_open": "Ouvrir",
       "dbl_click_thumbnail": "Double-cliquer sur la miniature",

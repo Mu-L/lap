@@ -1173,9 +1173,13 @@
       "show_status_bar": "상태 표시줄",
       "auto_check_updates": "업데이트 자동 확인"
     },
-    "library": {
-      "title": "라이브러리",
+    "browse": {
+      "title": "탐색",
       "section_album": "앨범",
+      "section_calendar": "캘린더",
+      "calendar_view": "표시 방식",
+      "calendar_view_hint": "캘린더 사이드바에서 날짜를 표시하는 방식을 선택합니다.",
+      "calendar_display_mode_options": ["날짜 계층", "캘린더 그리드"],
       "show_subfolder_files": "하위 폴더의 파일 표시",
       "show_subfolder_files_hint": "폴더 보기에서 하위 폴더의 파일을 포함합니다",
       "section_file_grouping": "파일 그룹화",
@@ -1209,8 +1213,8 @@
         "개수 (높은 순)"
       ]
     },
-    "browse": {
-      "title": "탐색",
+    "grid": {
+      "title": "그리드",
       "section_grid": "그리드",
       "section_open": "열기",
       "dbl_click_thumbnail": "썸네일 두 번 클릭",

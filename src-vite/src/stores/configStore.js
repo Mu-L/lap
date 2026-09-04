@@ -99,7 +99,7 @@ export const useConfigStore = defineStore('configStore', {
     libraryChangedVersion: 0,
 
     settings: {
-      tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: viewer, 3: search, 4: library, 5: advanced, 6: shortcuts, 7: about)
+      tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: grid, 3: viewer, 4: search, 5: advanced, 6: shortcuts, 7: about)
 
       // general settings
       language: 'en',             // default language
@@ -115,6 +115,7 @@ export const useConfigStore = defineStore('configStore', {
       // navigation settings
       folderSort: 0,              // folder_sort_options: 0=name asc, 1=name desc, 2=date asc(oldest first), 3=date desc(newest first)
       calendarSort: 0,            // 0=taken asc, 1=taken desc, 2=created asc, 3=created desc, 4=modified asc, 5=modified desc
+      calendarDisplayMode: 'hierarchy', // hierarchy | grid
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
       showSubfolderFiles: false,  // show subfolder files (in album folder view)
       groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
@@ -261,6 +262,9 @@ export const useConfigStore = defineStore('configStore', {
     },
     setCalendarSort(calendarSort) {
       this.settings.calendarSort = calendarSort;
+    },
+    setCalendarDisplayMode(calendarDisplayMode) {
+      this.settings.calendarDisplayMode = calendarDisplayMode;
     },
     setCategorySort(categorySort) {
       this.settings.categorySort = categorySort;

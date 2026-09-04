@@ -1173,9 +1173,13 @@
       "show_status_bar": "Mostrar barra estado",
       "auto_check_updates": "Buscar actualizaciones automáticamente"
     },
-    "library": {
-      "title": "Biblioteca",
+    "browse": {
+      "title": "Explorar",
       "section_album": "Álbum",
+      "section_calendar": "Calendario",
+      "calendar_view": "Modo de visualización",
+      "calendar_view_hint": "Elige cómo se muestran las fechas en la barra lateral del calendario.",
+      "calendar_display_mode_options": ["Jerarquía de fechas", "Cuadrícula de calendario"],
       "show_subfolder_files": "Mostrar archivos de subcarpetas",
       "show_subfolder_files_hint": "La vista de carpeta incluye archivos de carpetas secundarias",
       "section_file_grouping": "Agrupación de archivos",
@@ -1209,8 +1213,8 @@
         "Cantidad (De mayor a menor)"
       ]
     },
-    "browse": {
-      "title": "Explorar",
+    "grid": {
+      "title": "Cuadrícula",
       "section_grid": "Cuadrícula",
       "section_open": "Abrir",
       "dbl_click_thumbnail": "Doble clic en la miniatura",

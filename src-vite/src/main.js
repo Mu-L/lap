@@ -114,6 +114,9 @@ if (isMainWindow) {
   listen('settings-calendarSort-changed', (event) => {
     config.setCalendarSort(event.payload)
   })
+  listen('settings-calendarDisplayMode-changed', (event) => {
+    config.setCalendarDisplayMode(event.payload)
+  })
   listen('settings-categorySort-changed', (event) => {
     config.setCategorySort(event.payload)
   })

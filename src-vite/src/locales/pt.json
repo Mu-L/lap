@@ -1173,9 +1173,13 @@
       "show_status_bar": "Barra de status",
       "auto_check_updates": "Verificar atualizações automaticamente"
     },
-    "library": {
-      "title": "Biblioteca",
+    "browse": {
+      "title": "Navegar",
       "section_album": "Álbum",
+      "section_calendar": "Calendário",
+      "calendar_view": "Modo de exibição",
+      "calendar_view_hint": "Escolha como as datas são exibidas na barra lateral do calendário.",
+      "calendar_display_mode_options": ["Hierarquia de datas", "Grade de calendário"],
       "show_subfolder_files": "Mostrar arquivos de subpastas",
       "show_subfolder_files_hint": "A visualização de pasta inclui arquivos em subpastas",
       "section_file_grouping": "Agrupamento de arquivos",
@@ -1209,8 +1213,8 @@
         "Contagem (Maior para menor)"
       ]
     },
-    "browse": {
-      "title": "Navegar",
+    "grid": {
+      "title": "Grade",
       "section_grid": "Grade",
       "section_open": "Abrir",
       "dbl_click_thumbnail": "Clique duas vezes na miniatura",

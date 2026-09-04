@@ -1173,9 +1173,13 @@
       "show_status_bar": "Statusleiste",
       "auto_check_updates": "Automatisch nach Updates suchen"
     },
-    "library": {
-      "title": "Bibliothek",
+    "browse": {
+      "title": "Durchsuchen",
       "section_album": "Album",
+      "section_calendar": "Kalender",
+      "calendar_view": "Anzeigemodus",
+      "calendar_view_hint": "Wählen Sie, wie Daten in der Kalenderseitenleiste angezeigt werden.",
+      "calendar_display_mode_options": ["Datumshierarchie", "Kalenderraster"],
       "show_subfolder_files": "Dateien aus Unterordnern anzeigen",
       "show_subfolder_files_hint": "Die Ordneransicht enthält Dateien in Unterordnern",
       "section_file_grouping": "Dateigruppierung",
@@ -1209,8 +1213,8 @@
         "Anzahl (Absteigend)"
       ]
     },
-    "browse": {
-      "title": "Durchsuchen",
+    "grid": {
+      "title": "Raster",
       "section_grid": "Raster",
       "section_open": "Öffnen",
       "dbl_click_thumbnail": "Miniaturansicht doppelklicken",

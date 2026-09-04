@@ -1173,9 +1173,13 @@
       "show_status_bar": "ステータスバー",
       "auto_check_updates": "更新を自動確認"
     },
-    "library": {
-      "title": "ライブラリ",
+    "browse": {
+      "title": "ブラウズ",
       "section_album": "アルバム",
+      "section_calendar": "カレンダー",
+      "calendar_view": "表示方法",
+      "calendar_view_hint": "カレンダーのサイドバーでの日付の表示方法を選択します。",
+      "calendar_display_mode_options": ["日付の階層", "カレンダーグリッド"],
       "show_subfolder_files": "サブフォルダー内のファイルを表示",
       "show_subfolder_files_hint": "フォルダービューに子フォルダー内のファイルを含めます",
       "section_file_grouping": "ファイルのグループ化",
@@ -1209,8 +1213,8 @@
         "件数 (多い順)"
       ]
     },
-    "browse": {
-      "title": "ブラウズ",
+    "grid": {
+      "title": "グリッド",
       "section_grid": "グリッド",
       "section_open": "開く",
       "dbl_click_thumbnail": "サムネイルをダブルクリック",
