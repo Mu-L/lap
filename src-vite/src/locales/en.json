@@ -482,6 +482,7 @@
         "building_sets": "Building similar sets",
         "analyzing": "Analyzing similar photos",
         "groups_title": "Similar Sets",
+        "results": "Results",
         "groups_count": "{count} similar sets",
         "load_more": "Load more",
         "error_title": "Unable to load similar photos",
@@ -503,9 +504,12 @@
       "keep_label": "Keep",
       "unkeep_label": "Unkeep",
       "delete_selected": "Delete Selected",
+      "delete_all": "Delete all",
       "move_selected_to_trash": "Move to trash ({count} selected · {size})",
+      "no_removable_files": "No removable files to move to Trash",
       "set_keep": "Keep",
-      "duplicate_files_summary": "{count} duplicates ({size})"
+      "removable_copies_summary": "{count} removable copies · {size}",
+      "similar_photos_summary": "{count} similar photos · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "Move to trash",
       "file_content": "The file '{file}' will be trashed.",
       "files_content": "{count} selected files will be trashed.",
+      "removable_files_content": "All {count} removable files will be trashed.",
       "raw_jpeg_companions_content": "{count} RAW+JPEG companion file(s) will also be deleted.",
       "folder_content": "The folder '{folder}' will be trashed.",
       "ok": "Trash",
@@ -828,6 +833,7 @@
       "title": "Delete permanently",
       "file_content": "The file '{file}' will be permanently deleted.",
       "files_content": "{count} selected files will be permanently deleted.",
+      "removable_files_content": "All {count} removable files will be permanently deleted.",
       "folder_content": "The folder '{folder}' will be permanently deleted.",
       "checkbox": "Delete permanently (cannot be undone)",
       "ok": "Delete",

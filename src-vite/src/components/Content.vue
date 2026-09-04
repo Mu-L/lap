@@ -445,6 +445,7 @@
             @select-file="handleDedupSelectFile"
             @preview-file="handleDedupPreviewFile"
             @trash-selected-duplicates="handleDedupTrashSelectedDuplicates"
+            @trash-all-duplicates="handleDedupTrashAllDuplicates"
             @trash-selected-similar="handleDedupTrashSelectedSimilar"
             @compare-selected-photos="handleDedupCompareSelectedPhotos"
             @culling-status-updated="handleDedupCullingStatusUpdated"
@@ -567,7 +568,8 @@
     :warningOk="true"
     :checkboxText="$t('msgbox.permanent_delete.checkbox')"
     :checkboxChecked="deletePermanently"
-    @ok="onTrashFile"
+    :isLoading="isTrashDeleting"
+    @ok="handleTrashMsgboxOk"
     @cancel="closeTrashMsgbox"
     @checkbox-change="deletePermanently = $event"
   />
@@ -719,7 +721,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover, setDesktopWallpaper,
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
-         dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
+         dedupDelete, getQueryFilePosition, getFolderSearchExcluded,
          listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import {
@@ -1889,6 +1891,7 @@ const fileConflictDialog = ref({
 });
 let fileConflictResolver: ((result: { policy: FileConflictPolicy; applyAll: boolean }) => void) | null = null;
 const showTrashMsgbox = ref(false);
+const isTrashDeleting = ref(false);
 const showTrashFailedMsgbox = ref(false);
 const showExternalOpenWarningMsgbox = ref(false);
 const showExternalAppsDialog = ref(false);
@@ -1901,6 +1904,7 @@ const pendingTrashFailedOtherFailureCount = ref(0);
 const dedupReclaimBytes = ref(0);
 const dedupTrashGroupKey = ref('');
 const dedupDeleteFileIds = ref<number[]>([]);
+const dedupBulkFileCount = ref(0);
 const dedupPaneRef = ref<InstanceType<typeof DedupPane> | null>(null);
 const dedupStatuses = ref<Record<number, 'keep' | 'dup'>>({});
 const showCommentMsgbox = ref(false);
@@ -2167,14 +2171,26 @@ const openTrashMsgbox = (reclaimBytes = 0, groupKey = '', fileIds: number[] = []
   showTrashMsgbox.value = true;
 };
 
+const openAllDuplicatesTrashMsgbox = (fileCount: number, reclaimBytes: number) => {
+  if (fileCount <= 0) return;
+  dedupReclaimBytes.value = Math.max(0, reclaimBytes);
+  dedupBulkFileCount.value = fileCount;
+  dedupTrashGroupKey.value = 'all';
+  dedupDeleteFileIds.value = [];
+  deletePermanently.value = false;
+  showTrashMsgbox.value = true;
+};
+
 const closeTrashMsgbox = () => {
   showTrashMsgbox.value = false;
   dedupReclaimBytes.value = 0;
   dedupTrashGroupKey.value = '';
   dedupDeleteFileIds.value = [];
+  dedupBulkFileCount.value = 0;
 };
 
-const isDedupTrash = computed(() => dedupDeleteFileIds.value.length > 0);
+const isDedupBulkTrash = computed(() => dedupBulkFileCount.value > 0);
+const isDedupTrash = computed(() => dedupDeleteFileIds.value.length > 0 || isDedupBulkTrash.value);
 const rawJpegCompanionDeleteCount = computed(() => {
   if (!config.settings.groupRawJpegPairs) return 0;
   const items = isDedupTrash.value
@@ -2200,8 +2216,17 @@ const trashMsgboxOkText = computed(() => {
 });
 
 const trashMsgboxMessage = computed(() => {
-  const deleteCount = isDedupTrash.value ? dedupDeleteFileIds.value.length : selectedCount.value;
-  const base = deletePermanently.value
+  const deleteCount = isDedupBulkTrash.value
+    ? dedupBulkFileCount.value
+    : (isDedupTrash.value ? dedupDeleteFileIds.value.length : selectedCount.value);
+  const base = isDedupBulkTrash.value
+    ? t(
+        deletePermanently.value
+          ? 'msgbox.permanent_delete.removable_files_content'
+          : 'msgbox.move_to_trash.removable_files_content',
+        { count: deleteCount.toLocaleString() },
+      )
+    : deletePermanently.value
     ? ((isDedupTrash.value || selectMode.value)
         ? localeMsg.value.msgbox.permanent_delete.files_content.replace('{count}', deleteCount.toLocaleString())
         : localeMsg.value.msgbox.permanent_delete.file_content.replace('{file}', fileList.value[selectedItemIndex.value]?.name || ''))
@@ -8173,6 +8198,46 @@ const getDeleteFilesErrorMessage = (permanently: boolean) =>
     ? localeMsg.value.msgbox.permanent_delete.files_error
     : localeMsg.value.msgbox.move_to_trash.files_error;
 
+const onTrashAllDuplicates = async () => {
+  try {
+    const permanently = deletePermanently.value;
+    const result = await dedupDelete({ deleteAll: true, permanently });
+    const deletedCount = Number(result?.deletedCount || 0);
+    const failedCount = Number(result?.failedCount || 0);
+
+    if (deletedCount > 0) {
+      await updateContent(true);
+      await dedupPaneRef.value?.refreshGroups();
+      toast.success(getDeleteFilesSuccessMessage(deletedCount, permanently));
+    }
+    if (failedCount > 0) {
+      toast.error(getDeleteFilesErrorMessage(permanently));
+    }
+    if (deletedCount === 0 && failedCount === 0) {
+      toast.warning(localeMsg.value.info_panel.dedup.no_removable_files);
+    }
+  } catch (error) {
+    console.error('Failed to delete all removable duplicates:', error);
+    toast.error(getDeleteFilesErrorMessage(deletePermanently.value));
+  } finally {
+    closeTrashMsgbox();
+  }
+};
+
+const handleTrashMsgboxOk = async () => {
+  if (isTrashDeleting.value) return;
+  isTrashDeleting.value = true;
+  try {
+    if (isDedupBulkTrash.value) {
+      await onTrashAllDuplicates();
+    } else {
+      await onTrashFile();
+    }
+  } finally {
+    isTrashDeleting.value = false;
+  }
+};
+
 const onTrashFile = async (retryItemsOverride: any[] = []) => {
   permanentDeleteChecked.value = deletePermanently.value;
   const permanently = deletePermanently.value;
@@ -8228,7 +8293,7 @@ const onTrashFile = async (retryItemsOverride: any[] = []) => {
         deletedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
         deletedFileIds.push(...deletedItems.map(item => item.id));
       } else {
-        const result = await dedupDeleteSelected(null, ids);
+        const result = await dedupDelete({ fileIds: ids });
         if (result !== undefined) {
           const resultDeletedIds = Array.isArray(result?.deletedFileIds)
             ? result.deletedFileIds.map((id: any) => Number(id)).filter((id: number) => id > 0)
@@ -8300,9 +8365,9 @@ const onTrashFile = async (retryItemsOverride: any[] = []) => {
           .filter(item => !deletedIdSet.has(Number(item.id)))
           .map(item => Number(item.id)),
       );
-      fileList.value = fileList.value.filter((f) => !deletedIdSet.has(f.id));
+      fileList.value = fileList.value.filter((f) => !deletedIdSet.has(Number(f?.id)));
       totalFileCount.value = fileList.value.length;
-      totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+      totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file?.size || 0), 0);
       selectedItemIndex.value = fileList.value.length > 0 ? Math.min(selectedItemIndex.value, fileList.value.length - 1) : -1;
       rebuildSelectionAfterListMutation(remainingSelectedIds);
       if (!permanently && trashFailedIdSet.size > 0) {
@@ -8438,7 +8503,7 @@ function removeFromFileList(index: number = 0) {
   
   // update total file count and size
   totalFileCount.value = fileList.value.length;
-  totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+  totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file?.size || 0), 0);
   
   // update selected item index (ensure it's always a valid number)
   if (fileList.value.length > 0) {
@@ -9316,6 +9381,10 @@ const handleDedupPreviewFile = (fileId: number) => {
 const handleDedupTrashSelectedDuplicates = (groupKey: string, fileIds: number[], reclaimableBytes: number) => {
   if (!groupKey || !fileIds || fileIds.length === 0) return;
   openTrashMsgbox(reclaimableBytes, groupKey, fileIds);
+};
+
+const handleDedupTrashAllDuplicates = (fileCount: number, reclaimableBytes: number) => {
+  openAllDuplicatesTrashMsgbox(fileCount, reclaimableBytes);
 };
 
 const handleDedupTrashSelectedSimilar = (groupKey: string, fileIds: number[], reclaimableBytes: number) => {

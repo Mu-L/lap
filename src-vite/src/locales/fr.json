@@ -482,6 +482,7 @@
         "building_sets": "Création des groupes similaires",
         "analyzing": "Analyse des photos similaires",
         "groups_title": "Groupes similaires",
+        "results": "Résultats",
         "groups_count": "{count} groupes similaires",
         "load_more": "Charger plus",
         "error_title": "Impossible de charger les photos similaires",
@@ -503,9 +504,12 @@
       "keep_label": "Conserver",
       "unkeep_label": "Ne pas conserver",
       "delete_selected": "Supprimer les éléments sélectionnés",
+      "delete_all": "Tout supprimer",
       "move_selected_to_trash": "Mettre à la corbeille ({count} sélectionnés · {size})",
+      "no_removable_files": "Aucun fichier supprimable à mettre à la corbeille",
       "set_keep": "Conserver",
-      "duplicate_files_summary": "{count} doublons ({size})"
+      "removable_copies_summary": "{count} copies supprimables · {size}",
+      "similar_photos_summary": "{count} photos similaires · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "Mettre à la corbeille",
       "file_content": "Le fichier '{file}' sera mis à la corbeille.",
       "files_content": "{count} fichiers sélectionnés seront mis à la corbeille.",
+      "removable_files_content": "Les {count} fichiers supprimables seront tous mis à la corbeille.",
       "raw_jpeg_companions_content": "{count} fichier(s) associé(s) RAW+JPEG seront également supprimés.",
       "folder_content": "Le dossier '{folder}' sera mis à la corbeille.",
       "ok": "Mettre",
@@ -828,6 +833,7 @@
       "title": "Supprimer définitivement",
       "file_content": "Le fichier '{file}' sera supprimé définitivement.",
       "files_content": "{count} fichiers sélectionnés seront supprimés définitivement.",
+      "removable_files_content": "Les {count} fichiers supprimables seront tous supprimés définitivement.",
       "folder_content": "Le dossier '{folder}' sera supprimé définitivement.",
       "checkbox": "Supprimer définitivement (action irréversible)",
       "ok": "Supprimer",

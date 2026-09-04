@@ -482,6 +482,7 @@
         "building_sets": "類似グループを作成中",
         "analyzing": "類似写真を分析中",
         "groups_title": "類似グループ",
+        "results": "結果",
         "groups_count": "類似グループ {count} 件",
         "load_more": "さらに読み込む",
         "error_title": "類似写真を読み込めません",
@@ -503,9 +504,12 @@
       "keep_label": "保持",
       "unkeep_label": "保持しない",
       "delete_selected": "選択項目を削除",
+      "delete_all": "すべて削除",
       "move_selected_to_trash": "ゴミ箱に入れる（{count}件を選択 · {size}）",
+      "no_removable_files": "ゴミ箱に移動できる削除可能なファイルはありません",
       "set_keep": "保持",
-      "duplicate_files_summary": "重複 {count} 件（{size}）"
+      "removable_copies_summary": "削除可能なコピー {count} 件・{size}",
+      "similar_photos_summary": "{count} 枚の類似写真・{size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "ゴミ箱に入れる",
       "file_content": "ファイル '{file}' をゴミ箱に入れます。",
       "files_content": "{count} 個のファイルをゴミ箱に入れます。",
+      "removable_files_content": "削除可能な {count} 件すべてのファイルをゴミ箱に入れます。",
       "raw_jpeg_companions_content": "RAW+JPEG の関連ファイルも {count} 件削除されます。",
       "folder_content": "フォルダ '{folder}' をゴミ箱に入れます。",
       "ok": "入れる",
@@ -828,6 +833,7 @@
       "title": "完全に削除",
       "file_content": "ファイル '{file}' を完全に削除します。",
       "files_content": "選択した {count} 個のファイルを完全に削除します。",
+      "removable_files_content": "削除可能な {count} 件すべてのファイルを完全に削除します。",
       "folder_content": "フォルダ '{folder}' を完全に削除します。",
       "checkbox": "完全に削除する（元に戻せません）",
       "ok": "削除",

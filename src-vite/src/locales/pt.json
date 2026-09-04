@@ -482,6 +482,7 @@
         "building_sets": "Criando grupos semelhantes",
         "analyzing": "Analisando fotos semelhantes",
         "groups_title": "Grupos semelhantes",
+        "results": "Resultados",
         "groups_count": "{count} grupos semelhantes",
         "load_more": "Carregar mais",
         "error_title": "Não foi possível carregar fotos semelhantes",
@@ -503,9 +504,12 @@
       "keep_label": "Manter",
       "unkeep_label": "Não manter",
       "delete_selected": "Excluir selecionados",
+      "delete_all": "Excluir tudo",
       "move_selected_to_trash": "Mover para lixeira ({count} selecionados · {size})",
+      "no_removable_files": "Não há arquivos removíveis para mover para a lixeira",
       "set_keep": "Manter",
-      "duplicate_files_summary": "{count} duplicados ({size})"
+      "removable_copies_summary": "{count} cópias removíveis · {size}",
+      "similar_photos_summary": "{count} fotos semelhantes · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "Mover para o lixo",
       "file_content": "O arquivo '{file}' será movido para o lixo.",
       "files_content": "{count} arquivos selecionados serão movidos para o lixo.",
+      "removable_files_content": "Todos os {count} arquivos removíveis serão movidos para o lixo.",
       "raw_jpeg_companions_content": "{count} arquivo(s) complementar(es) RAW+JPEG também serão excluídos.",
       "folder_content": "A pasta '{folder}' será movida para o lixo.",
       "ok": "Mover",
@@ -828,6 +833,7 @@
       "title": "Excluir permanentemente",
       "file_content": "O arquivo '{file}' será excluído permanentemente.",
       "files_content": "{count} arquivos selecionados serão excluídos permanentemente.",
+      "removable_files_content": "Todos os {count} arquivos removíveis serão excluídos permanentemente.",
       "folder_content": "A pasta '{folder}' será excluída permanentemente.",
       "checkbox": "Excluir permanentemente (não pode ser desfeito)",
       "ok": "Excluir",

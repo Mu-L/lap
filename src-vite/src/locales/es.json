@@ -482,6 +482,7 @@
         "building_sets": "Creando grupos similares",
         "analyzing": "Analizando fotos similares",
         "groups_title": "Grupos similares",
+        "results": "Resultados",
         "groups_count": "{count} grupos similares",
         "load_more": "Cargar más",
         "error_title": "No se pudieron cargar las fotos similares",
@@ -503,9 +504,12 @@
       "keep_label": "Conservar",
       "unkeep_label": "No conservar",
       "delete_selected": "Eliminar seleccionados",
+      "delete_all": "Eliminar todo",
       "move_selected_to_trash": "Mover a papelera ({count} seleccionados · {size})",
+      "no_removable_files": "No hay archivos eliminables para mover a la papelera",
       "set_keep": "Conservar",
-      "duplicate_files_summary": "{count} duplicados ({size})"
+      "removable_copies_summary": "{count} copias eliminables · {size}",
+      "similar_photos_summary": "{count} fotos similares · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "Mover a la papelera",
       "file_content": "El archivo '{file}' se moverá a la papelera.",
       "files_content": "{count} archivos seleccionados se moverán a la papelera.",
+      "removable_files_content": "Se moverán todos los {count} archivos eliminables a la papelera.",
       "raw_jpeg_companions_content": "También se eliminarán {count} archivos complementarios RAW+JPEG.",
       "folder_content": "La carpeta '{folder}' se moverá a la papelera.",
       "ok": "Mover",
@@ -828,6 +833,7 @@
       "title": "Eliminar permanentemente",
       "file_content": "El archivo '{file}' se eliminará permanentemente.",
       "files_content": "{count} archivos seleccionados se eliminarán permanentemente.",
+      "removable_files_content": "Se eliminarán permanentemente todos los {count} archivos eliminables.",
       "folder_content": "La carpeta '{folder}' se eliminará permanentemente.",
       "checkbox": "Eliminar permanentemente (no se puede deshacer)",
       "ok": "Eliminar",

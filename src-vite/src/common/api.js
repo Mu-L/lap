@@ -1903,13 +1903,19 @@ export async function dedupSetKeep(groupId, fileId) {
   return await invoke('dedup_set_keep', { groupId, fileId });
 }
 
-// delete selected duplicates
-export async function dedupDeleteSelected(groupIds = null, fileIds = null) {
+// Delete explicitly selected duplicates or every removable duplicate.
+export async function dedupDelete({
+  groupIds = null,
+  fileIds = null,
+  deleteAll = false,
+  permanently = false,
+} = {}) {
   try {
-    const result = await invoke('dedup_delete_selected', { groupIds, fileIds });
-    return result;
+    return await invoke('dedup_delete', {
+      request: { groupIds, fileIds, deleteAll, permanently },
+    });
   } catch (error) {
-    console.error('dedupDeleteSelected error:', error);
+    console.error('dedupDelete error:', error);
     throw error;
   }
 }
@@ -1938,6 +1944,7 @@ export async function similarGetEligibleCount(params = null, collectionId = null
 export async function similarListGroups(scopeKey, limit = 100, offset = 0) {
   return await invoke('similar_list_groups', { scopeKey, limit, offset });
 }
+export async function similarGetOverview(scopeKey) { return await invoke('similar_get_overview', { scopeKey }); }
 export async function similarGetGroup(groupId, scopeKey) { return await invoke('similar_get_group', { groupId, scopeKey }); }
 export async function similarSetKeep(groupId, fileId, scopeKey) { return await invoke('similar_set_keep', { groupId, fileId, scopeKey }); }
 export async function similarHasScan(scopeKey) { return await invoke('similar_has_scan', { scopeKey }); }

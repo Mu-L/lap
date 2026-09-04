@@ -482,6 +482,7 @@
         "building_sets": "유사 그룹 생성 중",
         "analyzing": "유사 사진 분석 중",
         "groups_title": "유사 그룹",
+        "results": "결과",
         "groups_count": "유사 그룹 {count}개",
         "load_more": "더 보기",
         "error_title": "유사 사진을 불러올 수 없습니다",
@@ -503,9 +504,12 @@
       "keep_label": "유지",
       "unkeep_label": "유지 안 함",
       "delete_selected": "선택 항목 삭제",
+      "delete_all": "모두 삭제",
       "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
+      "no_removable_files": "휴지통으로 이동할 삭제 가능한 파일이 없습니다",
       "set_keep": "유지",
-      "duplicate_files_summary": "중복 {count}개 ({size})"
+      "removable_copies_summary": "삭제 가능한 사본 {count}개 · {size}",
+      "similar_photos_summary": "유사 사진 {count}장 · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "휴지통으로 이동",
       "file_content": "'{file}'을(를) 휴지통으로 이동합니다.",
       "files_content": "{count}개의 파일을 휴지통으로 이동합니다.",
+      "removable_files_content": "삭제 가능한 {count}개의 모든 파일을 휴지통으로 이동합니다.",
       "raw_jpeg_companions_content": "RAW+JPEG 연결 파일 {count}개도 함께 삭제됩니다.",
       "folder_content": "'{folder}'을(를) 휴지통으로 이동합니다.",
       "ok": "이동",
@@ -828,6 +833,7 @@
       "title": "영구 삭제",
       "file_content": "'{file}' 파일을 영구 삭제합니다.",
       "files_content": "선택한 {count}개 파일을 영구 삭제합니다.",
+      "removable_files_content": "삭제 가능한 {count}개의 모든 파일을 영구 삭제합니다.",
       "folder_content": "'{folder}' 폴더를 영구 삭제합니다.",
       "checkbox": "영구 삭제(되돌릴 수 없음)",
       "ok": "삭제",

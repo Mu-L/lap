@@ -13,7 +13,7 @@ import {
   IconRotate,
   IconCopy,
   IconRename,
-  IconMove,
+  IconFileArrowRight,
   IconTrash,
   IconComment,
   IconPhotoSearch,
@@ -250,7 +250,7 @@ export const useFileMenuItems = (
         children: [
           {
             label: translate('menu.file.move_within_library'),
-            icon: markRaw(IconMove),
+            icon: markRaw(IconFileArrowRight),
             shortcut: shortcut('file.moveTo'),
             action: createAction('move-within-library')
           },

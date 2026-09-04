@@ -482,6 +482,7 @@
         "building_sets": "Создание похожих групп",
         "analyzing": "Анализ похожих фотографий",
         "groups_title": "Похожие группы",
+        "results": "Результаты",
         "groups_count": "{count} похожих групп",
         "load_more": "Загрузить ещё",
         "error_title": "Не удалось загрузить похожие фотографии",
@@ -503,9 +504,12 @@
       "keep_label": "Оставить",
       "unkeep_label": "Не сохранять",
       "delete_selected": "Удалить выбранное",
+      "delete_all": "Удалить все",
       "move_selected_to_trash": "Удалить в Корзину ({count} выбрано · {size})",
+      "no_removable_files": "Нет удаляемых файлов для перемещения в Корзину",
       "set_keep": "Оставить",
-      "duplicate_files_summary": "Дубликатов: {count} ({size})"
+      "removable_copies_summary": "{count} удаляемых копий · {size}",
+      "similar_photos_summary": "{count} похожих фото · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "Удаление в Корзину",
       "file_content": "Файл '{file}' будет перемещён в Корзину.",
       "files_content": "Выбранные файлы ({count} шт.) будут перемещены в Корзину.",
+      "removable_files_content": "Все {count} удаляемых файлов будут перемещены в Корзину.",
       "raw_jpeg_companions_content": "Также будут удалены {count} связанных файлов RAW+JPEG.",
       "folder_content": "Папка '{folder}' будет перемещена в Корзину.",
       "ok": "Переместить",
@@ -828,6 +833,7 @@
       "title": "Удалить безвозвратно",
       "file_content": "Файл '{file}' будет удалён безвозвратно.",
       "files_content": "Выбранные файлы ({count} шт.) будут удалены безвозвратно.",
+      "removable_files_content": "Все {count} удаляемых файлов будут удалены безвозвратно.",
       "folder_content": "Папка '{folder}' будет удалена безвозвратно.",
       "checkbox": "Удалить безвозвратно (вернуть нельзя)",
       "ok": "Удалить",

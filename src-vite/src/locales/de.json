@@ -482,6 +482,7 @@
         "building_sets": "Ähnliche Gruppen werden erstellt",
         "analyzing": "Ähnliche Fotos werden analysiert",
         "groups_title": "Ähnliche Gruppen",
+        "results": "Ergebnisse",
         "groups_count": "{count} ähnliche Gruppen",
         "load_more": "Mehr laden",
         "error_title": "Ähnliche Fotos konnten nicht geladen werden",
@@ -503,9 +504,12 @@
       "keep_label": "Behalten",
       "unkeep_label": "Nicht behalten",
       "delete_selected": "Auswahl löschen",
+      "delete_all": "Alle löschen",
       "move_selected_to_trash": "In Papierkorb ({count} ausgewählt · {size})",
+      "no_removable_files": "Keine entfernbaren Dateien zum Verschieben in den Papierkorb",
       "set_keep": "Behalten",
-      "duplicate_files_summary": "{count} Duplikate ({size})"
+      "removable_copies_summary": "{count} entfernbare Kopien · {size}",
+      "similar_photos_summary": "{count} ähnliche Fotos · {size}"
     }
   },
   "tooltip": {
@@ -814,6 +818,7 @@
       "title": "In Papierkorb verschieben",
       "file_content": "Die Datei '{file}' wird in den Papierkorb verschoben.",
       "files_content": "{count} ausgewählte Dateien werden in den Papierkorb verschoben.",
+      "removable_files_content": "Alle {count} entfernbaren Dateien werden in den Papierkorb verschoben.",
       "raw_jpeg_companions_content": "{count} RAW- und JPEG-Begleitdatei(en) werden ebenfalls gelöscht.",
       "folder_content": "Der Ordner '{folder}' wird in den Papierkorb verschoben.",
       "ok": "In Papierkorb",
@@ -828,6 +833,7 @@
       "title": "Endgültig löschen",
       "file_content": "Die Datei '{file}' wird endgültig gelöscht.",
       "files_content": "{count} ausgewählte Dateien werden endgültig gelöscht.",
+      "removable_files_content": "Alle {count} entfernbaren Dateien werden endgültig gelöscht.",
       "folder_content": "Der Ordner '{folder}' wird endgültig gelöscht.",
       "checkbox": "Endgültig löschen (kann nicht rückgängig gemacht werden)",
       "ok": "Löschen",

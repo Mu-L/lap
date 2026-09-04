@@ -2089,106 +2089,113 @@ pub async fn batch_delete_files(
     files: Vec<BatchDeleteFile>,
     permanently: bool,
 ) -> Result<BatchDeleteResult, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        struct DeleteGroup {
-            primary_id: i64,
-            primary_path: String,
-            components: Vec<(i64, String)>,
-            aae_sidecars: Vec<String>,
-        }
+    tauri::async_runtime::spawn_blocking(move || delete_files_grouped(files, permanently))
+        .await
+        .map_err(|e| format!("Failed to run batch delete: {}", e))?
+}
 
-        let mut delete_groups = Vec::with_capacity(files.len());
-        let mut seen_ids = HashSet::new();
-        let mut seen_aae_paths = HashSet::new();
-        for file in &files {
-            if !seen_ids.insert(file.file_id) {
-                continue;
-            }
-            let mut component_targets = Vec::new();
-            if let Ok(components) = AFile::live_photo_component_files(file.file_id) {
-                for component in components {
-                    if let (Some(id), Some(path)) = (component.id, component.file_path) {
-                        if seen_ids.insert(id) {
-                            component_targets.push((id, path));
-                        }
+/// Delete files together with their Live Photo and Apple sidecar components.
+/// Kept synchronous so other backend workflows can share the same semantics.
+pub(crate) fn delete_files_grouped(
+    files: Vec<BatchDeleteFile>,
+    permanently: bool,
+) -> Result<BatchDeleteResult, String> {
+    struct DeleteGroup {
+        primary_id: i64,
+        primary_path: String,
+        components: Vec<(i64, String)>,
+        aae_sidecars: Vec<String>,
+    }
+
+    let mut delete_groups = Vec::with_capacity(files.len());
+    let mut seen_ids = HashSet::new();
+    let mut seen_aae_paths = HashSet::new();
+    for file in &files {
+        if !seen_ids.insert(file.file_id) {
+            continue;
+        }
+        let mut component_targets = Vec::new();
+        if let Ok(components) = AFile::live_photo_component_files(file.file_id) {
+            for component in components {
+                if let (Some(id), Some(path)) = (component.id, component.file_path) {
+                    if seen_ids.insert(id) {
+                        component_targets.push((id, path));
                     }
                 }
             }
-            let mut aae_sidecars = Vec::new();
-            for sidecar in apple_aae_sidecar_paths(&file.file_path) {
-                let sidecar_path = sidecar.to_string_lossy().into_owned();
-                if seen_aae_paths.insert(sidecar_path.to_ascii_lowercase()) {
-                    aae_sidecars.push(sidecar_path);
-                }
+        }
+        let mut aae_sidecars = Vec::new();
+        for sidecar in apple_aae_sidecar_paths(&file.file_path) {
+            let sidecar_path = sidecar.to_string_lossy().into_owned();
+            if seen_aae_paths.insert(sidecar_path.to_ascii_lowercase()) {
+                aae_sidecars.push(sidecar_path);
             }
-            delete_groups.push(DeleteGroup {
-                primary_id: file.file_id,
-                primary_path: file.file_path.clone(),
-                components: component_targets,
-                aae_sidecars,
-            });
+        }
+        delete_groups.push(DeleteGroup {
+            primary_id: file.file_id,
+            primary_path: file.file_path.clone(),
+            components: component_targets,
+            aae_sidecars,
+        });
+    }
+
+    let mut deleted_file_ids = Vec::new();
+    let mut failed_count = 0usize;
+    let mut trash_failed_file_ids = Vec::new();
+    for group in &delete_groups {
+        let result = if permanently {
+            t_utils::delete_file_permanently(&group.primary_path)
+        } else {
+            t_utils::trash_path(&group.primary_path)
+        };
+        if result.is_err() {
+            failed_count += 1;
+            if !permanently {
+                trash_failed_file_ids.push(group.primary_id);
+            }
+            continue;
+        }
+        deleted_file_ids.push(group.primary_id);
+        let mut group_failed = false;
+
+        for (file_id, file_path) in &group.components {
+            let result = if permanently {
+                t_utils::delete_file_permanently(file_path)
+            } else {
+                t_utils::trash_path(file_path)
+            };
+            if result.is_ok() {
+                deleted_file_ids.push(*file_id);
+            } else {
+                group_failed = true;
+                eprintln!("Failed to delete Live Photo sidecar: {}", file_path);
+            }
         }
 
-        let mut deleted_file_ids = Vec::new();
-        let mut failed_count = 0usize;
-        let mut trash_failed_file_ids = Vec::new();
-        for group in &delete_groups {
+        for sidecar_path in &group.aae_sidecars {
             let result = if permanently {
-                t_utils::delete_file_permanently(&group.primary_path)
+                t_utils::delete_file_permanently(sidecar_path)
             } else {
-                t_utils::trash_path(&group.primary_path)
+                t_utils::trash_path(sidecar_path)
             };
             if result.is_err() {
-                failed_count += 1;
-                if !permanently {
-                    trash_failed_file_ids.push(group.primary_id);
-                }
-                continue;
-            }
-            deleted_file_ids.push(group.primary_id);
-            let mut group_failed = false;
-
-            for (file_id, file_path) in &group.components {
-                let result = if permanently {
-                    t_utils::delete_file_permanently(file_path)
-                } else {
-                    t_utils::trash_path(file_path)
-                };
-                if result.is_ok() {
-                    deleted_file_ids.push(*file_id);
-                } else {
-                    group_failed = true;
-                    eprintln!("Failed to delete Live Photo sidecar: {}", file_path);
-                }
-            }
-
-            for sidecar_path in &group.aae_sidecars {
-                let result = if permanently {
-                    t_utils::delete_file_permanently(sidecar_path)
-                } else {
-                    t_utils::trash_path(sidecar_path)
-                };
-                if result.is_err() {
-                    group_failed = true;
-                    eprintln!("Failed to delete Apple sidecar: {}", sidecar_path);
-                }
-            }
-
-            if group_failed {
-                failed_count += 1;
+                group_failed = true;
+                eprintln!("Failed to delete Apple sidecar: {}", sidecar_path);
             }
         }
 
-        AFile::batch_delete(&deleted_file_ids)
-            .map_err(|e| format!("Error while deleting files from DB: {}", e))?;
-        Ok(BatchDeleteResult {
-            failed_count,
-            deleted_file_ids,
-            trash_failed_file_ids,
-        })
+        if group_failed {
+            failed_count += 1;
+        }
+    }
+
+    AFile::batch_delete(&deleted_file_ids)
+        .map_err(|e| format!("Error while deleting files from DB: {}", e))?;
+    Ok(BatchDeleteResult {
+        failed_count,
+        deleted_file_ids,
+        trash_failed_file_ids,
     })
-    .await
-    .map_err(|e| format!("Failed to run batch delete: {}", e))?
 }
 
 /// edit a file's comment
@@ -2920,6 +2927,11 @@ pub fn similar_list_groups(scope_key: String, limit: i64, offset: i64) -> Result
 }
 
 #[tauri::command]
+pub fn similar_get_overview(scope_key: String) -> Result<serde_json::Value, String> {
+    t_similar::get_overview(&scope_key)
+}
+
+#[tauri::command]
 pub fn similar_get_group(group_id: i64, scope_key: String) -> Result<serde_json::Value, String> {
     t_similar::get_group(group_id, &scope_key)
 }
@@ -3093,11 +3105,12 @@ pub fn dedup_set_keep(group_id: i64, file_id: i64) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn dedup_delete_selected(
-    group_ids: Option<Vec<i64>>,
-    file_ids: Option<Vec<i64>>,
+pub async fn dedup_delete(
+    request: crate::t_dedup::DedupDeleteRequest,
 ) -> Result<crate::t_dedup::DedupDeleteResult, String> {
-    crate::t_dedup::delete_selected(group_ids, file_ids)
+    tauri::async_runtime::spawn_blocking(move || crate::t_dedup::delete(request))
+        .await
+        .map_err(|e| format!("Failed to run dedup delete: {}", e))?
 }
 
 // ----------------------------------------------------------------------------

@@ -174,7 +174,7 @@ import {
   IconMore,
   IconNewFolder,
   IconRename,
-  IconMove,
+  IconFolderArrowRight,
   IconTrash,
   IconFolder,
   IconFolderOff,
@@ -371,7 +371,7 @@ const getMenuItemsForFolder = async (folder: any) => {
       children: [
         {
           label: t('menu.file.move_within_library'),
-          icon: IconMove,
+          icon: IconFolderArrowRight,
           disabled: isRoot,
           action: () => {
             showMoveTo.value = true;
