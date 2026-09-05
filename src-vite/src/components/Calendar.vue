@@ -2,30 +2,29 @@
 
   <div class="sidebar-panel overflow-hidden">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ calendarTitle }}</span>
-      <label
-        v-if="isCalendarGridLayout"
-        class="swap swap-flip inline-grid w-6 h-6 place-items-center text-base-content/70 hover:text-base-content"
-        :title="config.settings.showToolTip ? calendarToggleTooltip : undefined"
-        :aria-label="calendarToggleTooltip"
-      >
-        <input
-          type="checkbox"
-          :checked="!config.calendar.isMonthly"
-          @change="toggleCalendarView"
-        />
-        <IconCalendarMonth class="swap-off col-start-1 row-start-1 self-center justify-self-center w-4 h-4" />
-        <IconCalendarDay class="swap-on col-start-1 row-start-1 self-center justify-self-center w-4 h-4" />
-      </label>
+      <div class="sidebar-header-tabs" role="tablist" :aria-label="props.titlebar || $t('calendar.title')">
+        <button
+          v-for="tab in calendarTabs"
+          :key="tab.value"
+          type="button"
+          role="tab"
+          class="sidebar-header-tab"
+          :class="{ 'tab-active': calendarView === tab.value }"
+          :aria-selected="calendarView === tab.value"
+          @click="setCalendarView(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
     </div>
 
     <!-- calendar -->
     <div ref="scrollable" v-if="Object.keys(calendar_dates).length > 0"
       class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto"
     >
-      <template v-if="isDateHierarchyLayout">
+      <template v-if="calendarView === 'years'">
         <ul>
-          <li v-for="item in calendarTreeItems" :key="item.year">
+          <li v-for="item in calendarYearsItems" :key="item.year">
             <div
               :class="[
                 'sidebar-item',
@@ -77,7 +76,7 @@
         </ul>
       </template>
       <div
-        v-else-if="config.calendar.isMonthly"
+      v-else-if="calendarView === 'months'"
         class="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2 px-1"
       >
         <CalendarMonthly
@@ -118,33 +117,28 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getTakenDates } from '@/common/api';
-import { IconCalendarDay, IconCalendarMonth, IconRight } from '@/common/icons';
+import { IconCalendarDay, IconRight } from '@/common/icons';
 
 import CalendarMonthly from '@/components/CalendarMonthly.vue';
 import CalendarDaily from '@/components/CalendarDaily.vue';
 
-// props
 const props = defineProps({
-  titlebar: String
+  titlebar: String,
 });
 
 /// i18n
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
-const isDateHierarchyLayout = computed(() => config.settings.calendarDisplayMode !== 'grid');
-const isCalendarGridLayout = computed(() => !isDateHierarchyLayout.value);
-const calendarTitle = computed(() =>
-  isDateHierarchyLayout.value
-    ? props.titlebar || localeMsg.value.calendar.title || 'Calendar'
-    : config.calendar.isMonthly
-    ? (localeMsg.value.calendar.month_title || localeMsg.value.calendar.month || 'Month')
-    : (localeMsg.value.calendar.day_title || localeMsg.value.calendar.day || 'Day')
-);
-const calendarToggleTooltip = computed(() =>
-  config.calendar.isMonthly
-    ? (localeMsg.value.calendar.switch_to_day || 'Switch to Day')
-    : (localeMsg.value.calendar.switch_to_month || 'Switch to Month')
-);
+type CalendarView = 'years' | 'months' | 'days';
+const calendarView = computed<CalendarView>(() => {
+  const view = config.calendar.view;
+  return view === 'years' || view === 'months' || view === 'days' ? view : 'years';
+});
+const calendarTabs = computed(() => [
+  { value: 'years' as const, label: localeMsg.value.calendar.tabs?.years || 'Years' },
+  { value: 'months' as const, label: localeMsg.value.calendar.tabs?.months || 'Months' },
+  { value: 'days' as const, label: localeMsg.value.calendar.tabs?.days || 'Days' },
+]);
 
 const scrollable = ref<HTMLDivElement | null>(null); // Ref for the scrollable element
 type CalendarDates = Record<number, Record<number, { date: number; count: number }[]>>;
@@ -217,7 +211,7 @@ const sorted_daily_items = computed(() => {
   });
 });
 
-const calendarTreeItems = computed(() => {
+const calendarYearsItems = computed(() => {
   const ascending = config.settings.calendarSort % 2 === 0;
   return sorted_calendar_items.value.map(({ year, months }) => {
     const monthItems = Object.keys(months).map(Number)
@@ -252,7 +246,8 @@ onMounted(async () => {
   // }
 });
 
-watch(() => [config.calendar.isMonthly, config.settings.calendarSort, config.settings.calendarDisplayMode], () => {
+watch(() => [config.calendar.view, config.settings.calendarSort], () => {
+  if (calendarView.value === 'years') expandSelectedCalendarPath();
   scrollToSelected();
 });
 
@@ -263,7 +258,7 @@ watch(() => config.settings.calendarSort, async () => {
 watch(
   () => [libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
   () => {
-    if (isDateHierarchyLayout.value) expandSelectedCalendarPath();
+    if (calendarView.value === 'years') expandSelectedCalendarPath();
     scrollToSelected();
   },
 );
@@ -282,35 +277,24 @@ function scrollToSelected() {
   });
 }
 
-function switchToMonthlyView() {
-  libConfig.calendar.date = -1;  // -1 means selecting a month
-  config.calendar.isMonthly = true;
-}
+function setCalendarView(view: CalendarView) {
+  if (view === calendarView.value) return;
 
-function switchToDailyView() {
-  // if a year is selected in month view
-  if (config.calendar.isMonthly && libConfig.calendar.month === -1) {
+  if (view === 'months') {
+    libConfig.calendar.date = -1;
+  } else if (view === 'days' && libConfig.calendar.month === -1) {
     const year = libConfig.calendar.year;
     if (year !== null && year !== undefined && calendar_dates.value[year]) {
       const months = Object.keys(calendar_dates.value[year]).map(Number);
       if (months.length > 0) {
-        if (config.settings.calendarSort % 2 === 0) {
-          libConfig.calendar.month = Math.min(...months);
-        } else {
-          libConfig.calendar.month = Math.max(...months);
-        }
+        libConfig.calendar.month = config.settings.calendarSort % 2 === 0
+          ? Math.min(...months)
+          : Math.max(...months);
       }
     }
   }
-  config.calendar.isMonthly = false;
-}
 
-function toggleCalendarView() {
-  if (config.calendar.isMonthly) {
-    switchToDailyView();
-  } else {
-    switchToMonthlyView();
-  }
+  config.calendar.view = view;
 }
 
 const monthKey = (year: number, month: number) => `${year}-${month}`;
@@ -383,7 +367,7 @@ async function getCalendarDates() {
     const taken_dates = await getTakenDates(config.settings.calendarSort);
     if (taken_dates) {
       calendar_dates.value = transformArray(taken_dates);
-      if (isDateHierarchyLayout.value) expandSelectedCalendarPath();
+      if (calendarView.value === 'years') expandSelectedCalendarPath();
     }
   } finally {
     isLoading.value = false;
@@ -418,10 +402,5 @@ function transformArray(dates: [string, number][]): CalendarDates {
 
   return result;
 }
-
-defineExpose({
-  switchToMonthlyView,
-  switchToDailyView,
-});
 
 </script>

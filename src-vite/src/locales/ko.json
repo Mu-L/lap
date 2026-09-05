@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "달력",
-    "month_title": "월별 보기",
-    "day_title": "일별 보기",
-    "switch_to_month": "월로 전환",
-    "switch_to_day": "일로 전환",
+    "tabs": {
+      "years": "년",
+      "months": "월",
+      "days": "일"
+    },
     "day": "일",
     "week": "주",
     "month": "월",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "카메라",
-      "lens_title": "렌즈",
-      "switch_to_camera": "카메라로 전환",
-      "switch_to_lens": "렌즈로 전환"
+      "lens_title": "렌즈"
     },
     "search": {
       "clear_history": "검색 기록 지우기"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "탐색",
       "section_album": "앨범",
-      "section_calendar": "캘린더",
-      "calendar_view": "표시 방식",
-      "calendar_view_hint": "캘린더 사이드바에서 날짜를 표시하는 방식을 선택합니다.",
-      "calendar_display_mode_options": ["날짜 계층", "캘린더 그리드"],
       "show_subfolder_files": "하위 폴더의 파일 표시",
       "show_subfolder_files_hint": "폴더 보기에서 하위 폴더의 파일을 포함합니다",
       "section_file_grouping": "파일 그룹화",

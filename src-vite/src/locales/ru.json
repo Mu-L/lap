@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Календарь",
-    "month_title": "Месяц",
-    "day_title": "День",
-    "switch_to_month": "На месяц",
-    "switch_to_day": "На день",
+    "tabs": {
+      "years": "Годы",
+      "months": "Месяцы",
+      "days": "Дни"
+    },
     "day": "День",
     "week": "Неделя",
     "month": "Месяц",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Камеры",
-      "lens_title": "Объективы",
-      "switch_to_camera": "Переключить на камеры",
-      "switch_to_lens": "Переключить на объективы"
+      "lens_title": "Объективы"
     },
     "search": {
       "clear_history": "Очистить историю"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Обзор",
       "section_album": "Альбом",
-      "section_calendar": "Календарь",
-      "calendar_view": "Режим отображения",
-      "calendar_view_hint": "Выберите, как даты отображаются на боковой панели календаря.",
-      "calendar_display_mode_options": ["Иерархия дат", "Сетка календаря"],
       "show_subfolder_files": "Показывать файлы из подпапок",
       "show_subfolder_files_hint": "При просмотре папок отображаются файлы из вложенных папок",
       "section_file_grouping": "Группировка файлов",

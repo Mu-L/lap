@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "日历",
-    "month_title": "月视图",
-    "day_title": "日视图",
-    "switch_to_month": "切换到月视图",
-    "switch_to_day": "切换到日视图",
+    "tabs": {
+      "years": "年",
+      "months": "月",
+      "days": "日"
+    },
     "day": "日",
     "week": "周",
     "month": "月",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "相机",
-      "lens_title": "镜头",
-      "switch_to_camera": "切换到相机",
-      "switch_to_lens": "切换到镜头"
+      "lens_title": "镜头"
     },
     "search": {
       "clear_history": "清空搜索历史"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "浏览",
       "section_album": "相册",
-      "section_calendar": "日历",
-      "calendar_view": "显示方式",
-      "calendar_view_hint": "选择日历侧栏中日期的显示方式。",
-      "calendar_display_mode_options": ["日期层级", "日历网格"],
       "show_subfolder_files": "显示子文件夹中的文件",
       "show_subfolder_files_hint": "文件夹视图包含子文件夹内的文件",
       "section_file_grouping": "文件分组",

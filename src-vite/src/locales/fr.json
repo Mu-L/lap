@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Calendrier",
-    "month_title": "Vue mensuelle",
-    "day_title": "Vue journalière",
-    "switch_to_month": "Passer au mois",
-    "switch_to_day": "Passer au jour",
+    "tabs": {
+      "years": "Années",
+      "months": "Mois",
+      "days": "Jours"
+    },
     "day": "Jour",
     "week": "Semaine",
     "month": "Mois",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Appareils",
-      "lens_title": "Objectifs",
-      "switch_to_camera": "Passer aux appareils",
-      "switch_to_lens": "Passer aux objectifs"
+      "lens_title": "Objectifs"
     },
     "search": {
       "clear_history": "Effacer historique"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Parcourir",
       "section_album": "Album",
-      "section_calendar": "Calendrier",
-      "calendar_view": "Mode d’affichage",
-      "calendar_view_hint": "Choisissez comment les dates sont affichées dans la barre latérale du calendrier.",
-      "calendar_display_mode_options": ["Hiérarchie des dates", "Grille du calendrier"],
       "show_subfolder_files": "Afficher les fichiers des sous-dossiers",
       "show_subfolder_files_hint": "La vue dossier inclut les fichiers des sous-dossiers",
       "section_file_grouping": "Regroupement de fichiers",

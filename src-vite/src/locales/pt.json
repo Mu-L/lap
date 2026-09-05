@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Calendário",
-    "month_title": "Visão mensal",
-    "day_title": "Visão diária",
-    "switch_to_month": "Mudar para mês",
-    "switch_to_day": "Mudar para dia",
+    "tabs": {
+      "years": "Anos",
+      "months": "Meses",
+      "days": "Dias"
+    },
     "day": "Dia",
     "week": "Semana",
     "month": "Mês",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Câmeras",
-      "lens_title": "Lentes",
-      "switch_to_camera": "Mudar para câmeras",
-      "switch_to_lens": "Mudar para lentes"
+      "lens_title": "Lentes"
     },
     "search": {
       "clear_history": "Limpar histórico"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Navegar",
       "section_album": "Álbum",
-      "section_calendar": "Calendário",
-      "calendar_view": "Modo de exibição",
-      "calendar_view_hint": "Escolha como as datas são exibidas na barra lateral do calendário.",
-      "calendar_display_mode_options": ["Hierarquia de datas", "Grade de calendário"],
       "show_subfolder_files": "Mostrar arquivos de subpastas",
       "show_subfolder_files_hint": "A visualização de pasta inclui arquivos em subpastas",
       "section_file_grouping": "Agrupamento de arquivos",

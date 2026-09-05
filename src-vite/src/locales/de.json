@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Kalender",
-    "month_title": "Monatsansicht",
-    "day_title": "Tagesansicht",
-    "switch_to_month": "Zu Monat wechseln",
-    "switch_to_day": "Zu Tag wechseln",
+    "tabs": {
+      "years": "Jahre",
+      "months": "Monate",
+      "days": "Tage"
+    },
     "day": "Tag",
     "week": "Woche",
     "month": "Monat",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Kameras",
-      "lens_title": "Objektive",
-      "switch_to_camera": "Zu Kameras wechseln",
-      "switch_to_lens": "Zu Objektiven wechseln"
+      "lens_title": "Objektive"
     },
     "search": {
       "clear_history": "Suchverlauf löschen"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Durchsuchen",
       "section_album": "Album",
-      "section_calendar": "Kalender",
-      "calendar_view": "Anzeigemodus",
-      "calendar_view_hint": "Wählen Sie, wie Daten in der Kalenderseitenleiste angezeigt werden.",
-      "calendar_display_mode_options": ["Datumshierarchie", "Kalenderraster"],
       "show_subfolder_files": "Dateien aus Unterordnern anzeigen",
       "show_subfolder_files_hint": "Die Ordneransicht enthält Dateien in Unterordnern",
       "section_file_grouping": "Dateigruppierung",

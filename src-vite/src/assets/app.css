@@ -93,11 +93,11 @@ html, body {
 }
 
 @utility sidebar-header-tabs {
-  @apply tabs tabs-sm flex-1 flex-nowrap items-center;
+  @apply tabs tabs-sm flex-1 flex-nowrap items-center gap-3;
 }
 
 @utility sidebar-header-tab {
-  @apply tab whitespace-nowrap;
+  @apply tab h-10 px-0 min-w-0 whitespace-nowrap font-bold uppercase text-xs tracking-wide leading-none;
 }
 
 .sidebar-header-tab.tab-active {

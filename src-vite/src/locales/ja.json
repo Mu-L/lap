@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "カレンダー",
-    "month_title": "月表示",
-    "day_title": "日表示",
-    "switch_to_month": "月表示に切替",
-    "switch_to_day": "日表示に切替",
+    "tabs": {
+      "years": "年",
+      "months": "月",
+      "days": "日"
+    },
     "day": "日",
     "week": "週",
     "month": "月",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "カメラ",
-      "lens_title": "レンズ",
-      "switch_to_camera": "カメラに切替",
-      "switch_to_lens": "レンズに切替"
+      "lens_title": "レンズ"
     },
     "search": {
       "clear_history": "検索履歴を消去"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "ブラウズ",
       "section_album": "アルバム",
-      "section_calendar": "カレンダー",
-      "calendar_view": "表示方法",
-      "calendar_view_hint": "カレンダーのサイドバーでの日付の表示方法を選択します。",
-      "calendar_display_mode_options": ["日付の階層", "カレンダーグリッド"],
       "show_subfolder_files": "サブフォルダー内のファイルを表示",
       "show_subfolder_files_hint": "フォルダービューに子フォルダー内のファイルを含めます",
       "section_file_grouping": "ファイルのグループ化",

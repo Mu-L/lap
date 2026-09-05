@@ -790,6 +790,7 @@ import {
   IconPhotoSearch,
   IconPersonSearch,
   IconFolderSearch,
+  IconCalendar,
   IconCalendarMonth,
   IconCalendarDay,
   IconArrowUp,
@@ -3211,7 +3212,12 @@ const currentTitleIcon = computed(() => {
               return libConfig.album.selected || config.settings.showSubfolderFiles ? IconFolders : IconFolder;
           case SIDEBAR.SMART_ALBUM: return IconFolderCog;
           case SIDEBAR.SEARCH: return IconSearch;
-          case SIDEBAR.CALENDAR: return config.calendar.isMonthly ? IconCalendarMonth : IconCalendarDay;
+          case SIDEBAR.CALENDAR:
+            return config.calendar.view === 'months'
+              ? IconCalendarMonth
+              : config.calendar.view === 'days'
+                ? IconCalendarDay
+                : IconCalendar;
           case SIDEBAR.TAG: return IconTag;
           case SIDEBAR.PERSON: return IconPerson;
           case SIDEBAR.LOCATION: return IconLocation;
@@ -5475,7 +5481,7 @@ watch(
     album: [libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected],
     smartAlbum: [libConfig.smartAlbum.type, libConfig.smartAlbum.id],
     personId: libConfig.person.id,
-    calendar: [config.calendar.isMonthly, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
+    calendar: [config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
     tagId: libConfig.tag.id,
     location: [libConfig.location.admin1, libConfig.location.name],
     camera: [config.camera.isCamera, libConfig.camera.make, libConfig.camera.model, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel],
@@ -5504,7 +5510,7 @@ watch(
     config.settings.showSubfolderFiles,                                            // album folder view
     config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting
     libConfig.person.id,                                                              // person
-    config.calendar.isMonthly, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date, // calendar
+    config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date, // calendar
     libConfig.tag.id,             // tag
     libConfig.location.admin1, libConfig.location.name,                               // location
     libConfig.camera.make, libConfig.camera.model,                                    // camera 

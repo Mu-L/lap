@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Calendar",
-    "month_title": "Month",
-    "day_title": "Day",
-    "switch_to_month": "Switch to Month",
-    "switch_to_day": "Switch to Day",
+    "tabs": {
+      "years": "Years",
+      "months": "Months",
+      "days": "Days"
+    },
     "day": "Day",
     "week": "Week",
     "month": "Month",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Cameras",
-      "lens_title": "Lenses",
-      "switch_to_camera": "Switch to Cameras",
-      "switch_to_lens": "Switch to Lenses"
+      "lens_title": "Lenses"
     },
     "search": {
       "clear_history": "Clear search history"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Browse",
       "section_album": "Album",
-      "section_calendar": "Calendar",
-      "calendar_view": "Display mode",
-      "calendar_view_hint": "Choose how dates are displayed in the Calendar sidebar.",
-      "calendar_display_mode_options": ["Date hierarchy", "Calendar grid"],
       "show_subfolder_files": "Show files from subfolders",
       "show_subfolder_files_hint": "Folder view includes files in child folders",
       "section_file_grouping": "File grouping",

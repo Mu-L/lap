@@ -58,7 +58,7 @@ export const useConfigStore = defineStore('configStore', {
     },
 
     calendar: {
-      isMonthly: true,    // display monthly or daily calendar
+      view: 'years',      // years | months | days
     },
 
     camera: {
@@ -115,7 +115,6 @@ export const useConfigStore = defineStore('configStore', {
       // navigation settings
       folderSort: 0,              // folder_sort_options: 0=name asc, 1=name desc, 2=date asc(oldest first), 3=date desc(newest first)
       calendarSort: 0,            // 0=taken asc, 1=taken desc, 2=created asc, 3=created desc, 4=modified asc, 5=modified desc
-      calendarDisplayMode: 'hierarchy', // hierarchy | grid
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
       showSubfolderFiles: false,  // show subfolder files (in album folder view)
       groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
@@ -262,9 +261,6 @@ export const useConfigStore = defineStore('configStore', {
     },
     setCalendarSort(calendarSort) {
       this.settings.calendarSort = calendarSort;
-    },
-    setCalendarDisplayMode(calendarDisplayMode) {
-      this.settings.calendarDisplayMode = calendarDisplayMode;
     },
     setCategorySort(categorySort) {
       this.settings.categorySort = categorySort;

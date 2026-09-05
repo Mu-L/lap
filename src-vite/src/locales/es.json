@@ -306,10 +306,11 @@
   },
   "calendar": {
     "title": "Calendario",
-    "month_title": "Vista mensual",
-    "day_title": "Vista diaria",
-    "switch_to_month": "Cambiar a mes",
-    "switch_to_day": "Cambiar a día",
+    "tabs": {
+      "years": "Años",
+      "months": "Meses",
+      "days": "Días"
+    },
     "day": "Día",
     "week": "Semana",
     "month": "Mes",
@@ -657,9 +658,7 @@
     },
     "camera_panel": {
       "camera_title": "Cámaras",
-      "lens_title": "Lentes",
-      "switch_to_camera": "Cambiar a cámaras",
-      "switch_to_lens": "Cambiar a lentes"
+      "lens_title": "Lentes"
     },
     "search": {
       "clear_history": "Borrar historial"
@@ -1176,10 +1175,6 @@
     "browse": {
       "title": "Explorar",
       "section_album": "Álbum",
-      "section_calendar": "Calendario",
-      "calendar_view": "Modo de visualización",
-      "calendar_view_hint": "Elige cómo se muestran las fechas en la barra lateral del calendario.",
-      "calendar_display_mode_options": ["Jerarquía de fechas", "Cuadrícula de calendario"],
       "show_subfolder_files": "Mostrar archivos de subcarpetas",
       "show_subfolder_files_hint": "La vista de carpeta incluye archivos de carpetas secundarias",
       "section_file_grouping": "Agrupación de archivos",
