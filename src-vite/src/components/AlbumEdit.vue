@@ -129,7 +129,7 @@
     <div class="mt-4 flex justify-end space-x-4">
       <button 
         class="t-button-default" 
-        @mousedown.left.stop.prevent="clickCancel"
+        @mouseup.left.stop.prevent="clickCancel"
         @click="!$event.detail && clickCancel()"
       >
         {{ $t('msgbox.cancel') }}
@@ -137,7 +137,7 @@
       <button 
         class="t-button-primary"
         :disabled="inputNameValue.trim().length === 0 || selectedFolder.length === 0"
-        @mousedown.left.stop.prevent="clickOk"
+        @mouseup.left.stop.prevent="clickOk"
         @click="!$event.detail && clickOk()"
       >
         {{ $t('msgbox.ok') }}
