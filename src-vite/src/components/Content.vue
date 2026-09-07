@@ -733,6 +733,7 @@ import {
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
 import { getSmartTagById } from '@/common/smartTags';
 import { clearFolderFileCounts, setFolderFileCount } from '@/composables/useAlbumSelection';
+import { createEmptyLibraryCounts } from '@/stores/libraryStore';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { CULLING, DATE_SORT, GROUP, LIB_ITEM, RATE, SIDEBAR } from '@/common/constants';
 import { isWin, isMac, isLinux, setTheme, separator,
@@ -2990,6 +2991,7 @@ const imageSearchError = ref(false);
 const imageSearchLanguageUnsupported = ref(false);
 const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
 const contentReady = ref(false);  // true after current view's content has loaded (empty or not), reset on navigation
+const contentCountIsAuthoritative = ref(false);
 const dedupSourceVersion = ref(0);
 
 // Store current query params for virtual scrolling
@@ -3016,6 +3018,7 @@ const currentQueryParams = ref({
   cullingFlag: -1,
   tagId: 0,
   personId: 0,
+  smallFileFilter: 0,
 });
 const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('query');
 const isMapView = computed(() => config.settings.grid.viewMode === 'map');
@@ -3034,6 +3037,17 @@ const dedupSmartFileIds = ref<number[] | null>(null);
 watch(isMapView, (active) => {
   if (active) mapViewMounted.value = true;
 });
+
+function passesSmallFileFilter(file: any) {
+  const threshold = Number(config.settings.smallFileFilter || 0);
+  if (![160, 320, 640].includes(threshold)) return true;
+
+  const width = Number(file?.width || 0);
+  const height = Number(file?.height || 0);
+  if (width <= 0 || height <= 0) return true;
+
+  return width >= threshold || height >= threshold;
+}
 
 type SaveAsContext = {
   folderId?: number;
@@ -3081,20 +3095,131 @@ watch(() => props.libraryEmpty, () => {
 }, { immediate: true });
 
 watch(contentReady, (ready) => {
-  if (
-    !ready ||
-    tempViewMode.value !== 'none' ||
-    config.main.sidebarIndex !== SIDEBAR.LIBRARY ||
-    libConfig.activePane !== 'main'
-  ) return;
-  void tauriEmit('library-item-count-updated', {
-    item: libConfig.library.item,
-    rating: libConfig.rating.item,
-    cullingItem: libConfig.culling.item,
-    smartId: libConfig.library.smartId,
-    count: totalFileCount.value,
-  });
+  if (!ready || !contentCountIsAuthoritative.value || tempViewMode.value !== 'none') return;
+  commitRequestedSidebarCount(totalFileCount.value);
 });
+
+function updateCount(owner: any, itemId: string | number, count: number) {
+  owner.counts = {
+    ...(owner.counts || {}),
+    [String(itemId)]: Math.max(0, Number(count || 0)),
+  };
+}
+
+function matchesRequestedSidebarCount(request: any) {
+  switch (request?.source) {
+    case 'library':
+      return config.main.sidebarIndex === SIDEBAR.LIBRARY
+        && libConfig.activePane === 'main'
+        && libConfig.library.item === request.item
+        && (request.item !== LIB_ITEM.RATINGS || Number(libConfig.rating.item) === Number(request.rating))
+        && (request.item !== LIB_ITEM.CULLING || libConfig.culling.item === request.cullingItem)
+        && (request.item !== LIB_ITEM.SUBJECTS || libConfig.library.smartId === request.smartId);
+    case 'album':
+      return config.main.sidebarIndex === SIDEBAR.ALBUM
+        && libConfig.activePane === 'main'
+        && libConfig.album.selected
+        && Number(libConfig.album.id) === Number(request.id);
+    case 'album-folder':
+      return config.main.sidebarIndex === SIDEBAR.ALBUM
+        && libConfig.activePane === 'main'
+        && !libConfig.album.selected
+        && libConfig.album.folderPath === request.path;
+    case 'collection':
+      return libConfig.activePane === 'collection'
+        && Number(libConfig.collection.selectedId) === Number(request.id);
+    case 'tag':
+      return config.main.sidebarIndex === SIDEBAR.TAG && Number(libConfig.tag.id) === Number(request.id);
+    case 'smart-album':
+      return config.main.sidebarIndex === SIDEBAR.SMART_ALBUM
+        && libConfig.smartAlbum.type === 'custom'
+        && String(libConfig.smartAlbum.id) === String(request.id);
+    case 'search':
+      return config.main.sidebarIndex === SIDEBAR.SEARCH && libConfig.search.searchText === request.text;
+    default:
+      return false;
+  }
+}
+
+function commitRequestedSidebarCount(count: number) {
+  const request = uiStore.countUpdateRequest;
+  if (!request) return;
+  if (!matchesRequestedSidebarCount(request)) {
+    uiStore.clearCountUpdateRequest();
+    return;
+  }
+
+  switch (request.source) {
+    case 'library': {
+      const library = libConfig.library as any;
+      if (request.item === LIB_ITEM.SUBJECTS) {
+        library.subjectCounts = {
+          ...(library.subjectCounts || {}),
+          [String(request.smartId)]: Math.max(0, Number(count || 0)),
+        };
+      } else {
+        const cachedValues = library.counts || {};
+        const defaults = createEmptyLibraryCounts();
+        const values = {
+          ...defaults,
+          ...cachedValues,
+          ratings: { ...defaults.ratings, ...(cachedValues.ratings || {}) },
+          culling: { ...defaults.culling, ...(cachedValues.culling || {}) },
+        };
+        if (request.item === LIB_ITEM.ALL) values.all = count;
+        else if (request.item === LIB_ITEM.FAV) values.favorite = count;
+        else if (request.item === LIB_ITEM.TODAY) values.today = count;
+        else if (request.item === LIB_ITEM.RATINGS) {
+          if (Number(request.rating) === RATE.ALL) values.rated = count;
+          else if (Number(request.rating) === RATE.UNRATED) values.unrated = count;
+          else values.ratings = { ...(values.ratings || {}), [Number(request.rating)]: count };
+        } else if (request.item === LIB_ITEM.CULLING) {
+          values.culling = { ...(values.culling || {}), [String(request.cullingItem)]: count };
+        }
+        library.counts = values;
+      }
+      break;
+    }
+    case 'album':
+      updateCount(libConfig.album, request.id, count);
+      break;
+    case 'album-folder':
+      setFolderFileCount(request.path, Math.max(0, Number(count || 0)));
+      break;
+    case 'collection':
+      updateCount(libConfig.collection, request.id, count);
+      break;
+    case 'tag':
+      updateCount(libConfig.tag, request.id, count);
+      break;
+    case 'smart-album': {
+      const albums = [...(libConfig.smartAlbums || [])];
+      const index = albums.findIndex((album: any) => String(album.id) === String(request.id));
+      if (index >= 0) {
+        albums[index] = {
+          ...albums[index],
+          count: Math.max(0, Number(count || 0)),
+        };
+        libConfig.smartAlbums = albums;
+      }
+      break;
+    }
+    case 'search': {
+      const history = [...(libConfig.search.searchHistory || [])] as any[];
+      const index = history.findIndex((item: any) => (typeof item === 'string' ? item : item?.text) === request.text);
+      if (index >= 0) {
+        const item = history[index];
+        history[index] = {
+          ...(typeof item === 'string' ? { text: item } : item),
+          count: Math.max(0, Number(count || 0)),
+        };
+        libConfig.search.searchHistory = history;
+      }
+      break;
+    }
+  }
+  uiStore.clearCountUpdateRequest();
+}
 
 const showWelcomeContent = computed(() => props.libraryEmpty && libraryChecked.value);
 const hasConfirmedEmptyContent = computed(() => (
@@ -3131,6 +3256,7 @@ function showEmptyContent(requestId: number) {
   clearContentRows();
   totalFileCount.value = 0;
   totalFileSize.value = 0;
+  contentCountIsAuthoritative.value = true;
   timelineData.value = [];
   lastVisibleRange = { start: -1, end: -1 };
   visibleRangeSeqId++;
@@ -3147,6 +3273,7 @@ function showLoadingContent(requestId: number) {
   clearContentRows();
   totalFileCount.value = 0;
   totalFileSize.value = 0;
+  contentCountIsAuthoritative.value = false;
   timelineData.value = [];
   isLoading.value = true;
   contentReady.value = false;
@@ -5447,28 +5574,31 @@ watch(() => libConfig.index.albumQueue.length, (newLength) => {
    }
 });
 
-/// watch image search params
 watch(
-  () => [
-    libConfig.search.searchText,
-    uiStore.searchCountRequestTick,
-  ],
-  () => {
-    scheduleContentRefresh(() => {
-      // Only update content if we are currently in the Image Search view
-      if (config.main.sidebarIndex === SIDEBAR.SEARCH) {
-        refreshContentFromSelectionChange();
-      }
-    });
-  }
-);
-
-watch(
-  () => [config.settings.showSubfolderFiles, libConfig._libraryId],
+  () => [config.settings.showSubfolderFiles, config.settings.smallFileFilter, libConfig._libraryId],
   () => {
     clearFolderFileCounts();
   },
 );
+
+watch(() => libConfig._libraryId, () => {
+  uiStore.clearCountUpdateRequest();
+});
+
+watch(() => config.settings.smallFileFilter, () => {
+  uiStore.clearCountUpdateRequest();
+  // Cached lazy counts were computed under the previous filter value; drop them
+  // so badges disappear instead of showing stale numbers. They repopulate on
+  // the next explicit activation of each item.
+  libConfig.clearLazySidebarCounts();
+  if (
+    libConfig.activePane !== 'main'
+    || ![SIDEBAR.CALENDAR, SIDEBAR.PERSON, SIDEBAR.LOCATION, SIDEBAR.CAMERA].includes(config.main.sidebarIndex)
+  ) {
+    return;
+  }
+  scheduleContentRefresh(() => refreshContentFromSelectionChange());
+});
 
 /// watch for file list changes
 watch(
@@ -5498,20 +5628,23 @@ watch(
   () => [
     config.main.sidebarIndex,      // toolbar index
     libConfig.activePane,          // main content or collection tray
-    libConfig.collection.selectedId, // collection
-    (libConfig.library as any).item, // library
+    libConfig.collection.selectedId, libConfig.collection.activateTick, // collection
+    (libConfig.library as any).item, (libConfig.library as any).activateTick, // library
     libConfig.library.smartId,
-    libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, // album
-    libConfig.smartAlbum.type, libConfig.smartAlbum.id, JSON.stringify(libConfig.smartAlbums || []), // smart album
-    uiStore.smartAlbumCountRequestTick,
+    libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, libConfig.album.activateTick, // album
+    libConfig.smartAlbum.type, libConfig.smartAlbum.id,
+    // Lazy counts are cache, not query input: exclude them so count commits
+    // and filter-change invalidation do not retrigger content refreshes.
+    JSON.stringify((libConfig.smartAlbums || []).map(({ count, ...rest }: any) => rest)), // smart album
+    libConfig.search.searchText, uiStore.countUpdateTick,
     libConfig.rating.item, // rating
     libConfig.culling.item, // culling
     config.search.fileType, config.search.sortType, config.search.sortOrder, // search and sort 
     config.settings.showSubfolderFiles,                                            // album folder view
-    config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting
+    config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting and filtering
     libConfig.person.id,                                                              // person
     config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date, // calendar
-    libConfig.tag.id,             // tag
+    libConfig.tag.id, libConfig.tag.activateTick, // tag
     libConfig.location.admin1, libConfig.location.name,                               // location
     libConfig.camera.make, libConfig.camera.model,                                    // camera 
     config.camera.isCamera, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel, // lens
@@ -5693,17 +5826,6 @@ const getCurrentQueryCountAndSum = () => {
   }
   return getQueryCountAndSum(currentQueryParams.value);
 };
-
-function updateFolderFileCount(folderPath: string, count: number, includesSubfolders: boolean) {
-  if (
-    currentQuerySource.value === 'query' &&
-    !libConfig.album.selected &&
-    folderPath === libConfig.album.folderPath &&
-    includesSubfolders === config.settings.showSubfolderFiles
-  ) {
-    setFolderFileCount(folderPath, count);
-  }
-}
 
 const getCurrentQueryTimeLine = () => {
   if (currentQuerySource.value === 'collection' || currentQuerySource.value === 'search') {
@@ -6083,11 +6205,7 @@ async function initializeGroupedFileList(requestId: number) {
   totalFileCount.value = normalized.totalItemCount;
   totalRowCount.value = normalized.totalRowCount;
   totalFileSize.value = normalized.totalSize;
-  updateFolderFileCount(
-    currentQueryParams.value.searchFolder || currentQueryParams.value.searchAllSubfolders,
-    totalFileCount.value,
-    Boolean(currentQueryParams.value.searchAllSubfolders),
-  );
+  contentCountIsAuthoritative.value = true;
   scrollPosition.value = 0;
   timelineData.value = [];
   groupedRows.value = Array.from({ length: totalRowCount.value }).map((_, i) => ({
@@ -6362,6 +6480,7 @@ async function getFileList(
     cullingFlag = -1,
     tagId = 0,
     personId = 0,
+    smallFileFilter = Number(config.settings.smallFileFilter || 0),
     gpsMinLat = null,
     gpsMaxLat = null,
     gpsMinLon = null,
@@ -6399,6 +6518,7 @@ async function getFileList(
     cullingFlag,
     tagId,
     personId,
+    smallFileFilter,
     gpsMinLat,
     gpsMaxLat,
     gpsMinLon,
@@ -6427,7 +6547,7 @@ async function getFileList(
       clearSelectionForFileListUpdate();
       totalFileCount.value = result[0];
       totalFileSize.value = result[1];
-      updateFolderFileCount(searchFolder || searchAllSubfolders, totalFileCount.value, Boolean(searchAllSubfolders));
+      contentCountIsAuthoritative.value = true;
       
       // Get timeline data for date-based sorts
       getCurrentQueryTimeLine().then(data => {
@@ -6484,6 +6604,7 @@ async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<
     if (requestId !== currentContentRequestId) return;
 
     const inCluster = (files || []).filter((file: any) => {
+      if (!passesSmallFileFilter(file)) return false;
       if (file.gps_latitude == null || file.gps_longitude == null || file.gps_latitude === '' || file.gps_longitude === '') return false;
       const lat = Number(file.gps_latitude);
       const lon = Number(file.gps_longitude);
@@ -6538,6 +6659,7 @@ async function getCollectionFileList(collectionId: number, requestId: number) {
     calendarSort: config.settings.calendarSort,
     folderSort: config.settings.folderSort,
     categorySort: config.settings.categorySort,
+    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     make: '',
     model: '',
     lensMake: '',
@@ -6563,6 +6685,7 @@ async function getCollectionFileList(collectionId: number, requestId: number) {
       resetGroupingState();
       totalFileCount.value = result[0];
       totalFileSize.value = result[1];
+      contentCountIsAuthoritative.value = true;
       timelineData.value = [];
 
       fileList.value = createVirtualFileSlots(totalFileCount.value);
@@ -6602,10 +6725,6 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
   const query = smartAlbum?.query;
   const rules = Array.isArray(query?.rules) ? query.rules : [];
   if (!query || rules.length === 0) {
-    if (uiStore.smartAlbumCountRequestedFor === String(smartAlbum?.id)) {
-      updateSmartAlbumCount(smartAlbum.id, 0);
-      uiStore.smartAlbumCountRequestedFor = null;
-    }
     showEmptyContent(requestId);
     return;
   }
@@ -6623,6 +6742,7 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
     folderSort: Number(config.settings.folderSort || 0),
     calendarSort: Number(config.settings.calendarSort || 0),
     categorySort: Number(config.settings.categorySort || 0),
+    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     groupBy: effectiveGroupBy.value,
   };
   void refreshDedupSmartFileIds(requestId, currentSmartQueryParams.value);
@@ -6631,28 +6751,16 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
   isLoading.value = true;
 
   try {
-    if (await initializeGroupedFileList(requestId)) {
-      if (
-        requestId === currentContentRequestId &&
-        uiStore.smartAlbumCountRequestedFor === String(smartAlbum?.id)
-      ) {
-        updateSmartAlbumCount(smartAlbum.id, totalFileCount.value);
-        uiStore.smartAlbumCountRequestedFor = null;
-      }
-      return;
-    }
+    if (await initializeGroupedFileList(requestId)) return;
 
     const result = await getCurrentQueryCountAndSum();
     if (requestId !== currentContentRequestId) return;
 
     if (result) {
-      if (uiStore.smartAlbumCountRequestedFor === String(smartAlbum?.id)) {
-        updateSmartAlbumCount(smartAlbum.id, Number(result[0] || 0));
-        uiStore.smartAlbumCountRequestedFor = null;
-      }
       clearSelectionForFileListUpdate();
       totalFileCount.value = result[0];
       totalFileSize.value = result[1];
+      contentCountIsAuthoritative.value = true;
 
       getCurrentQueryTimeLine().then(data => {
         if (requestId === currentContentRequestId) {
@@ -6714,34 +6822,6 @@ async function updateSmartAlbumCover(smartAlbum: any, requestId: number) {
   libConfig.smartAlbums = albums;
 }
 
-function updateSmartAlbumCount(smartAlbumId: string | number, count: number) {
-  const albums = [...(libConfig.smartAlbums || [])];
-  const albumIndex = albums.findIndex((album: any) => String(album.id) === String(smartAlbumId));
-  const currentCount = albums[albumIndex]?.count;
-  if (albumIndex < 0 || (currentCount !== null && currentCount !== undefined && Number(currentCount) === count)) return;
-
-  albums[albumIndex] = {
-    ...albums[albumIndex],
-    count,
-  };
-  libConfig.smartAlbums = albums;
-}
-
-function updateSearchHistoryCount(searchText: string, count: number) {
-  const history = libConfig.search.searchHistory as any[];
-  const historyIndex = history.findIndex((item: any) =>
-    (typeof item === 'string' ? item : item?.text) === searchText
-  );
-  if (historyIndex < 0) return;
-
-  const item = history[historyIndex];
-  if (typeof item !== 'string' && item.count !== null && item.count !== undefined && Number(item.count) === count) return;
-  history[historyIndex] = {
-    text: typeof item === 'string' ? item : item.text,
-    count,
-  };
-}
-
 async function getImageSearchFileList(
   searchText: string,
   fileId: number,
@@ -6782,7 +6862,8 @@ async function getImageSearchFileList(
     if (result) {
       clearSelectionForFileListUpdate();
       resetGroupingState();
-      fileList.value = preserveLoadedThumbnails(result);
+      fileList.value = preserveLoadedThumbnails(result.filter(passesSmallFileFilter));
+      contentCountIsAuthoritative.value = true;
       currentSearchFileIds.value = fileList.value
         .map(file => Number(file.id))
         .filter(id => Number.isFinite(id) && id > 0);
@@ -6838,6 +6919,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     calendarSort: config.settings.calendarSort,
     folderSort: config.settings.folderSort,
     categorySort: config.settings.categorySort,
+    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     make: '',
     model: '',
     lensMake: '',
@@ -6891,13 +6973,10 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     const textMatches = Array.isArray(textResult) ? textResult : [];
     const textIds = new Set(textMatches.map((file: any) => Number(file.id)));
     const visualMatches = (Array.isArray(visualResult) ? visualResult : [])
-      .filter((file: any) => !textIds.has(Number(file.id)));
+      .filter((file: any) => !textIds.has(Number(file.id)))
+      .filter(passesSmallFileFilter);
     const files = preserveLoadedThumbnails([...textMatches, ...visualMatches]);
-
-    if (uiStore.searchCountRequestedFor === searchText) {
-      updateSearchHistoryCount(searchText, files.length);
-      uiStore.searchCountRequestedFor = null;
-    }
+    contentCountIsAuthoritative.value = true;
 
     clearSelectionForFileListUpdate();
     resetGroupingState();
@@ -7026,6 +7105,7 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
   const requestId = ++currentContentRequestId;
 
   contentReady.value = false;
+  contentCountIsAuthoritative.value = false;
   imageSearchError.value = false;
   imageSearchLanguageUnsupported.value = false;
   isCurrentFolderExcluded.value = false;

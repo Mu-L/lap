@@ -69,10 +69,11 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getCameraInfo, getLensInfo } from '@/common/api';
+import { SIDEBAR } from '@/common/constants';
 import { IconCamera, IconCameraAperture, IconRight } from '@/common/icons';
 
 const props = defineProps({
@@ -87,6 +88,13 @@ const localeMsg = computed(() => messages.value[locale.value] as any);
 const cameras = ref<any[]>([]);
 const lenses = ref<any[]>([]);
 const isLoadingCameraInfo = ref(true);
+let isCameraMounted = true;
+let cameraRequestVersion = 0;
+
+onUnmounted(() => {
+  isCameraMounted = false;
+  cameraRequestVersion++;
+});
 
 const activeTab = computed(() => {
   return config.camera.isCamera ? 'camera' : 'lens';
@@ -113,22 +121,43 @@ const sortedItems = computed(() => activeItems.value);
 
 onMounted(async () => {
   await loadCameraInfo();
-
-  validateSelections();
   expandSelectedItem(cameras.value, (libConfig.camera as any).make, (libConfig.camera as any).model);
   expandSelectedItem(lenses.value, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel);
 });
 
-watch(() => config.settings.categorySort, async () => {
-  await loadCameraInfo();
+// Only refresh the active view. Inactive panel data is refreshed on re-entry.
+watch(() => [config.settings.categorySort, config.settings.smallFileFilter], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CAMERA) await loadCameraInfo();
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CAMERA) await loadCameraInfo();
 });
 
 async function loadCameraInfo() {
+  const requestVersion = ++cameraRequestVersion;
+  const libraryId = libConfig._libraryId;
   isLoadingCameraInfo.value = true;
   try {
-    await Promise.all([getCameras(), getLenses()]);
+    const [fetchedCameras, fetchedLenses] = await Promise.all([
+      getCameraInfo(config.settings.categorySort),
+      getLensInfo(config.settings.categorySort),
+    ]);
+    if (!isCameraMounted || requestVersion !== cameraRequestVersion || libraryId !== libConfig._libraryId) return;
+
+    if (fetchedCameras) {
+      cameras.value = fetchedCameras.map((camera: any) => ({ ...camera, is_expanded: false }));
+      restoreExpandedItem(cameras.value, (libConfig.camera as any).make, (libConfig.camera as any).model);
+    }
+    if (fetchedLenses) {
+      lenses.value = fetchedLenses.map((lens: any) => ({ ...lens, is_expanded: false }));
+      restoreExpandedItem(lenses.value, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel);
+    }
+    validateSelections();
   } finally {
-    isLoadingCameraInfo.value = false;
+    if (isCameraMounted && requestVersion === cameraRequestVersion) {
+      isLoadingCameraInfo.value = false;
+    }
   }
 }
 
@@ -189,29 +218,6 @@ function clickModel(make: string, model: string) {
   } else {
     (libConfig.camera as any).make = make;
     (libConfig.camera as any).model = model;
-  }
-}
-
-/// get cameras from db
-async function getCameras() {
-  const fetchedCameras = await getCameraInfo(config.settings.categorySort);
-  if (fetchedCameras) {
-    cameras.value = fetchedCameras.map((camera: any) => ({
-      ...camera, 
-      is_expanded: false,
-    }));
-    restoreExpandedItem(cameras.value, (libConfig.camera as any).make, (libConfig.camera as any).model);
-  }
-}
-
-async function getLenses() {
-  const fetchedLenses = await getLensInfo(config.settings.categorySort);
-  if (fetchedLenses) {
-    lenses.value = fetchedLenses.map((lens: any) => ({
-      ...lens,
-      is_expanded: false,
-    }));
-    restoreExpandedItem(lenses.value, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel);
   }
 }
 

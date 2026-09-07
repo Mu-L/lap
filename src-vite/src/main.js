@@ -174,6 +174,9 @@ if (isMainWindow) {
   listen('settings-groupRawJpegPairs-changed', (event) => {
     config.settings.groupRawJpegPairs = event.payload
   })
+  listen('settings-smallFileFilter-changed', (event) => {
+    config.setSmallFileFilter(event.payload)
+  })
   listen('settings-navigatorViewMode-changed', (event) => {
     config.setNavigatorViewMode(event.payload)
   })

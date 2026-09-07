@@ -251,6 +251,7 @@ async fn main() {
             t_cmds::get_album,
             t_cmds::check_album_accessibility,
             t_cmds::recount_album,
+            t_cmds::get_album_visible_counts,
             t_cmds::add_album,
             t_cmds::edit_album,
             t_cmds::remove_album,
@@ -278,7 +279,6 @@ async fn main() {
             t_cmds::open_file_with_app,
             t_cmds::open_files_with_app,
             // file query
-            t_cmds::get_total_count_and_sum,
             t_cmds::get_query_count_and_sum,
             t_cmds::get_query_time_line,
             t_cmds::get_query_files,
@@ -286,6 +286,7 @@ async fn main() {
             t_cmds::get_group_file_ids,
             t_cmds::get_grouped_file_position,
             t_cmds::get_query_file_ids,
+            t_cmds::get_library_visible_counts,
             t_cmds::get_query_file_position,
             // smart album
             t_cmds::get_smart_query_count_and_sum,
@@ -297,6 +298,7 @@ async fn main() {
             t_cmds::get_smart_query_file_position,
             // collection
             t_cmds::list_collections,
+            t_cmds::get_collection_counts,
             t_cmds::create_collection,
             t_cmds::rename_collection,
             t_cmds::delete_collection,
@@ -363,6 +365,7 @@ async fn main() {
             t_cmds::batch_update_file_metadata,
             // tag
             t_cmds::get_all_tags,
+            t_cmds::get_tag_counts,
             t_cmds::get_tag_name,
             t_cmds::create_tag,
             t_cmds::rename_tag,

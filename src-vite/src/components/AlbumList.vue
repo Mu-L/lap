@@ -173,11 +173,11 @@
             <!-- Right side: Count and Status Icons -->
             <div class="ml-auto">
               <span
-                v-if="props.showTotalCount !== false && album.total"
+                v-if="props.showTotalCount !== false && getAlbumDisplayCount(album) > 0"
                 class="sidebar-item-count"
                 :class="selection.albumId.value === album.id && selection.selected.value ? 'hidden' : 'group-hover:hidden'"
               >
-                {{ album.total.toLocaleString() }}
+                {{ getAlbumDisplayCount(album).toLocaleString() }}
               </span>
             </div>  
 
@@ -271,7 +271,7 @@ import {
   openFolderDialog,
 } from '@/common/utils';
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { getAllAlbums, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
+import { getAllAlbums, getAlbumVisibleCounts, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
          getAlbum, checkAlbumAccessibility, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
@@ -300,6 +300,7 @@ import {
   IconHeart,
   IconHeartFilled,
 } from '@/common/icons';
+import { SIDEBAR } from '@/common/constants';
 
 const props = withDefaults(defineProps<{
   selectionSource: SelectionSource;
@@ -313,6 +314,10 @@ const props = withDefaults(defineProps<{
 const { t, locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const uiStore = useUIStore();
+
+const getAlbumDisplayCount = (album: Album) => {
+  return Number(libConfig.album.counts?.[String(album.id)] || 0);
+};
 
 // Set up the selection context using provide/inject
 // Pass the expandAndSelectFolder callback so the composable can trigger folder expansion
@@ -329,6 +334,21 @@ let unlistenIndexProgress: (() => void) | undefined;
 let unlistenIndexFinished: (() => void) | undefined;
 let unlistenAlbumsRefreshed: (() => void) | undefined;
 let unlistenAlbumFolderPathsMigrated: (() => void) | undefined;
+let albumCountRequest = 0;
+
+async function refreshAlbumVisibleCounts() {
+  const request = ++albumCountRequest;
+  const libraryId = libConfig._libraryId;
+  const smallFileFilter = Number(config.settings.smallFileFilter || 0);
+  const counts = await getAlbumVisibleCounts(smallFileFilter);
+  if (
+    request !== albumCountRequest
+    || libraryId !== libConfig._libraryId
+    || smallFileFilter !== Number(config.settings.smallFileFilter || 0)
+    || !counts
+  ) return;
+  libConfig.album.counts = counts;
+}
 
 // Computed to check if we're in main album pane
 const isMainPane = computed(() => props.selectionSource === 'album');
@@ -714,6 +734,7 @@ onMounted( async () => {
   document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   if (albums.value.length === 0) {
     albums.value = await getAllAlbums(true);
+    void refreshAlbumVisibleCounts();
     await loadAlbumCovers();
     isLoading.value = false;
 
@@ -870,6 +891,18 @@ watch(() => config.settings.folderSort, async () => {
 
   if (shouldRestoreFolderSelection && selectedAlbumId > 0) {
     await clickFinalSubFolder(selectedAlbumId, selectedFolderPath);
+  }
+});
+
+watch(() => config.settings.smallFileFilter, () => {
+  if (isMainPane.value && libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.ALBUM) {
+    void refreshAlbumVisibleCounts();
+  }
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], () => {
+  if (isMainPane.value && libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.ALBUM) {
+    void refreshAlbumVisibleCounts();
   }
 });
 

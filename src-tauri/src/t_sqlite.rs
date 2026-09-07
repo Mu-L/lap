@@ -517,6 +517,28 @@ impl Album {
         Ok(result)
     }
 
+    /// Count files visible in the current browse filter for every album.
+    /// This is intentionally read-only: `albums.total` remains the scan/index
+    /// total and is not affected by browse-only filters.
+    pub fn get_visible_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+        let conn = open_conn()?;
+        let query = format!(
+            "SELECT b.album_id, COUNT(DISTINCT a.id)
+             FROM afiles a
+             JOIN afolders b ON b.id = a.folder_id
+             WHERE {} AND {}{}{}
+             GROUP BY b.album_id",
+            AFile::search_exclusion_condition("b"),
+            AFile::live_photo_companion_exclusion_condition(),
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+        );
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<Result<HashMap<_, _>, _>>().map_err(|e| e.to_string())
+    }
+
     pub fn merged_file_stats_in_album(album_id: i64) -> Result<(u64, u64), String> {
         let conn = open_conn()?;
         conn.query_row(
@@ -1496,20 +1518,14 @@ impl ACollection {
         }
     }
 
+    /// Collection counts are populated lazily after explicit sidebar activation.
     pub fn list() -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
+        let query = "SELECT id, name, sort_order, 0 AS count, created_at, updated_at
+             FROM acollections
+             ORDER BY sort_order ASC, id ASC";
         let mut stmt = conn
-            .prepare(
-                "SELECT c.id, c.name, c.sort_order, COUNT(a.id) AS count, c.created_at, c.updated_at
-                FROM acollections c
-                LEFT JOIN acollections_files cf ON cf.collection_id = c.id
-                LEFT JOIN afiles a ON a.id = cf.file_id
-                    AND a.id NOT IN (
-                        SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                    )
-                GROUP BY c.id
-                ORDER BY c.sort_order ASC, c.id ASC",
-            )
+            .prepare(query)
             .map_err(|e| e.to_string())?;
 
         let rows = stmt
@@ -1520,6 +1536,27 @@ impl ACollection {
             collections.push(row.map_err(|e| e.to_string())?);
         }
         Ok(collections)
+    }
+
+    /// Count visible files for every collection in one grouped query.
+    pub fn get_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+        let conn = open_conn()?;
+        let query = format!(
+            "SELECT cf.collection_id, COUNT(DISTINCT a.id)
+             FROM acollections_files cf
+             JOIN afiles a ON a.id = cf.file_id
+             JOIN afolders b ON b.id = a.folder_id
+             WHERE {}{}{} AND {}
+             GROUP BY cf.collection_id",
+            AFile::live_photo_companion_exclusion_condition(),
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+        );
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<Result<HashMap<_, _>, _>>().map_err(|e| e.to_string())
     }
 
     pub fn create(name: &str) -> Result<Self, String> {
@@ -1860,6 +1897,8 @@ pub struct QueryParams {
     pub folder_sort: i64, // 0=name asc, 1=name desc, 2=date asc, 3=date desc
     #[serde(default)]
     pub category_sort: i64, // 0=name asc, 1=name desc, 2=count asc, 3=count desc
+    #[serde(default)]
+    pub small_file_filter: i64, // 0 | 160 | 320 | 640: hide files below this width and height
     pub make: String,
     pub model: String,
     pub lens_make: String,
@@ -1915,6 +1954,8 @@ pub struct SmartQueryParams {
     pub folder_sort: i64,
     #[serde(default)]
     pub category_sort: i64,
+    #[serde(default)]
+    pub small_file_filter: i64,
     #[serde(default)]
     pub group_by: i64,
     #[serde(default)]
@@ -2005,7 +2046,21 @@ pub struct ImageSearchParams {
     pub file_type: i64, // file type bitmask (0=all, 1=image, 2=video, 4=raw)
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryVisibleCounts {
+    pub all: i64, pub favorite: i64, pub today: i64, pub rated: i64, pub unrated: i64,
+    pub rating_1: i64, pub rating_2: i64, pub rating_3: i64, pub rating_4: i64, pub rating_5: i64,
+    pub pick: i64, pub reject: i64, pub unreviewed: i64,
+}
+
 impl AFile {
+    pub fn get_library_visible_counts(small_file_filter: i64) -> Result<LibraryVisibleCounts, String> {
+        let conn = open_conn()?;
+        let today = chrono::Local::now().format("%m-%d").to_string();
+        let query = format!("SELECT COUNT(*), COALESCE(SUM(a.is_favorite=1),0), COALESCE(SUM(strftime('%m-%d',a.taken_date,'unixepoch','localtime')=?1),0), COALESCE(SUM(a.rating>0),0), COALESCE(SUM(a.rating=0),0), COALESCE(SUM(a.rating=1),0), COALESCE(SUM(a.rating=2),0), COALESCE(SUM(a.rating=3),0), COALESCE(SUM(a.rating=4),0), COALESCE(SUM(a.rating=5),0), COALESCE(SUM(a.culling_flag=1),0), COALESCE(SUM(a.culling_flag=2),0), COALESCE(SUM(a.culling_flag=0),0) FROM afiles a JOIN afolders b ON b.id=a.folder_id WHERE {} AND {}{}{}", Self::search_exclusion_condition("b"), Self::live_photo_companion_exclusion_condition(), Self::small_file_filter_sql(small_file_filter, "a"), Self::inaccessible_album_filter("b"));
+        conn.query_row(&query, params![today], |r| Ok(LibraryVisibleCounts { all:r.get(0)?, favorite:r.get(1)?, today:r.get(2)?, rated:r.get(3)?, unrated:r.get(4)?, rating_1:r.get(5)?, rating_2:r.get(6)?, rating_3:r.get(7)?, rating_4:r.get(8)?, rating_5:r.get(9)?, pick:r.get(10)?, reject:r.get(11)?, unreviewed:r.get(12)? })).map_err(|e| e.to_string())
+    }
     fn inaccessible_album_filter(folder_alias: &str) -> String {
         match t_utils::inaccessible_album_ids().as_slice() {
             [] => String::new(),
@@ -3367,6 +3422,35 @@ impl AFile {
         }
     }
 
+    /// Bare SQL predicate that hides a file only when both dimensions are known
+    /// (> 0) and below the selected threshold. IFNULL treats NULL dimensions as 0
+    /// so dimensionless files stay visible, matching the frontend
+    /// passesSmallFileFilter logic. Returns None when the filter is off. The
+    /// threshold is allowlisted, so interpolating it is safe and keeps aggregate
+    /// query plans simple without exposing untrusted SQL input.
+    fn small_file_filter_predicate(value: i64, alias: &str) -> Option<String> {
+        match value {
+            160 | 320 | 640 => Some(format!(
+                "(IFNULL({alias}.width, 0) <= 0 OR IFNULL({alias}.height, 0) <= 0 OR {alias}.width >= {value} OR {alias}.height >= {value})"
+            )),
+            _ => None,
+        }
+    }
+
+    /// Append the small-file predicate to a WHERE condition list (alias `a`).
+    fn append_small_file_filter(conditions: &mut Vec<String>, value: i64) {
+        if let Some(predicate) = Self::small_file_filter_predicate(value, "a") {
+            conditions.push(predicate);
+        }
+    }
+
+    /// ` AND <predicate>` fragment for aggregate sidebar queries; empty when off.
+    fn small_file_filter_sql(value: i64, alias: &str) -> String {
+        Self::small_file_filter_predicate(value, alias)
+            .map(|predicate| format!(" AND {predicate}"))
+            .unwrap_or_default()
+    }
+
     /// insert a file into db if not exists
     /// Returns (file, status)
     /// status: 0 - existing, 1 - new, 2 - updated
@@ -4221,7 +4305,7 @@ impl AFile {
     }
 
     /// get all taken dates from db
-    pub fn get_taken_dates(sort: i64) -> Result<Vec<(String, i64)>, String> {
+    pub fn get_taken_dates(sort: i64, small_file_filter: i64) -> Result<Vec<(String, i64)>, String> {
         let conn = open_conn()?;
 
         // sort encodes both the date column and direction:
@@ -4245,7 +4329,7 @@ impl AFile {
             "SELECT {} AS group_date, COUNT(1)
             FROM afiles a
             JOIN afolders b ON a.folder_id = b.id
-            WHERE {} IS NOT NULL AND {} >= 86400 AND {}{}
+            WHERE {} IS NOT NULL AND {} >= 86400 AND {}{}{} AND {}
             GROUP BY {}
             ORDER BY group_date {}",
             date_expr,
@@ -4253,6 +4337,8 @@ impl AFile {
             date_col,
             Self::live_photo_companion_exclusion_condition(),
             Self::inaccessible_album_filter("b"),
+            Self::small_file_filter_sql(small_file_filter, "a"),
+            Self::search_exclusion_condition("b"),
             date_expr,
             order_clause
         );
@@ -4269,17 +4355,6 @@ impl AFile {
             .map_err(|e| format!("Failed to process rows: {}", e))?;
 
         Ok(results)
-    }
-
-    // get total count and size of files
-    pub fn get_total_count_and_sum() -> Result<(i64, i64), String> {
-        let sql = format!(
-            "{} WHERE {} AND {}",
-            Self::build_count_query(),
-            Self::search_exclusion_condition("b"),
-            Self::live_photo_companion_exclusion_condition()
-        );
-        Self::query_count_and_sum(&sql, &[])
     }
 
     // helper to build search query conditions and params
@@ -4312,6 +4387,8 @@ impl AFile {
         if let Some(condition) = Self::build_file_type_condition(params.search_file_type) {
             conditions.push(condition);
         }
+
+        Self::append_small_file_filter(&mut conditions, params.small_file_filter);
 
         if !params.search_all_subfolders.is_empty() {
             // Match path that starts with search_folder followed by '/' or end of string
@@ -5481,6 +5558,8 @@ impl AFile {
                 &mut sql_params,
             )?);
         }
+
+        Self::append_small_file_filter(&mut conditions, params.small_file_filter);
 
         let inaccessible_album_ids = t_utils::inaccessible_album_ids();
         if !inaccessible_album_ids.is_empty() {
@@ -7576,25 +7655,31 @@ impl ATag {
     }
 
     /// Get all tags from the db
-    pub fn get_all(sort: i64) -> Result<Vec<Self>, String> {
+    pub fn get_all(sort: i64, small_file_filter: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
+        // Count-based ordering must match the sidebar badge count (which comes
+        // from getQueryCountAndSum with tagId): tagged files excluding Live Photo
+        // videos and honoring the small-file filter. The displayed count itself is
+        // populated lazily, so this expression is only used for ordering.
+        let count_expr = format!(
+            "(SELECT COUNT(*) FROM afile_tags ft
+              JOIN afiles a ON a.id = ft.file_id
+              JOIN afolders b ON b.id = a.folder_id
+              WHERE ft.tag_id = atags.id AND {}{}{} AND {})",
+            AFile::live_photo_companion_exclusion_condition(),
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+        );
         let order_clause = match sort {
-            1 => "atags.name DESC",
-            2 => "count ASC, atags.name ASC",
-            3 => "count DESC, atags.name ASC",
-            _ => "atags.name ASC",
+            1 => "atags.name DESC".to_string(),
+            2 => format!("{count_expr} ASC, atags.name ASC"),
+            3 => format!("{count_expr} DESC, atags.name ASC"),
+            _ => "atags.name ASC".to_string(),
         };
-        let query = "SELECT atags.id, atags.name, SUM(CASE WHEN afiles.id IS NOT NULL THEN 1 ELSE 0 END) AS count 
-            FROM atags 
-            LEFT JOIN afile_tags ON atags.id = afile_tags.tag_id
-            LEFT JOIN afiles ON afile_tags.file_id = afiles.id
-                AND afiles.id NOT IN (
-                    SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                )
-            GROUP BY atags.id
-            ORDER BY "
-            .to_string()
-            + order_clause;
+        let query = format!(
+            "SELECT atags.id, atags.name, 0 AS count FROM atags ORDER BY {order_clause}",
+        );
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
         let tags_iter = stmt
@@ -7606,6 +7691,27 @@ impl ATag {
             tags.push(tag.map_err(|e| e.to_string())?);
         }
         Ok(tags)
+    }
+
+    /// Count visible files for every tag in one grouped query.
+    pub fn get_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+        let conn = open_conn()?;
+        let query = format!(
+            "SELECT ft.tag_id, COUNT(DISTINCT a.id)
+             FROM afile_tags ft
+             JOIN afiles a ON a.id = ft.file_id
+             JOIN afolders b ON b.id = a.folder_id
+             WHERE {}{}{} AND {}
+             GROUP BY ft.tag_id",
+            AFile::live_photo_companion_exclusion_condition(),
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+        );
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<Result<HashMap<_, _>, _>>().map_err(|e| e.to_string())
     }
 
     /// Get tag name by id
@@ -7878,6 +7984,27 @@ pub struct PersonPage {
     pub persons: Vec<Person>,
     pub has_more: bool,
     pub total: usize,
+    pub visible_total: Option<usize>,
+    pub selected_person_visible: Option<bool>,
+}
+
+/// Pagination request for the People sidebar.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonPageRequest {
+    pub sort: i64,
+    pub offset: usize,
+    pub limit: usize,
+    pub search: String,
+    pub small_file_filter: i64,
+    pub refresh_summary: Option<PersonPageRefreshSummary>,
+}
+
+/// Aggregate data needed only after the small-file filter changes.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersonPageRefreshSummary {
+    pub selected_person_id: Option<i64>,
 }
 
 impl Person {
@@ -7967,10 +8094,10 @@ impl Person {
         Ok(generated.map(|data| general_purpose::STANDARD.encode(data)))
     }
 
-    pub fn get_page(sort: i64, offset: usize, limit: usize, search: &str) -> Result<PersonPage, String> {
+    pub fn get_page(request: &PersonPageRequest) -> Result<PersonPage, String> {
         let conn = open_conn()?;
-        let limit = limit.clamp(1, 100);
-        let search = search.trim();
+        let limit = request.limit.clamp(1, 100);
+        let search = request.search.trim();
         let search_pattern = format!(
             "%{}%",
             search
@@ -7978,33 +8105,79 @@ impl Person {
                 .replace('%', "\\%")
                 .replace('_', "\\_")
         );
+        let visible_file_conditions = format!(
+            "{}{} AND {} AND {}",
+            AFile::small_file_filter_sql(request.small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+            AFile::live_photo_companion_exclusion_condition(),
+        );
+        let visible_person_condition = format!(
+            "EXISTS (SELECT 1 FROM faces f JOIN afiles a ON a.id = f.file_id JOIN afolders b ON b.id = a.folder_id WHERE f.person_id = p.id{})",
+            visible_file_conditions,
+        );
         let total: i64 = conn
             .query_row(
-                "SELECT COUNT(*) FROM persons WHERE ?1 = '' OR COALESCE(name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE",
+                &format!(
+                    "SELECT COUNT(*) FROM persons p WHERE (?1 = '' OR COALESCE(p.name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE) AND {visible_person_condition}"
+                ),
                 params![search, search_pattern],
                 |row| row.get(0),
             )
             .map_err(|e| e.to_string())?;
+        let visible_total = if request.refresh_summary.is_some() {
+            if search.is_empty() {
+                Some(total as usize)
+            } else {
+                Some(
+                    conn.query_row(
+                        &format!("SELECT COUNT(*) FROM persons p WHERE {visible_person_condition}"),
+                        [],
+                        |row| row.get::<_, i64>(0),
+                    )
+                    .map_err(|e| e.to_string())? as usize,
+                )
+            }
+        } else {
+            None
+        };
+        let selected_person_visible = request.refresh_summary.as_ref()
+            .and_then(|summary| summary.selected_person_id)
+            .map(|person_id| {
+                conn.query_row(
+                    &format!(
+                        "SELECT EXISTS(SELECT 1 FROM persons p WHERE p.id = ?1 AND {visible_person_condition})"
+                    ),
+                    params![person_id],
+                    |row| row.get::<_, i64>(0),
+                )
+                .map(|visible| visible != 0)
+                .map_err(|e| e.to_string())
+            })
+            .transpose()?;
         let name_asc = "rtrim(COALESCE(p.name, ''), '0123456789') COLLATE NOCASE ASC, CAST(substr(COALESCE(p.name, ''), length(rtrim(COALESCE(p.name, ''), '0123456789')) + 1) AS INTEGER) ASC, p.name ASC, p.id ASC";
         let name_desc = "rtrim(COALESCE(p.name, ''), '0123456789') COLLATE NOCASE DESC, CAST(substr(COALESCE(p.name, ''), length(rtrim(COALESCE(p.name, ''), '0123456789')) + 1) AS INTEGER) DESC, p.name DESC, p.id ASC";
-        let order_clause = match sort {
+        let order_clause = match request.sort {
             1 => name_desc,
             2 => "count ASC, p.name ASC, p.id ASC",
             3 => "count DESC, p.name ASC, p.id ASC",
             _ => name_asc,
         };
         let query = format!(
-            "SELECT p.id, p.name, COUNT(f.id) as count, p.thumbnail
+            "SELECT p.id, p.name, COUNT(DISTINCT a.id) as count, p.thumbnail
              FROM persons p
-             LEFT JOIN faces f ON f.person_id = p.id
-             WHERE ?1 = '' OR COALESCE(p.name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE
+             JOIN faces f ON f.person_id = p.id
+             JOIN afiles a ON a.id = f.file_id
+             JOIN afolders b ON b.id = a.folder_id
+             WHERE (?1 = '' OR COALESCE(p.name, '') LIKE ?2 ESCAPE '\\' COLLATE NOCASE){}
              GROUP BY p.id
              ORDER BY {order_clause}
-             LIMIT ?3 OFFSET ?4"
+             LIMIT ?3 OFFSET ?4",
+            visible_file_conditions,
         );
         let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
         let persons_iter = stmt
-            .query_map(params![search, search_pattern, (limit + 1) as i64, offset as i64], |row| {
+            .query_map(params![search, search_pattern, (limit + 1) as i64, request.offset as i64], |row| {
                 let thumb_data: Option<Vec<u8>> = row.get(3)?;
                 Ok(Self {
                     id: row.get(0)?,
@@ -8029,6 +8202,8 @@ impl Person {
             persons,
             has_more,
             total: total as usize,
+            visible_total,
+            selected_person_visible,
         })
     }
 
@@ -8568,12 +8743,19 @@ impl Face {
 
     /// Get full statistics for face indexing
     /// Returns (total_images, processed_images, unprocessed_images, total_faces)
-    pub fn get_stats_full() -> Result<(usize, usize, usize, usize), String> {
+    pub fn get_stats_full(small_file_filter: i64) -> Result<(usize, usize, usize, usize), String> {
         let conn = open_conn()?;
+        let visible_file_conditions = format!(
+            "{}{} AND {} AND {}",
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+            AFile::live_photo_companion_exclusion_condition(),
+        );
 
         let total: i64 = conn
             .query_row(
-                "SELECT COUNT(*) FROM afiles WHERE file_type = 1",
+                &format!("SELECT COUNT(*) FROM afiles a JOIN afolders b ON b.id = a.folder_id WHERE a.file_type = 1{}", visible_file_conditions),
                 [],
                 |row| row.get(0),
             )
@@ -8581,14 +8763,18 @@ impl Face {
 
         let processed: i64 = conn
             .query_row(
-                "SELECT COUNT(*) FROM afiles WHERE has_faces > 0 AND file_type = 1",
+                &format!("SELECT COUNT(*) FROM afiles a JOIN afolders b ON b.id = a.folder_id WHERE a.has_faces > 0 AND a.file_type = 1{}", visible_file_conditions),
                 [],
                 |row| row.get(0),
             )
             .unwrap_or(0);
 
         let faces: i64 = conn
-            .query_row("SELECT COUNT(*) FROM faces", [], |row| row.get(0))
+            .query_row(
+                &format!("SELECT COUNT(*) FROM faces f JOIN afiles a ON a.id = f.file_id JOIN afolders b ON b.id = a.folder_id WHERE {}", visible_file_conditions.trim_start_matches(" AND ")),
+                [],
+                |row| row.get(0),
+            )
             .unwrap_or(0);
 
         let unprocessed = total - processed;
@@ -8627,7 +8813,7 @@ fn sort_labeled_counts(labels: &mut Vec<String>, counts: &mut Vec<i64>, sort: i6
 
 impl ACamera {
     // get all camera makes and models from db
-    pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
+    pub fn get_from_db(sort: i64, small_file_filter: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
         let query = format!("SELECT UPPER(a.e_make), a.e_model, count(a.id) as count
             FROM afiles a
@@ -8635,9 +8821,9 @@ impl ACamera {
             WHERE a.e_make IS NOT NULL AND a.e_model IS NOT NULL
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                ){}
+                ){}{} AND {}
             GROUP BY UPPER(a.e_make), a.e_model
-            ORDER BY UPPER(a.e_make), a.e_model", AFile::inaccessible_album_filter("b"));
+            ORDER BY UPPER(a.e_make), a.e_model", AFile::inaccessible_album_filter("b"), AFile::small_file_filter_sql(small_file_filter, "a"), AFile::search_exclusion_condition("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
@@ -8705,7 +8891,7 @@ pub struct ALens {
 
 impl ALens {
     // get all lens makes and models from db
-    pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
+    pub fn get_from_db(sort: i64, small_file_filter: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
         let query = format!("SELECT UPPER(a.e_lens_make), a.e_lens_model, count(a.id) as count
             FROM afiles a
@@ -8713,9 +8899,9 @@ impl ALens {
             WHERE a.e_lens_make IS NOT NULL AND a.e_lens_model IS NOT NULL
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                ){}
+                ){}{} AND {}
             GROUP BY UPPER(a.e_lens_make), a.e_lens_model
-            ORDER BY UPPER(a.e_lens_make), a.e_lens_model", AFile::inaccessible_album_filter("b"));
+            ORDER BY UPPER(a.e_lens_make), a.e_lens_model", AFile::inaccessible_album_filter("b"), AFile::small_file_filter_sql(small_file_filter, "a"), AFile::search_exclusion_condition("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
@@ -8784,7 +8970,7 @@ pub struct ALocation {
 
 impl ALocation {
     // get all location admin1 and names from db
-    pub fn get_from_db(sort: i64) -> Result<Vec<Self>, String> {
+    pub fn get_from_db(sort: i64, small_file_filter: i64) -> Result<Vec<Self>, String> {
         let conn = open_conn()?;
 
         let query = format!("SELECT COALESCE(a.geo_cc, ''), a.geo_admin1, a.geo_name, count(a.id) as count
@@ -8793,9 +8979,9 @@ impl ALocation {
             WHERE COALESCE(a.geo_admin1, '') <> '' AND COALESCE(a.geo_name, '') <> ''
                 AND a.id NOT IN (
                     SELECT live_photo_video_id FROM afiles WHERE live_photo_video_id IS NOT NULL
-                ){}
+                ){}{} AND {}
             GROUP BY a.geo_cc, a.geo_admin1, a.geo_name
-            ORDER BY a.geo_cc, a.geo_admin1, a.geo_name", AFile::inaccessible_album_filter("b"));
+            ORDER BY a.geo_cc, a.geo_admin1, a.geo_name", AFile::inaccessible_album_filter("b"), AFile::small_file_filter_sql(small_file_filter, "a"), AFile::search_exclusion_condition("b"));
 
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 

@@ -17,7 +17,7 @@ use crate::t_similar;
 use crate::t_sqlite::{
     ACamera, ACollection, ACollectionOrder, ACollectionSelectionCount, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
     ATagSelectionCount, AThumb, ATimeLine, Album, AlbumDisplayOrder, GroupedQueryResult, ImageSearchParams, Person,
-    PersonPage, QueryParams, SmartQueryParams,
+    PersonPage, PersonPageRequest, QueryParams, SmartQueryParams,
 };
 use crate::t_storage;
 use crate::t_utils;
@@ -400,6 +400,12 @@ pub fn check_album_accessibility(album_id: i64) -> Result<bool, String> {
 #[tauri::command]
 pub fn recount_album(album_id: i64) -> Result<Album, String> {
     Album::recount_album(album_id).map_err(|e| format!("Error while recounting album: {}", e))
+}
+
+#[tauri::command]
+pub fn get_album_visible_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    Album::get_visible_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting album visible counts: {}", e))
 }
 
 /// add an album
@@ -951,13 +957,6 @@ pub fn open_files_with_app(file_paths: Vec<String>, app_path: &str) -> Result<()
 
 // file
 
-/// get total file count and sum
-#[tauri::command]
-pub fn get_total_count_and_sum() -> Result<(i64, i64), String> {
-    AFile::get_total_count_and_sum()
-        .map_err(|e| format!("Error while getting all files count: {}", e))
-}
-
 /// get query count and sum
 #[tauri::command]
 pub async fn get_query_count_and_sum(params: QueryParams) -> Result<(i64, i64), String> {
@@ -1029,6 +1028,12 @@ pub async fn get_query_file_ids(params: QueryParams) -> Result<Vec<i64>, String>
 }
 
 #[tauri::command]
+pub fn get_library_visible_counts(small_file_filter: i64) -> Result<t_sqlite::LibraryVisibleCounts, String> {
+    AFile::get_library_visible_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting library visible counts: {}", e))
+}
+
+#[tauri::command]
 pub async fn get_query_file_position(
     params: QueryParams,
     file_id: i64,
@@ -1042,6 +1047,12 @@ pub async fn get_query_file_position(
 #[tauri::command]
 pub fn list_collections() -> Result<Vec<ACollection>, String> {
     ACollection::list().map_err(|e| format!("Error while listing collections: {}", e))
+}
+
+#[tauri::command]
+pub fn get_collection_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    ACollection::get_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting collection counts: {}", e))
 }
 
 #[tauri::command]
@@ -2691,8 +2702,15 @@ pub fn batch_update_file_metadata(params: BatchFileMetadataUpdate) -> Result<usi
 
 /// get all tags
 #[tauri::command]
-pub fn get_all_tags(sort: i64) -> Result<Vec<ATag>, String> {
-    ATag::get_all(sort).map_err(|e| format!("Error while getting all tags: {}", e))
+pub fn get_all_tags(sort: i64, small_file_filter: i64) -> Result<Vec<ATag>, String> {
+    ATag::get_all(sort, small_file_filter)
+        .map_err(|e| format!("Error while getting all tags: {}", e))
+}
+
+#[tauri::command]
+pub fn get_tag_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    ATag::get_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting tag counts: {}", e))
 }
 
 /// get tag name by id
@@ -2760,30 +2778,31 @@ pub fn apply_tags_to_files(
 
 /// get camera's taken dates
 #[tauri::command]
-pub fn get_taken_dates(sort: i64) -> Result<Vec<(String, i64)>, String> {
-    AFile::get_taken_dates(sort).map_err(|e| format!("Error while getting taken dates: {}", e))
+pub fn get_taken_dates(sort: i64, small_file_filter: i64) -> Result<Vec<(String, i64)>, String> {
+    AFile::get_taken_dates(sort, small_file_filter)
+        .map_err(|e| format!("Error while getting taken dates: {}", e))
 }
 
 // camera
 
 /// get a file's camera make and model info
 #[tauri::command]
-pub fn get_camera_info(sort: i64) -> Result<Vec<ACamera>, String> {
-    ACamera::get_from_db(sort).map_err(|e| format!("Error while getting camera info: {}", e))
+pub fn get_camera_info(sort: i64, small_file_filter: i64) -> Result<Vec<ACamera>, String> {
+    ACamera::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting camera info: {}", e))
 }
 
 /// get a file's lens make and model info
 #[tauri::command]
-pub fn get_lens_info(sort: i64) -> Result<Vec<ALens>, String> {
-    ALens::get_from_db(sort).map_err(|e| format!("Error while getting lens info: {}", e))
+pub fn get_lens_info(sort: i64, small_file_filter: i64) -> Result<Vec<ALens>, String> {
+    ALens::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting lens info: {}", e))
 }
 
 // location
 
 /// get a file's location info
 #[tauri::command]
-pub fn get_location_info(sort: i64) -> Result<Vec<ALocation>, String> {
-    ALocation::get_from_db(sort).map_err(|e| format!("Error while getting location info: {}", e))
+pub fn get_location_info(sort: i64, small_file_filter: i64) -> Result<Vec<ALocation>, String> {
+    ALocation::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting location info: {}", e))
 }
 
 #[tauri::command]
@@ -2970,8 +2989,8 @@ pub fn index_faces(
 
 /// get face indexing stats
 #[tauri::command]
-pub fn get_face_stats() -> Result<t_face::FaceStats, String> {
-    let (total, processed, unprocessed, faces) = t_sqlite::Face::get_stats_full()
+pub fn get_face_stats(small_file_filter: i64) -> Result<t_face::FaceStats, String> {
+    let (total, processed, unprocessed, faces) = t_sqlite::Face::get_stats_full(small_file_filter)
         .map_err(|e| format!("Error while getting face stats: {}", e))?;
 
     Ok(t_face::FaceStats {
@@ -3019,8 +3038,8 @@ pub fn get_persons(sort: i64) -> Result<Vec<Person>, String> {
 
 /// Get a page of persons with face counts.
 #[tauri::command]
-pub fn get_persons_page(sort: i64, offset: usize, limit: usize, search: String) -> Result<PersonPage, String> {
-    Person::get_page(sort, offset, limit, &search)
+pub fn get_persons_page(request: PersonPageRequest) -> Result<PersonPage, String> {
+    Person::get_page(&request)
         .map_err(|e| format!("Error while getting persons page: {}", e))
 }
 

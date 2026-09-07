@@ -113,10 +113,11 @@
 
 <script setup lang="ts">
 
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getTakenDates } from '@/common/api';
+import { SIDEBAR } from '@/common/constants';
 import { IconCalendarDay, IconRight } from '@/common/icons';
 
 import CalendarMonthly from '@/components/CalendarMonthly.vue';
@@ -146,6 +147,13 @@ const calendar_dates = ref<CalendarDates>({});
 const isLoading = ref(true);
 const expandedYears = ref<number[]>([]);
 const expandedMonths = ref<string[]>([]);
+let isCalendarMounted = true;
+let calendarRequestVersion = 0;
+
+onUnmounted(() => {
+  isCalendarMounted = false;
+  calendarRequestVersion++;
+});
 
 function buildHeatmapThresholds(values: number[]): number[] | null {
   const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
@@ -251,8 +259,13 @@ watch(() => [config.calendar.view, config.settings.calendarSort], () => {
   scrollToSelected();
 });
 
-watch(() => config.settings.calendarSort, async () => {
-  await getCalendarDates();
+// Only refresh the active view. Inactive panel data is refreshed on re-entry.
+watch(() => [config.settings.calendarSort, config.settings.smallFileFilter], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CALENDAR) await getCalendarDates();
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CALENDAR) await getCalendarDates();
 });
 
 watch(
@@ -362,15 +375,38 @@ function expandSelectedCalendarPath() {
 
 /// fetch calendar dates
 async function getCalendarDates() {
+  const requestVersion = ++calendarRequestVersion;
+  const libraryId = libConfig._libraryId;
   isLoading.value = true;
   try {
     const taken_dates = await getTakenDates(config.settings.calendarSort);
+    if (!isCalendarMounted || requestVersion !== calendarRequestVersion || libraryId !== libConfig._libraryId) return;
     if (taken_dates) {
       calendar_dates.value = transformArray(taken_dates);
+      validateCalendarSelection();
       if (calendarView.value === 'years') expandSelectedCalendarPath();
     }
   } finally {
-    isLoading.value = false;
+    if (isCalendarMounted && requestVersion === calendarRequestVersion) {
+      isLoading.value = false;
+    }
+  }
+}
+
+function validateCalendarSelection() {
+  const year = libConfig.calendar.year;
+  const month = libConfig.calendar.month;
+  const date = libConfig.calendar.date;
+
+  if (year === null || year === undefined) return;
+  const months = calendar_dates.value[year];
+  const isSelectedDateVisible = months
+    && (month === -1 || (months[month!] && (date === -1 || months[month!].some(item => item.date === date))));
+
+  if (!isSelectedDateVisible) {
+    libConfig.calendar.year = null;
+    libConfig.calendar.month = null;
+    libConfig.calendar.date = null;
   }
 }
 

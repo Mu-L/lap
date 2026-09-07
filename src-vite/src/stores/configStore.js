@@ -118,6 +118,7 @@ export const useConfigStore = defineStore('configStore', {
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
       showSubfolderFiles: false,  // show subfolder files (in album folder view)
       groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
+      smallFileFilter: 0,         // 0 | 160 | 320 | 640: hide files below this width and height
       
       // grid view settings
       thumbnailSize: 512,         // gallery thumbnail quality: 256, 512, or 1024
@@ -195,6 +196,7 @@ export const useConfigStore = defineStore('configStore', {
     // Cluster threshold values: cosine distance (lower = stricter, higher = looser)
     // [Very High, High, Medium, Low]
     faceClusterThresholds: () => [0.35, 0.45, 0.55, 0.65],
+
   },
 
   actions: {
@@ -267,6 +269,10 @@ export const useConfigStore = defineStore('configStore', {
     },
     setShowSubfolderFiles(showSubfolderFiles) {
       this.settings.showSubfolderFiles = showSubfolderFiles;
+    },
+    setSmallFileFilter(smallFileFilter) {
+      const value = Number(smallFileFilter);
+      this.settings.smallFileFilter = [160, 320, 640].includes(value) ? value : 0;
     },
 
     // video settings

@@ -417,10 +417,10 @@
             </div>
           </div>
 
-          <!-- file grouping -->
+          <!-- file display -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_file_grouping') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_file_display') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
@@ -428,6 +428,15 @@
                 <div class="text-xs text-base-content/30">{{ $t('settings.browse.group_raw_jpeg_pairs_hint') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.browse.small_file_filter') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.small_file_filter_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm w-auto shrink-0" v-model="config.settings.smallFileFilter">
+                <option v-for="option in smallFileFilterOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
             </div>
           </div>
 
@@ -858,6 +867,11 @@ const categorySortOptions = computed(() => {
   }
 
   return result;
+});
+
+const smallFileFilterOptions = computed(() => {
+  const options = localeMsg.value.settings.browse.small_file_filter_options || [];
+  return [0, 160, 320, 640].map((value, index) => ({ label: options[index] ?? String(value), value }));
 });
 
 // Define the wheel options using computed to react to language changes
@@ -1507,6 +1521,9 @@ watch(() => config.settings.showSubfolderFiles, (newValue) => {
 });
 watch(() => config.settings.groupRawJpegPairs, (newValue) => {
   emit('settings-groupRawJpegPairs-changed', newValue);
+});
+watch(() => config.settings.smallFileFilter, (newValue) => {
+  emit('settings-smallFileFilter-changed', newValue);
 });
 
 // grid view settings
