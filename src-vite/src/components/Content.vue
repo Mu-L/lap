@@ -5633,9 +5633,8 @@ watch(
     libConfig.library.smartId,
     libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, libConfig.album.activateTick, // album
     libConfig.smartAlbum.type, libConfig.smartAlbum.id,
-    // Lazy counts are cache, not query input: exclude them so count commits
-    // and filter-change invalidation do not retrigger content refreshes.
-    JSON.stringify((libConfig.smartAlbums || []).map(({ count, ...rest }: any) => rest)), // smart album
+    // Count and cover updates are query outputs, not refresh triggers.
+    JSON.stringify((libConfig.smartAlbums || []).map(({ count, coverFileId, ...rest }: any) => rest)), // smart album
     libConfig.search.searchText, uiStore.countUpdateTick,
     libConfig.rating.item, // rating
     libConfig.culling.item, // culling
@@ -5649,7 +5648,9 @@ watch(
     libConfig.camera.make, libConfig.camera.model,                                    // camera 
     config.camera.isCamera, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel, // lens
   ], 
-  () => {
+  (values, previousValues) => {
+    // Replacing smartAlbums creates a new outer array even if these values match.
+    if (previousValues && values.every((value, index) => value === previousValues[index])) return;
     // Clear active adjustments when the file list changes to avoid unnecessary confirmation dialogs
     uiStore.clearActiveAdjustments();
 
