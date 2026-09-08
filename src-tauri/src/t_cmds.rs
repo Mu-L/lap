@@ -350,6 +350,17 @@ pub fn get_current_library_state() -> Result<LibraryState, String> {
 /// get all albums
 #[tauri::command]
 pub fn get_all_albums(refresh_accessibility: bool) -> Result<Vec<Album>, String> {
+    // Best-effort: repair stale covers so the album list never renders a
+    // broken thumbnail.
+    let albums = Album::get_all_albums()
+        .map_err(|e| format!("Error while getting all albums: {}", e))?;
+    for album in &albums {
+        if let Some(album_id) = album.id {
+            let _ = Album::auto_set_cover(album_id);
+        }
+    }
+
+    // Reload to reflect any repaired covers.
     let mut albums = Album::get_all_albums()
         .map_err(|e| format!("Error while getting all albums: {}", e))?;
     if refresh_accessibility {

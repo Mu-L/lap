@@ -432,11 +432,14 @@ impl Album {
         Ok(result)
     }
 
-    /// set album cover to the first file (image/video) if not set
+    /// Keep an album cover when it still refers to a displayable file in that
+    /// album; otherwise fall back to the first available file or no cover.
     pub fn auto_set_cover(id: i64) -> Result<(), String> {
         let conn = open_conn()?;
 
-        // 1. check if cover_file_id is set
+        // A cover ID can remain after its file is removed outside Lap. It is
+        // valid only when the file still belongs to this album and has a
+        // thumbnail that can be displayed in the album list.
         let cover_file_id: Option<i64> = conn
             .query_row(
                 "SELECT cover_file_id FROM albums WHERE id = ?1",
@@ -445,35 +448,51 @@ impl Album {
             )
             .map_err(|e| e.to_string())?;
 
-        if cover_file_id.unwrap_or(0) > 0 {
-            return Ok(());
+        if let Some(cover_file_id) = cover_file_id.filter(|file_id| *file_id > 0) {
+            let cover_query = format!(
+                "SELECT a.id
+                     FROM afiles a
+                     JOIN afolders b ON a.folder_id = b.id
+                     JOIN athumbs c ON a.id = c.file_id
+                     WHERE a.id = ?1
+                       AND b.album_id = ?2
+                       AND (a.file_type = 1 OR a.file_type = 2)
+                       AND {}",
+                AFile::live_photo_companion_exclusion_condition(),
+            );
+            let cover_is_available: Option<i64> = conn
+                .query_row(&cover_query, params![cover_file_id, id], |row| row.get(0))
+                .optional()
+                .map_err(|e| e.to_string())?;
+            if cover_is_available.is_some() {
+                return Ok(());
+            }
         }
 
-        // 2. get the first formatted file (image or video)
-        let file_id: Option<i64> = conn
-            .query_row(
-                "SELECT a.id 
+        // Choose the first displayable file. A missing candidate intentionally
+        // clears the stale cover so the UI uses its default album icon.
+        let fallback_query = format!(
+            "SELECT a.id
                 FROM afiles a
                 JOIN afolders b ON a.folder_id = b.id
                 JOIN athumbs c ON a.id = c.file_id
-                WHERE b.album_id = ?1 AND (a.file_type = 1 OR a.file_type = 2)
+                WHERE b.album_id = ?1
+                  AND (a.file_type = 1 OR a.file_type = 2)
+                  AND {}
                 ORDER BY a.taken_date ASC
                 LIMIT 1",
-                params![id],
-                |row| row.get(0),
-            )
+            AFile::live_photo_companion_exclusion_condition(),
+        );
+        let file_id: Option<i64> = conn
+            .query_row(&fallback_query, params![id], |row| row.get(0))
             .optional() // returns Option<i64>
             .map_err(|e| e.to_string())?;
 
-        // 3. update cover_file_id
-        if let Some(fid) = file_id {
-            let _ = conn
-                .execute(
-                    "UPDATE albums SET cover_file_id = ?1 WHERE id = ?2",
-                    params![fid, id],
-                )
-                .map_err(|e| e.to_string())?;
-        }
+        conn.execute(
+            "UPDATE albums SET cover_file_id = ?1 WHERE id = ?2",
+            params![file_id, id],
+        )
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }
