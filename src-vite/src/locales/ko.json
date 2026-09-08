@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "원본 폴더",
+    "source_placeholder": "원본 폴더 선택",
+    "choose_folder": "폴더 선택…",
+    "destination": "대상 폴더",
+    "folder_layout": "폴더 구조",
+    "layout_day": "일별 — YYYY/YYYY-MM-DD",
+    "layout_month": "월별 — YYYY/YYYY-MM",
+    "layout_year": "연도별 — YYYY",
+    "layout_none": "단일 폴더",
+    "import": "가져오기",
+    "preparing": "가져오기 준비 중",
+    "importing": "파일 가져오는 중",
+    "complete": "가져오기 완료",
+    "cancelled": "가져오기가 취소됨",
+    "failed": "실패: {count}"
+  },
   "welcome": {
     "title": "Lap에 오신 것을 환영합니다",
     "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",

@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "読み込み元フォルダー",
+    "source_placeholder": "読み込み元フォルダーを選択",
+    "choose_folder": "フォルダーを選択…",
+    "destination": "保存先フォルダー",
+    "folder_layout": "フォルダー構成",
+    "layout_day": "日別 — YYYY/YYYY-MM-DD",
+    "layout_month": "月別 — YYYY/YYYY-MM",
+    "layout_year": "年別 — YYYY",
+    "layout_none": "単一フォルダー",
+    "import": "読み込む",
+    "preparing": "読み込みを準備中",
+    "importing": "ファイルを読み込み中",
+    "complete": "読み込み完了",
+    "cancelled": "読み込みをキャンセルしました",
+    "failed": "失敗: {count}"
+  },
   "welcome": {
     "title": "Lap へようこそ",
     "description": "あなたのローカルフォトライブラリ。高速で検索可能、常にあなたの管理下に。",

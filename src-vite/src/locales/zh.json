@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "来源文件夹",
+    "source_placeholder": "选择来源文件夹",
+    "choose_folder": "选择文件夹…",
+    "destination": "目标文件夹",
+    "folder_layout": "文件夹结构",
+    "layout_day": "按天 — YYYY/YYYY-MM-DD",
+    "layout_month": "按月 — YYYY/YYYY-MM",
+    "layout_year": "按年 — YYYY",
+    "layout_none": "单个文件夹",
+    "import": "导入",
+    "preparing": "正在准备导入",
+    "importing": "正在导入文件",
+    "complete": "导入完成",
+    "cancelled": "已取消导入",
+    "failed": "失败：{count}"
+  },
   "welcome": {
     "title": "欢迎使用 Lap",
     "description": "您的本地照片库。快速、可搜索，始终由您掌控。",

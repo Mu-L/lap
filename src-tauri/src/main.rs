@@ -87,6 +87,9 @@ async fn main() {
         .manage(t_cmds::IndexCancellation(std::sync::Arc::new(
             std::sync::Mutex::new(std::collections::HashMap::new()),
         )))
+        .manage(t_cmds::ImportCancellation(std::sync::Arc::new(std::sync::Mutex::new(
+            t_cmds::ImportState::default(),
+        ))))
         .manage(t_face::FaceIndexCancellation(std::sync::Arc::new(
             std::sync::Mutex::new(false),
         )))
@@ -330,6 +333,8 @@ async fn main() {
             t_cmds::move_file_outside_library,
             t_cmds::copy_file,
             t_cmds::import_file,
+            t_cmds::import_and_organize,
+            t_cmds::cancel_import_and_organize,
             t_cmds::import_url,
             t_cmds::import_from_drag,
             t_cmds::get_drag_payload,

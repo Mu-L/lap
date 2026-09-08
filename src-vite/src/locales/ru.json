@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Исходная папка",
+    "source_placeholder": "Выберите исходную папку",
+    "choose_folder": "Выбрать папку…",
+    "destination": "Целевая папка",
+    "folder_layout": "Структура папок",
+    "layout_day": "По дням — YYYY/YYYY-MM-DD",
+    "layout_month": "По месяцам — YYYY/YYYY-MM",
+    "layout_year": "По годам — YYYY",
+    "layout_none": "Одна папка",
+    "import": "Импортировать",
+    "preparing": "Подготовка импорта",
+    "importing": "Импорт файлов",
+    "complete": "Импорт завершён",
+    "cancelled": "Импорт отменён",
+    "failed": "Ошибок: {count}"
+  },
   "welcome": {
     "title": "Добро пожаловать в Lap",
     "description": "Ваша локальная фототека. Быстрая, с поиском и всегда под вашим контролем.",

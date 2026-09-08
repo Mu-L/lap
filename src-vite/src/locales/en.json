@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Source folder",
+    "source_placeholder": "Choose a source folder",
+    "choose_folder": "Choose folder…",
+    "destination": "Destination folder",
+    "folder_layout": "Folder layout",
+    "layout_day": "By day — YYYY/YYYY-MM-DD",
+    "layout_month": "By month — YYYY/YYYY-MM",
+    "layout_year": "By year — YYYY",
+    "layout_none": "One folder",
+    "import": "Import",
+    "preparing": "Preparing import",
+    "importing": "Importing files",
+    "complete": "Import complete",
+    "cancelled": "Import cancelled",
+    "failed": "Failed: {count}"
+  },
   "welcome": {
     "title": "Welcome to Lap",
     "description": "Your local photo library. Fast, searchable, and always under your control.",

@@ -2584,6 +2584,16 @@ impl AFile {
         Ok(file)
     }
 
+    /// Read the capture timestamp used by Lap before a file is imported.
+    /// This keeps date-organized imports consistent with the timestamp shown
+    /// after the same file has been indexed.
+    pub fn capture_timestamp_for_path(file_path: &str, file_type: i64) -> Result<i64, String> {
+        let file = Self::new(0, file_path, file_type)?;
+        file.taken_date
+            .or(file.modified_at)
+            .ok_or_else(|| format!("Could not read a date from: {}", file_path))
+    }
+
     fn extract_gps_data(exif: &Option<exif::Exif>) -> (Option<f64>, Option<f64>, Option<f64>) {
         let Some(exif_data) = exif else {
             return (None, None, None);

@@ -5,11 +5,13 @@
  * date:    2024-08-08
  */
 use crate::t_common;
+use crate::t_apple_sidecar;
 use crate::t_sqlite::{AFile, AFolder, AThumb, Album, FolderScanState, FolderSubfolderState};
 use chrono::{DateTime, Local, TimeZone, Utc};
 use once_cell::sync::Lazy;
 use pinyin::ToPinyin;
 use rstar::{AABB, PointDistance, RTree, RTreeObject};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
@@ -1270,6 +1272,166 @@ pub fn import_file(source_path: &str, dest_folder: &str) -> Option<String> {
             None
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportOrganizeProgress {
+    pub phase: String,
+    pub current_path: Option<String>,
+    pub processed: usize,
+    pub total: usize,
+    pub imported: usize,
+    pub failed: usize,
+    pub cancelled: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportOrganizeResult {
+    pub total: usize,
+    pub imported: usize,
+    pub failed: usize,
+    pub cancelled: bool,
+}
+
+/// Copy supported media from a source folder into a folder in an album and
+/// create the corresponding folder/file records. `layout` is day, month, year,
+/// or none.
+pub fn import_and_organize<F, C>(
+    album_id: i64,
+    source_path: &str,
+    destination_path: &str,
+    layout: &str,
+    mut report_progress: F,
+    is_cancelled: C,
+) -> Result<ImportOrganizeResult, String>
+where
+    F: FnMut(ImportOrganizeProgress),
+    C: Fn() -> bool,
+{
+    let album = Album::get_album_by_id(album_id)?;
+    let source = fs::canonicalize(source_path)
+        .map_err(|e| format!("Cannot access source folder: {}", e))?;
+    if !source.is_dir() {
+        return Err("The import source must be a folder".to_string());
+    }
+    let album_root = fs::canonicalize(&album.path)
+        .map_err(|e| format!("Cannot access album folder: {}", e))?;
+    let destination_folder = fs::canonicalize(destination_path)
+        .map_err(|e| format!("Cannot access destination folder: {}", e))?;
+    if !destination_folder.starts_with(&album_root) {
+        return Err("The destination folder must be inside the album".to_string());
+    }
+    if source == destination_folder
+        || destination_folder.starts_with(&source)
+        || source.starts_with(&destination_folder)
+    {
+        return Err(
+            "The import source and destination folders cannot contain one another".to_string(),
+        );
+    }
+    let destination_components = destination_folder
+        .strip_prefix(&album_root)
+        .map_err(|_| "The destination folder must be inside the album".to_string())?
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+    report_progress(ImportOrganizeProgress {
+        phase: "preparing".to_string(), current_path: None, processed: 0, total: 0,
+        imported: 0, failed: 0, cancelled: false,
+    });
+    let mut files = Vec::new();
+    for entry in WalkDir::new(&source)
+        .into_iter()
+        .filter_entry(is_visible_or_root)
+    {
+        if is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "preparing".to_string(), current_path: None, processed: 0, total: files.len(),
+                imported: 0, failed: 0, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { total: files.len(), imported: 0, failed: 0, cancelled: true });
+        }
+        let Ok(entry) = entry else { continue; };
+        if !entry.file_type().is_file() { continue; }
+        let path = entry.into_path();
+        if let Some(file_type) = get_file_type(&path.to_string_lossy()) {
+            files.push((path, file_type));
+        }
+    }
+    let total = files.len();
+    let mut imported = 0;
+    let mut failed = 0;
+
+    for (processed, (path, file_type)) in files.into_iter().enumerate() {
+        if is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "importing".to_string(), current_path: None, processed, total, imported, failed, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { total, imported, failed, cancelled: true });
+        }
+
+        let path_string = path.to_string_lossy().to_string();
+        let result = (|| -> Result<String, String> {
+            let timestamp = AFile::capture_timestamp_for_path(&path_string, file_type)?;
+            let date = Local.timestamp_opt(timestamp, 0).single()
+                .ok_or_else(|| format!("Invalid capture date: {}", path_string))?;
+            let relative_folder = match layout {
+                "day" => date.format("%Y/%Y-%m-%d").to_string(),
+                "month" => date.format("%Y/%Y-%m").to_string(),
+                "year" => date.format("%Y").to_string(),
+                "none" => String::new(),
+                _ => return Err("Invalid import folder layout".to_string()),
+            };
+            let target_folder = destination_folder.join(&relative_folder);
+            fs::create_dir_all(&target_folder).map_err(|e| format!("Cannot create destination folder: {}", e))?;
+            let mut folder = AFolder::add_to_db(album_id, &album_root.to_string_lossy())?;
+            for component in destination_components.iter().map(String::as_str)
+                .chain(relative_folder.split('/').filter(|component| !component.is_empty()))
+            {
+                let parent = Path::new(&folder.path).join(component);
+                folder = AFolder::add_to_db(album_id, &parent.to_string_lossy())?;
+            }
+            let destination = import_file(&path_string, &target_folder.to_string_lossy())
+                .ok_or_else(|| format!("Failed to copy file: {}", path_string))?;
+            let copied_sidecars = match t_apple_sidecar::copy_apple_aae_sidecars_for_import(
+                &path_string,
+                &destination,
+            ) {
+                Ok(sidecars) => sidecars,
+                Err(error) => {
+                    let _ = fs::remove_file(&destination);
+                    return Err(error);
+                }
+            };
+            let folder_id = folder.id.ok_or_else(|| "Imported folder is missing its database id".to_string())?;
+            if let Err(error) = AFile::add_to_db(folder_id, &destination, file_type, chrono::Utc::now().timestamp_millis()) {
+                let _ = fs::remove_file(&destination);
+                for sidecar in copied_sidecars {
+                    let _ = fs::remove_file(sidecar);
+                }
+                return Err(error);
+            }
+            Ok(destination)
+        })();
+        let current_path = match result {
+            Ok(destination) => {
+                imported += 1;
+                destination
+            }
+            Err(_) => {
+                failed += 1;
+                path_string.clone()
+            }
+        };
+        report_progress(ImportOrganizeProgress {
+            phase: "importing".to_string(), current_path: Some(current_path), processed: processed + 1, total, imported, failed, cancelled: false,
+        });
+    }
+
+    Ok(ImportOrganizeResult { total, imported, failed, cancelled: false })
 }
 
 /// Map an image MIME type to the canonical file extension.

@@ -239,6 +239,13 @@
       @cancel="showAlbumEdit = false"
     />
 
+    <ImportOrganizeDialog
+      v-if="importAlbum"
+      :album="importAlbum"
+      @complete="handleImportComplete"
+      @cancel="importAlbum = null"
+    />
+
     <!-- Remove album dialog -->
     <MessageBox
       v-if="showRemoveAlbumMsgbox"
@@ -273,18 +280,20 @@ import {
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { getAllAlbums, getAlbumVisibleCounts, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
-         getAlbum, checkAlbumAccessibility, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
+         getAlbum, checkAlbumAccessibility, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished, recountAlbum } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
 
 import AlbumFolder from '@/components/AlbumFolder.vue';
 import AlbumEdit from '@/components/AlbumEdit.vue';
+import ImportOrganizeDialog from '@/components/ImportOrganizeDialog.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
 
 import {
   IconAdd,
+  IconDownload,
   IconMore,
   IconInformation,
   IconRemove,
@@ -358,6 +367,7 @@ const albumListRootRef = ref<HTMLElement | null>(null);
 // message boxes
 const showAlbumEdit = ref(false);           // show edit album
 const showRemoveAlbumMsgbox = ref(false);   // show remove album
+const importAlbum = ref<Album | null>(null);
 
 const albums = ref<Album[]>([]);
 const albumCovers = ref<Record<number, string>>({});
@@ -652,6 +662,16 @@ const openAlbumEdit = async (albumId: number) => {
   showAlbumEdit.value = true;
 };
 
+const handleImportComplete = async () => {
+  if (!importAlbum.value) return;
+  const album = getAlbumById(Number(importAlbum.value.id));
+  const updated = await recountAlbum(Number(importAlbum.value.id));
+  if (album && updated) Object.assign(album, updated);
+  if (album?.is_expanded) await expandAlbum(album, true);
+  await refreshAlbumVisibleCounts();
+  await tauriEmit('import-files-added', { albumId: Number(importAlbum.value.id) });
+};
+
 // Get menu items for a specific album (function for lazy evaluation)
 const getMoreMenuItems = async (album: any) => {
   const isAccessible = await refreshAlbumAccess(album);
@@ -664,6 +684,12 @@ const getMoreMenuItems = async (album: any) => {
     {
       label: "-",   // separator
       action: () => {}
+    },
+    {
+      label: `${localeMsg.value.import_organize.import}…`,
+      icon: IconDownload,
+      disabled: !isAccessible,
+      action: () => { importAlbum.value = album; }
     },
     {
       label: isAlbumQueued(album.id)

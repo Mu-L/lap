@@ -34,6 +34,25 @@ use tauri::{AppHandle, Emitter, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
+pub struct ImportCancellation(pub Arc<Mutex<ImportState>>);
+
+pub struct ImportState {
+    cancelled: bool,
+    running: bool,
+}
+
+impl Default for ImportState {
+    fn default() -> Self {
+        Self { cancelled: false, running: false }
+    }
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportOrganizeFinished {
+    result: Option<crate::t_utils::ImportOrganizeResult>,
+    error: Option<String>,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1648,6 +1667,52 @@ pub fn import_file(
     let now = chrono::Utc::now().timestamp_millis();
     let (file, _) = AFile::add_to_db(folder_id, &new_path, file_type, now)?;
     Ok(Some(file))
+}
+
+/// Import media from a folder and organize it below the album root by date.
+#[tauri::command]
+pub fn import_and_organize(
+    app_handle: AppHandle,
+    state: State<ImportCancellation>,
+    album_id: i64,
+    source_path: String,
+    destination_path: String,
+    layout: String,
+) -> Result<(), String> {
+    {
+        let mut import = state.0.lock().map_err(|_| "Import cancellation state is unavailable")?;
+        if import.running {
+            return Err("An import is already in progress".to_string());
+        }
+        import.cancelled = false;
+        import.running = true;
+    }
+    let cancellation = state.0.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = t_utils::import_and_organize(
+            album_id,
+            &source_path,
+            &destination_path,
+            &layout,
+            |progress| { let _ = app_handle.emit("import-organize-progress", progress); },
+            || cancellation.lock().map(|import| import.cancelled).unwrap_or(true),
+        );
+        if let Ok(mut import) = cancellation.lock() {
+            import.running = false;
+        }
+        let payload = match result {
+            Ok(result) => ImportOrganizeFinished { result: Some(result), error: None },
+            Err(error) => ImportOrganizeFinished { result: None, error: Some(error) },
+        };
+        let _ = app_handle.emit("import-organize-finished", payload);
+    });
+    Ok(())
+}
+
+#[tauri::command]
+pub fn cancel_import_and_organize(state: State<ImportCancellation>) -> Result<(), String> {
+    state.0.lock().map_err(|_| "Import cancellation state is unavailable")?.cancelled = true;
+    Ok(())
 }
 
 /// import an image from a URL into a folder preserving the original file name when possible

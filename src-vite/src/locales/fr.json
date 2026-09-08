@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Dossier source",
+    "source_placeholder": "Choisir un dossier source",
+    "choose_folder": "Choisir un dossier…",
+    "destination": "Dossier de destination",
+    "folder_layout": "Organisation des dossiers",
+    "layout_day": "Par jour — YYYY/YYYY-MM-DD",
+    "layout_month": "Par mois — YYYY/YYYY-MM",
+    "layout_year": "Par année — YYYY",
+    "layout_none": "Un dossier",
+    "import": "Importer",
+    "preparing": "Préparation de l’importation",
+    "importing": "Importation des fichiers",
+    "complete": "Importation terminée",
+    "cancelled": "Importation annulée",
+    "failed": "Échecs : {count}"
+  },
   "welcome": {
     "title": "Bienvenue sur Lap",
     "description": "Votre photothèque locale. Rapide, consultable et toujours sous votre contrôle.",

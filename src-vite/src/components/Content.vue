@@ -3371,6 +3371,7 @@ let unlistenImageViewer: () => void;
 let unlistenImageEditor: (() => void) | null = null;
 let unlistenFaceIndexProgress: (() => void) | null = null;
 let unlistenLibraryTotalRefreshed: (() => void) | null = null;
+let unlistenImportFilesAdded: (() => void) | null = null;
 let unlistenPasteClipboard: (() => void) | null = null;
 
 let resizeObserver: ResizeObserver | null = null;
@@ -3448,7 +3449,30 @@ onBeforeUnmount(() => {
   if (unlistenImageViewer) unlistenImageViewer();
   if (unlistenImageEditor) unlistenImageEditor();
   if (unlistenLibraryTotalRefreshed) unlistenLibraryTotalRefreshed();
+  if (unlistenImportFilesAdded) unlistenImportFilesAdded();
 });
+
+async function refreshImportedAlbumContent(albumId: number) {
+  if (
+    config.main.sidebarIndex !== SIDEBAR.ALBUM
+    || Number(libConfig.album.id || 0) !== albumId
+  ) return;
+
+  const requestId = ++currentContentRequestId;
+  if (libConfig.album.selected) {
+    await getFileList({ searchAllSubfolders: libConfig.album.folderPath }, requestId);
+    return;
+  }
+
+  const folderPath = libConfig.album.folderPath || '';
+  if (!folderPath) return;
+  await getFileList(
+    config.settings.showSubfolderFiles
+      ? { searchAllSubfolders: folderPath }
+      : { searchFolder: folderPath },
+    requestId,
+  );
+}
 
 // New event handlers for GridView
 function handleItemClicked(
@@ -5055,6 +5079,9 @@ onMounted( async() => {
       hasRestoredInitialSelection = false;
       updateContent(true);
     }
+  });
+  unlistenImportFilesAdded = await listen('import-files-added', (event: any) => {
+    void refreshImportedAlbumContent(Number(event.payload?.albumId || 0));
   });
   unlistenPasteClipboard = await listen('paste-clipboard-to-folder', (event: any) => {
     const albumId = Number(event.payload?.albumId || 0);

@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Carpeta de origen",
+    "source_placeholder": "Elige una carpeta de origen",
+    "choose_folder": "Elegir carpeta…",
+    "destination": "Carpeta de destino",
+    "folder_layout": "Estructura de carpetas",
+    "layout_day": "Por día — YYYY/YYYY-MM-DD",
+    "layout_month": "Por mes — YYYY/YYYY-MM",
+    "layout_year": "Por año — YYYY",
+    "layout_none": "Una carpeta",
+    "import": "Importar",
+    "preparing": "Preparando la importación",
+    "importing": "Importando archivos",
+    "complete": "Importación completada",
+    "cancelled": "Importación cancelada",
+    "failed": "Fallidos: {count}"
+  },
   "welcome": {
     "title": "Bienvenido a Lap",
     "description": "Tu biblioteca de fotos local. Rápida, buscable y siempre bajo tu control.",
