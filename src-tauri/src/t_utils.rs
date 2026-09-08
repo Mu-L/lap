@@ -1962,6 +1962,7 @@ fn sync_dirty_folders_by_mtime(
 
 struct ChildFolderScan {
     folders: Vec<AFolder>,
+    child_paths: Vec<String>,
     has_subfolders: bool,
     deleted_folder_count: u32,
     folder_path_migrations: Vec<FolderPathMigration>,
@@ -2018,8 +2019,7 @@ fn scan_new_child_folders(
 
     // The background mtime sync visits every known folder but preserves
     // missing paths. Avoid loading every album path once per dirty folder;
-    // reconciliation is needed only for an explicit foreground refresh of
-    // the selected folder.
+    // reconciliation is needed only for an explicit subfolder refresh.
     let deleted_folder_count = if reconcile_removed_children {
         AFolder::delete_unseen_direct_children(album_id, folder_path, &seen_paths)? as u32
     } else {
@@ -2028,6 +2028,7 @@ fn scan_new_child_folders(
 
     Ok(ChildFolderScan {
         folders: new_folders,
+        child_paths: seen_paths.into_iter().collect(),
         has_subfolders,
         deleted_folder_count,
         folder_path_migrations,
@@ -2353,7 +2354,7 @@ fn reconcile_raw_jpeg_pairs_after_album_index(
     Ok(())
 }
 
-/// Sync a single folder if its directory mtime has changed or reconciliation is requested.
+/// Sync a single folder when its directory mtime has changed.
 /// Returns counts and schedules thumbnail/embedding generation.
 pub fn sync_single_folder(
     app_handle: &tauri::AppHandle,
@@ -2361,7 +2362,6 @@ pub fn sync_single_folder(
     folder_id: i64,
     folder_path: &str,
     group_raw_jpeg_pairs: bool,
-    reconcile_missing: bool,
 ) -> Result<FolderMtimeSyncResult, String> {
     // A complete album scan owns folder and file reconciliation for this
     // album. Skip foreground refreshes until it finishes to avoid concurrent
@@ -2421,10 +2421,9 @@ pub fn sync_single_folder(
         ));
     }
 
-    // Reconcile direct children even when the mtime is unchanged. A manual
-    // refresh must remove a deleted child from the database, and some
-    // filesystems expose directory mtimes at a coarser resolution.
-    let child_scan = scan_new_child_folders(album_id, folder_path, reconcile_missing)?;
+    // Always reconcile direct child additions before deciding whether file
+    // metadata needs an mtime-driven update.
+    let child_scan = scan_new_child_folders(album_id, folder_path, false)?;
     let new_folder_count = child_scan.folders.len() as u32;
 
     let needs_live_photo_reindex = FolderScanState::needs_version(
@@ -2432,7 +2431,7 @@ pub fn sync_single_folder(
         FolderScanState::LIVE_PHOTO_PAIRING,
         FolderScanState::LIVE_PHOTO_PAIRING_VERSION,
     )?;
-    if info.modified == folder.modified_at && !needs_live_photo_reindex && !reconcile_missing {
+    if info.modified == folder.modified_at && !needs_live_photo_reindex {
         // An unchanged mtime-driven sync still reconciles the existing pair state.
         // This is intentionally the only incremental path that receives the
         // setting; changing Settings alone does not mutate the database.
@@ -2499,6 +2498,49 @@ pub fn sync_single_folder(
         deleted_folder_count: child_scan.deleted_folder_count,
         folder_path_migrations: child_scan.folder_path_migrations,
     })
+}
+
+/// Recursively reconcile the folder hierarchy below `folder_path` without
+/// enumerating or updating any file records.
+pub fn refresh_album_subfolders(
+    album_id: i64,
+    folder_path: &str,
+) -> Result<Vec<FolderPathMigration>, String> {
+    if album_scan_active(album_id) {
+        return Err("Album scan is already in progress.".to_string());
+    }
+    if album_removal_pending(album_id) {
+        return Err("Album is being removed.".to_string());
+    }
+
+    let album_sync_lock = album_sync_lock(album_id);
+    let _album_sync_guard = album_sync_lock
+        .lock()
+        .map_err(|_| format!("Album sync lock poisoned: {album_id}"))?;
+    if album_scan_active(album_id) || album_removal_pending(album_id) {
+        return Err("Album is unavailable for subfolder refresh.".to_string());
+    }
+
+    let folder = AFolder::fetch(folder_path)?
+        .ok_or_else(|| format!("Folder not found: {folder_path}"))?;
+    if folder.album_id != album_id {
+        return Err(format!("Folder does not belong to album: {folder_path}"));
+    }
+    if !directory_accessible(folder_path) {
+        return Err(format!("Folder is not accessible: {folder_path}"));
+    }
+
+    let mut pending = vec![folder_path.to_string()];
+    let mut migrations = Vec::new();
+    let mut subfolder_flags = Vec::new();
+    while let Some(path) = pending.pop() {
+        let scan = scan_new_child_folders(album_id, &path, true)?;
+        migrations.extend(scan.folder_path_migrations);
+        subfolder_flags.push((path, scan.has_subfolders));
+        pending.extend(scan.child_paths);
+    }
+    FolderSubfolderState::update_subfolder_flags(album_id, &subfolder_flags)?;
+    Ok(migrations)
 }
 
 fn should_process_synced_file(file: &AFile, file_type: i64) -> bool {

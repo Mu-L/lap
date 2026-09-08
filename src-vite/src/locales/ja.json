@@ -558,6 +558,10 @@
       "success": "デスクトップの壁紙を更新しました",
       "failed": "デスクトップの壁紙を設定できませんでした"
     },
+    "refresh_subfolders": {
+      "success": "サブフォルダーを更新しました",
+      "failed": "サブフォルダーを更新できませんでした"
+    },
     "copy_image": {
       "success": "{count} 件のファイルをクリップボードにコピーしました",
       "limit": "一度にコピーできるファイルは最大 {count} 件です。",
@@ -614,7 +618,7 @@
       "exclude_from_search": "検索から除外",
       "remove": "削除",
       "delete_folder": "フォルダーを削除",
-      "refresh": "フォルダーを更新"
+      "refresh_subfolders": "サブフォルダーを更新"
     },
     "file": {
       "new_folder": "新しいフォルダー",

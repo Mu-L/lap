@@ -558,6 +558,10 @@
       "success": "Desktop wallpaper updated",
       "failed": "Failed to set desktop wallpaper"
     },
+    "refresh_subfolders": {
+      "success": "Subfolders refreshed",
+      "failed": "Failed to refresh subfolders"
+    },
     "copy_image": {
       "success": "{count} file(s) copied to clipboard",
       "limit": "You can copy up to {count} files at a time.",
@@ -614,7 +618,7 @@
       "exclude_from_search": "Exclude from search",
       "remove": "Remove",
       "delete_folder": "Delete folder",
-      "refresh": "Refresh folder"
+      "refresh_subfolders": "Refresh subfolders"
     },
     "file": {
       "new_folder": "New folder",

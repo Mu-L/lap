@@ -155,7 +155,7 @@ import { isMac, shortenFilename, isValidFileName, getFolderPath, getFullPath, no
 import {
   createFolder, renameFolder, fetchFolder, getAllAlbums, moveFolder, moveFolderOutsideLibrary,
   copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum, selectFolder as selectFolderInDb,
-  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes, refreshFolderThumbnails,
+  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, refreshAlbumSubfolders,
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
@@ -404,21 +404,10 @@ const getMenuItemsForFolder = async (folder: any) => {
       action: null
     },
     {
-      label: localeMsg.value.menu.album.refresh,
+      label: localeMsg.value.menu.album.refresh_subfolders,
       icon: IconRefresh,
-      action: async () => {
-        // The context-menu target may differ from the folder currently shown
-        // in Content. Select and sync this exact folder before reloading its
-        // tree, so the filesystem and database cannot drift apart.
-        await selection.selectFolder(props.albumId, folder);
-        const folderId = Number(selection.folderId.value || 0);
-        if (folderId > 0) {
-          await refreshFolderThumbnails(props.albumId, folder.path);
-          await syncAlbumFolderMtimes(props.albumId, folderId, folder.path, true);
-        }
-        await expandFolder(folder, true);
-        await tauriEmit('refresh-content');
-      }
+      disabled: refreshingSubfolderPaths.value.has(folder.path),
+      action: () => { void refreshSubfolders(folder); }
     },
     {
       label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
@@ -467,6 +456,31 @@ const toggleFolderFavorite = async (folder: Folder) => {
   if (result !== null) {
     folder.is_favorite = nextValue;
     emit('folderFavoriteChanged');
+  }
+};
+
+const refreshingSubfolderPaths = ref(new Set<string>());
+
+const refreshSubfolders = async (folder: Folder) => {
+  const paths = new Set(refreshingSubfolderPaths.value);
+  paths.add(folder.path);
+  refreshingSubfolderPaths.value = paths;
+  try {
+    await refreshAlbumSubfolders(props.albumId, folder.path);
+    const refreshed = await fetchFolder(folder.path, true, config.settings.folderSort);
+    if (refreshed) {
+      folder.has_subfolders = refreshed.has_subfolders;
+      folder.children = refreshed.children;
+      folder.is_expanded = true;
+    }
+    toast.success(localeMsg.value.tooltip.refresh_subfolders.success);
+  } catch (error) {
+    console.error('Failed to refresh subfolders:', error);
+    toast.error(localeMsg.value.tooltip.refresh_subfolders.failed);
+  } finally {
+    const nextPaths = new Set(refreshingSubfolderPaths.value);
+    nextPaths.delete(folder.path);
+    refreshingSubfolderPaths.value = nextPaths;
   }
 };
 

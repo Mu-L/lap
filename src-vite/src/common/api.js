@@ -1033,14 +1033,13 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
 };
 
 // sync a single folder's mtime and DB records with the filesystem
-export async function syncAlbumFolderMtimes(albumId, folderId, folderPath, reconcileMissing = false) {
+export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
   try {
     const result = await invoke('sync_album_folder_mtimes', {
       albumId,
       folderId,
       folderPath,
       groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
-      reconcileMissing,
     });
     if (result) {
       return {
@@ -1053,6 +1052,10 @@ export async function syncAlbumFolderMtimes(albumId, folderId, folderPath, recon
   }
   return null;
 };
+
+export async function refreshAlbumSubfolders(albumId, folderPath) {
+  return await invoke('refresh_album_subfolders', { albumId, folderPath });
+}
 
 // get the thumbnail count of the folder
 export async function getFolderThumbCount(folderId) {
@@ -1222,14 +1225,6 @@ export async function cleanUnusedThumbnailCache() {
   }
 }
 
-export async function refreshFolderThumbnails(albumId, folderPath) {
-  try {
-    return await invoke('refresh_folder_thumbnails', { albumId, folderPath });
-  } catch (error) {
-    console.error('Failed to refresh folder thumbnails:', error);
-    throw error;
-  }
-}
 
 export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = false) {
   try {

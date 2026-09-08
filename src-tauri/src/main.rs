@@ -318,6 +318,7 @@ async fn main() {
             t_cmds::get_files_by_ids,
             t_cmds::get_folder_files,
             t_cmds::sync_album_folder_mtimes,
+            t_cmds::refresh_album_subfolders,
             t_cmds::is_directory_accessible,
             t_cmds::get_folder_thumb_count,
             // file operations
@@ -342,7 +343,6 @@ async fn main() {
             // file metadata
             t_cmds::edit_file_comment,
             t_cmds::clean_unused_thumbnail_cache,
-            t_cmds::refresh_folder_thumbnails,
             t_cmds::get_file_thumb,
             t_cmds::get_file_thumb_by_id,
             t_cmds::get_file_thumbs,

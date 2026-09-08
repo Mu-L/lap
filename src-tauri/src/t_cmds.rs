@@ -1273,7 +1273,6 @@ pub async fn sync_album_folder_mtimes(
     folder_id: i64,
     folder_path: String,
     group_raw_jpeg_pairs: bool,
-    reconcile_missing: bool,
 ) -> Result<crate::t_utils::FolderMtimeSyncResult, String> {
     let sync_app_handle = app_handle.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -1283,7 +1282,6 @@ pub async fn sync_album_folder_mtimes(
             folder_id,
             &folder_path,
             group_raw_jpeg_pairs,
-            reconcile_missing,
         )
     })
     .await
@@ -1295,6 +1293,24 @@ pub async fn sync_album_folder_mtimes(
         );
     }
     Ok(result)
+}
+
+/// Refresh the subfolder tree below a folder without scanning its files.
+#[tauri::command]
+pub async fn refresh_album_subfolders(
+    app_handle: tauri::AppHandle,
+    album_id: i64,
+    folder_path: String,
+) -> Result<(), String> {
+    let migrations = tauri::async_runtime::spawn_blocking(move || {
+        t_utils::refresh_album_subfolders(album_id, &folder_path)
+    })
+    .await
+    .map_err(|error| format!("Subfolder refresh task failed: {error}"))??;
+    if !migrations.is_empty() {
+        let _ = app_handle.emit("album-folder-paths-migrated", &migrations);
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -2220,13 +2236,6 @@ pub fn edit_file_comment(file_id: i64, comment: &str) -> Result<usize, String> {
 #[tauri::command]
 pub fn clean_unused_thumbnail_cache() -> Result<t_sqlite::ThumbnailCacheCleanupResult, String> {
     AThumb::clean_unused_cache()
-}
-
-/// Clear thumbnails for a manually refreshed folder so they are rebuilt at the
-/// current thumbnail quality when the folder is rendered again.
-#[tauri::command]
-pub fn refresh_folder_thumbnails(album_id: i64, folder_path: &str) -> Result<usize, String> {
-    AThumb::delete_for_folder(album_id, folder_path)
 }
 
 /// get a file's thumb image, if not exist, create a new one

@@ -3095,7 +3095,9 @@ watch(() => props.libraryEmpty, () => {
 }, { immediate: true });
 
 watch(contentReady, (ready) => {
-  if (!ready || !contentCountIsAuthoritative.value || tempViewMode.value !== 'none') return;
+  if (!ready) return;
+  contentQueryRefreshPending = false;
+  if (!contentCountIsAuthoritative.value || tempViewMode.value !== 'none') return;
   commitRequestedSidebarCount(totalFileCount.value);
 });
 
@@ -3141,9 +3143,8 @@ function matchesRequestedSidebarCount(request: any) {
   }
 }
 
-function commitRequestedSidebarCount(count: number) {
-  const request = uiStore.countUpdateRequest;
-  if (!request) return;
+function commitRequestedSidebarCount(count: number, request = uiStore.countUpdateRequest) {
+  if (!request || uiStore.countUpdateRequest !== request) return;
   if (!matchesRequestedSidebarCount(request)) {
     uiStore.clearCountUpdateRequest();
     return;
@@ -3374,6 +3375,8 @@ let unlistenPasteClipboard: (() => void) | null = null;
 
 let resizeObserver: ResizeObserver | null = null;
 let contentUpdateTimer: ReturnType<typeof setTimeout> | null = null;
+let contentQueryRefreshPending = false;
+let sidebarCountRequestId = 0;
 
 function scheduleContentRefresh(task: () => void) {
   if (contentUpdateTimer) {
@@ -5628,14 +5631,14 @@ watch(
   () => [
     config.main.sidebarIndex,      // toolbar index
     libConfig.activePane,          // main content or collection tray
-    libConfig.collection.selectedId, libConfig.collection.activateTick, // collection
-    (libConfig.library as any).item, (libConfig.library as any).activateTick, // library
+    libConfig.collection.selectedId, // collection
+    (libConfig.library as any).item, // library
     libConfig.library.smartId,
-    libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, libConfig.album.activateTick, // album
+    libConfig.album.id, libConfig.album.folderId, libConfig.album.folderPath, libConfig.album.selected, // album
     libConfig.smartAlbum.type, libConfig.smartAlbum.id,
     // Count and cover updates are query outputs, not refresh triggers.
     JSON.stringify((libConfig.smartAlbums || []).map(({ count, coverFileId, ...rest }: any) => rest)), // smart album
-    libConfig.search.searchText, uiStore.countUpdateTick,
+    libConfig.search.searchText,
     libConfig.rating.item, // rating
     libConfig.culling.item, // culling
     config.search.fileType, config.search.sortType, config.search.sortOrder, // search and sort 
@@ -5643,7 +5646,7 @@ watch(
     config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting and filtering
     libConfig.person.id,                                                              // person
     config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date, // calendar
-    libConfig.tag.id, libConfig.tag.activateTick, // tag
+    libConfig.tag.id, // tag
     libConfig.location.admin1, libConfig.location.name,                               // location
     libConfig.camera.make, libConfig.camera.model,                                    // camera 
     config.camera.isCamera, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel, // lens
@@ -5651,13 +5654,17 @@ watch(
   (values, previousValues) => {
     // Replacing smartAlbums creates a new outer array even if these values match.
     if (previousValues && values.every((value, index) => value === previousValues[index])) return;
+    contentQueryRefreshPending = true;
     // Clear active adjustments when the file list changes to avoid unnecessary confirmation dialogs
     uiStore.clearActiveAdjustments();
 
     // Entering the temporary person result updates person.id so face overlays
     // can identify the matched person. Ignore only that internal sync; later
     // query-context changes exit this temporary view like similar-image search.
-    if (tempViewMode.value === 'person' && suppressPersonContextRefresh) return;
+    if (tempViewMode.value === 'person' && suppressPersonContextRefresh) {
+      contentQueryRefreshPending = false;
+      return;
+    }
 
     // A changed query context invalidates other temporary result lists. Return
     // to the normal view instead of refreshing or retaining the temporary list.
@@ -5668,12 +5675,45 @@ watch(
     
     scheduleContentRefresh(() => {
       // Double check in case tempViewMode changed during setTimeout
-      if (tempViewMode.value !== 'none') return;
+      if (tempViewMode.value !== 'none') {
+        contentQueryRefreshPending = false;
+        return;
+      }
 
       refreshContentFromSelectionChange();
     });
   }, 
   { immediate: true }
+);
+
+watch(
+  () => uiStore.countUpdateTick,
+  async () => {
+    const request = uiStore.countUpdateRequest;
+    if (
+      !request
+      || contentQueryRefreshPending
+      || !contentReady.value
+      || !contentCountIsAuthoritative.value
+      || tempViewMode.value !== 'none'
+    ) return;
+
+    const requestId = ++sidebarCountRequestId;
+    try {
+      const result = await getCurrentQueryCountAndSum();
+      if (requestId !== sidebarCountRequestId || uiStore.countUpdateRequest !== request) return;
+      if (result) {
+        commitRequestedSidebarCount(Number(result[0] || 0), request);
+      } else {
+        uiStore.clearCountUpdateRequest();
+      }
+    } catch (error) {
+      console.error('Failed to refresh sidebar count:', error);
+      if (requestId === sidebarCountRequestId && uiStore.countUpdateRequest === request) {
+        uiStore.clearCountUpdateRequest();
+      }
+    }
+  },
 );
 
 watch(

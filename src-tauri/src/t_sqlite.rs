@@ -652,6 +652,35 @@ impl FolderSubfolderState {
         tx.commit().map_err(|e| e.to_string())?;
         Ok(())
     }
+
+    /// Update only the cached tree shape after a folder-only refresh.  The
+    /// directory mtime must remain untouched so a later file sync can still
+    /// detect external file changes.
+    pub fn update_subfolder_flags(
+        album_id: i64,
+        states: &[(String, bool)],
+    ) -> Result<(), String> {
+        if states.is_empty() {
+            return Ok(());
+        }
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        {
+            let mut stmt = tx
+                .prepare(
+                    "UPDATE afolders
+                    SET has_subfolders = ?1
+                    WHERE album_id = ?2 AND path = ?3",
+                )
+                .map_err(|e| e.to_string())?;
+            for (path, has_subfolders) in states {
+                stmt.execute(params![i64::from(*has_subfolders), album_id, path])
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(())
+    }
 }
 
 impl AFolder {
@@ -7534,33 +7563,6 @@ impl AThumb {
             .execute("DELETE FROM athumbs WHERE file_id = ?1", params![file_id])
             .map_err(|e| e.to_string())?;
         Ok(result)
-    }
-
-    /// Remove thumbnails for a folder and its descendants. The next explicit
-    /// folder refresh renders the visible files at the current quality.
-    pub fn delete_for_folder(album_id: i64, folder_path: &str) -> Result<usize, String> {
-        let file_ids = {
-            let conn = open_conn()?;
-            let mut stmt = conn
-                .prepare(
-                    "SELECT a.id
-                    FROM afiles a
-                    JOIN afolders f ON f.id = a.folder_id
-                    WHERE f.album_id = ?1 AND (f.path = ?2 OR f.path LIKE ?3 ESCAPE '\\')",
-                )
-                .map_err(|e| e.to_string())?;
-            let rows = stmt
-                .query_map(params![album_id, folder_path, subtree_like_pattern(folder_path)], |row| row.get(0))
-                .map_err(|e| e.to_string())?;
-            rows.map(|row| row.map_err(|e| e.to_string()))
-                .collect::<Result<Vec<i64>, String>>()?
-        };
-
-        let mut removed = 0;
-        for file_id in file_ids {
-            removed += Self::delete(file_id)?;
-        }
-        Ok(removed)
     }
 
     /// get the thumbnail count of the folder
