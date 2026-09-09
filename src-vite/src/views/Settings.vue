@@ -1179,6 +1179,8 @@ const shortcutDisplaySections: Array<{ key: string; items: ShortcutDisplayItem[]
       { actionId: 'view.next', labelKey: 'next_image' },
       { actionId: 'view.first', labelKey: 'first_image' },
       { actionId: 'view.last', labelKey: 'last_image' },
+      { actionId: 'view.pageUp', labelKey: 'page_up' },
+      { actionId: 'view.pageDown', labelKey: 'page_down' },
       { actionId: 'view.quickPreview', labelKey: 'quick_preview' },
       { actionId: 'view.close', labelKey: 'close_viewer' },
       { actionId: 'file.openNewWindow', labelKey: 'open_new_window' },
@@ -1318,6 +1320,11 @@ function splitMacShortcutLabel(label: string): string[] {
   while (remaining.length > 0 && modifierKeys.has(remaining[0])) {
     keys.push(remaining[0]);
     remaining = remaining.slice(1);
+  }
+
+  if (remaining.startsWith('Fn')) {
+    keys.push('Fn');
+    remaining = remaining.slice(2);
   }
 
   if (remaining.length > 0) {

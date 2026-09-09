@@ -793,12 +793,18 @@ function centerItem(index: number) {
   if (index >= 0) scrollToItem(index, true);
 }
 
-function getNextItemIndex(currentIndex: number, direction: 'up' | 'down'): number {
+function getNextItemIndex(currentIndex: number, direction: 'up' | 'down', page = false): number {
+  const pageHeight = Math.max(1, (scroller.value?.$el.clientHeight ?? 0)
+    - 48 * Number(config.settings.scale || 1) - (config.settings.showStatusBar ? 32 : 4));
   const style = config.settings.grid.style;
   const supportsGeometryNavigation = hasGroupRows.value
     || style === 2
     || (!config.settings.grid.showFilmStrip && isGeometryGridStyle(style));
   if (!supportsGeometryNavigation || layoutGeometry.value.length === 0) {
+    if (page && !hasGroupRows.value) {
+      const step = Math.max(1, Math.floor(pageHeight / itemHeight.value)) * columnCount.value;
+      return Math.max(0, Math.min(props.fileList.length - 1, currentIndex + (direction === 'down' ? step : -step)));
+    }
     return -1;
   }
 
@@ -833,11 +839,12 @@ function getNextItemIndex(currentIndex: number, direction: 'up' | 'down'): numbe
 
   if (candidates.length === 0) return currentIndex;
 
-  // Find the closest row (smallest diffY)
-  const minDiffY = Math.min(...candidates.map(c => c.diffY));
+  // Arrow keys move one row; page keys target one viewport away.
+  const targetDistance = page ? pageHeight : 0;
+  const minDiffY = Math.min(...candidates.map(c => Math.abs(c.diffY - targetDistance)));
   
   // Filter candidates to only those in the closest row
-  const rowCandidates = candidates.filter(c => Math.abs(c.diffY - minDiffY) < 5); // 5px tolerance
+  const rowCandidates = candidates.filter(c => Math.abs(Math.abs(c.diffY - targetDistance) - minDiffY) < 5); // 5px tolerance
 
   // Find item with closest centerX
   let closestIndex = -1;

@@ -1394,6 +1394,8 @@
         "next_image": "次へ",
         "first_image": "最初",
         "last_image": "最後",
+        "page_up": "前のページ",
+        "page_down": "次のページ",
         "quick_preview": "クイックプレビューを開く",
         "close_viewer": "ビューアを閉じる",
         "search_similar": "関連写真を検索",

@@ -1394,6 +1394,8 @@
         "next_image": "다음",
         "first_image": "처음",
         "last_image": "마지막",
+        "page_up": "이전 페이지",
+        "page_down": "다음 페이지",
         "quick_preview": "빠른 미리보기 열기",
         "close_viewer": "뷰어 닫기",
         "search_similar": "관련 사진 찾기",

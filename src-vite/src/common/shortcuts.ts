@@ -53,6 +53,8 @@ export type ShortcutActionId =
   | 'view.previous'
   | 'view.first'
   | 'view.last'
+  | 'view.pageUp'
+  | 'view.pageDown'
   | 'view.zoomIn'
   | 'view.zoomOut'
   | 'view.zoomInDirectional'
@@ -373,6 +375,16 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
       { key: 'ArrowDown', modifiers: ['meta'], platforms: ['mac'], label: { mac: '⌘↓' } },
       { key: 'End', platforms: ['windows', 'linux'], label: { windows: 'End', linux: 'End' } },
     ],
+  },
+  {
+    id: 'view.pageUp',
+    contexts: ['content'],
+    defaultBindings: [{ key: 'PageUp', label: { mac: 'Fn↑', windows: 'PgUp', linux: 'PgUp' } }],
+  },
+  {
+    id: 'view.pageDown',
+    contexts: ['content'],
+    defaultBindings: [{ key: 'PageDown', label: { mac: 'Fn↓', windows: 'PgDn', linux: 'PgDn' } }],
   },
   {
     id: 'view.zoomIn',

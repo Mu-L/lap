@@ -4409,6 +4409,11 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
+  if (matchesShortcut('view.pageUp', event, shortcutPlatform) || matchesShortcut('view.pageDown', event, shortcutPlatform)) {
+    if (getActivePreviewMode() === 'none') event.preventDefault();
+    return; // Navigation is dispatched once through global-keydown below.
+  }
+
   const handledKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Enter', 'Space', ' '];
 
   if (!isMac) {
@@ -4521,6 +4526,16 @@ const handleKeyDown = (e: any) => {
 
   const event = e.payload;
   const { key } = event;
+
+  if (matchesShortcut('view.pageUp', event, shortcutPlatform) || matchesShortcut('view.pageDown', event, shortcutPlatform)) {
+    if (getActivePreviewMode() !== 'none' || isSlideShow.value || selectedItemIndex.value < 0) return;
+    checkUnsavedChanges(() => {
+      const direction = matchesShortcut('view.pageUp', event, shortcutPlatform) ? 'up' : 'down';
+      const nextIndex = gridViewRef.value?.getNextItemIndex(selectedItemIndex.value, direction, true);
+      if (nextIndex !== undefined && nextIndex >= 0) selectedItemIndex.value = nextIndex;
+    });
+    return;
+  }
 
   if (isMapView.value && (key === 'Space' || key === ' ')) {
     return;

@@ -1394,6 +1394,8 @@
         "next_image": "Siguiente",
         "first_image": "Primera",
         "last_image": "Última",
+        "page_up": "Página anterior",
+        "page_down": "Página siguiente",
         "quick_preview": "Abrir vista previa rápida",
         "close_viewer": "Cerrar visor",
         "search_similar": "Buscar fotos relacionadas",
