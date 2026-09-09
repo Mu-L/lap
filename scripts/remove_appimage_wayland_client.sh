@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
-# Post-process AppImages after Tauri/linuxdeploy builds them.
+# Post-process Lap AppImages built by Tauri/linuxdeploy (issues #270 and #271).
+# Each input AppImage is extracted, patched, and replaced with a repacked image.
 #
-# 1. Remove the bundled Wayland libraries so the host's ABI-compatible copies
-#    are resolved instead (required for EGL/Mesa on pure-Wayland systems).
-# 2. Disable AppImageKit's GStreamer plugin-path override, since the AppImage
-#    does not bundle GStreamer plugins (fixes "GStreamer element appsink not
-#    found").
-# 3. Remove bundled host-runtime libraries that linuxdeploy follows through
-#    WebKitGTK (GStreamer, GLib, and their transitive dependencies). This
-#    keeps GTK, WebKitGTK, GStreamer, and GLib on a consistent host ABI.
-# 4. Optionally embed update information and generate a .zsync delta file.
+# Packaging policy:
+# - Default the GTK launch hook to wayland,x11; preserve user-selected backends.
+# - Use host Wayland, GStreamer, GLib, and selected support libraries to avoid
+#   mixing bundled older libraries with newer host drivers and media plugins.
+# - Disable bundled GStreamer plugin paths so host plugin discovery can work.
+# - Optionally embed update information and generate a .zsync file.
+#
+# Assumes bundleMediaFramework is disabled; this script does not check that
+# setting. GTK/WebKitGTK remain bundled, so hosts must provide libraries that
+# satisfy their dependencies. Validate final images on supported distributions.
+# These packaging changes do not apply to .deb packages.
 #
 # Usage:
 #   remove_appimage_wayland_client.sh <appimage-directory>
 #
-# Optional environment variables (may contain `{name}` / `{name_star}`, replaced
-# with each AppImage's basename):
+# Optional environment variables:
 #   UPDATE_INFO  appimagetool `-u` value (e.g. "zsync|https://.../{name}.zsync")
 #   ZSYNC_URL    full-download URL written into the generated .zsync file
-#   VERSION      version string; enables `{name_star}` (basename with the
-#                version replaced by `*`, for gh-releases-zsync patterns)
+#   VERSION      version string used to expand UPDATE_INFO's {name_star}
+# Both URL settings expand {name} to the AppImage basename. UPDATE_INFO also
+# expands {name_star} when VERSION is set, replacing its first occurrence in
+# the basename with * for gh-releases-zsync matching.
 #
-# Note: repacking swaps the AppImage's embedded runtime for appimagetool's own.
-# This is harmless — both are backward-compatible type-2 runtimes.
+# Repacking also replaces the embedded AppImage runtime; test the repacked
+# artifact, not only the extracted application.
 set -euo pipefail
 
 if [ "$#" -ne 1 ]; then
@@ -39,8 +43,7 @@ if [ ! -d "$APPIMAGE_DIR" ]; then
   echo "AppImage directory does not exist: $APPIMAGE_DIR" >&2
   exit 66
 fi
-# Resolve to an absolute path: the extraction subshell `cd`s away, so a relative
-# path (as passed by the CI workflow) would no longer resolve.
+# Keep input paths valid after the extraction subshell changes directory.
 APPIMAGE_DIR="$(cd "$APPIMAGE_DIR" && pwd)"
 
 case "$(uname -m)" in
@@ -62,6 +65,7 @@ curl --fail --location --silent --show-error \
   --output "$APPIMAGETOOL" \
   "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${APPIMAGE_ARCH}.AppImage"
 chmod +x "$APPIMAGETOOL"
+# Run appimagetool without requiring a FUSE mount on the build runner.
 export APPIMAGE_EXTRACT_AND_RUN=1
 
 shopt -s nullglob
@@ -82,8 +86,8 @@ for appimage in "${APPIMAGES[@]}"; do
     "$appimage" --appimage-extract >/dev/null
   )
 
-  # Locate the bundled Wayland client library (the exact path varies by build,
-  # so search rather than hardcoding usr/lib/).
+  # The bundled Wayland client caused EGL initialization failures with host
+  # graphics libraries (#270/#271). Locate its SONAME across build layouts.
   wayland_client="$(find "$image_work_dir/squashfs-root" -name 'libwayland-client.so.0' -print -quit)"
   if [ -z "$wayland_client" ]; then
     echo "Bundled libwayland-client.so.0 not found in ${image_name}" >&2
@@ -92,48 +96,73 @@ for appimage in "${APPIMAGES[@]}"; do
   echo "==> Removing bundled libwayland-client.so.0 from ${image_name}"
   rm -f "$wayland_client"
 
-  # AppImageKit's AppRun.wrapped unconditionally sets
-  # GST_PLUGIN_SYSTEM_PATH_1_0, even when Tauri's bundleMediaFramework is false
-  # (tauri#15665). The bundled path does not exist, which prevents GStreamer
-  # from finding host plugins such as appsink.
-  #
-  # AppRun.wrapped is an ELF binary, so line-oriented tools such as sed corrupt
-  # it. Replace the environment-variable name with a same-length, app-specific
-  # unused name. This is binary-safe and leaves the executable layout intact.
+  # Apply the default before the application starts, only for AppImages.
+  # ${VAR-default} preserves explicit values (including empty), allowing users
+  # to select X11. Require one assignment so upstream hook changes get reviewed.
+  gtk_hook="$image_work_dir/squashfs-root/apprun-hooks/linuxdeploy-plugin-gtk.sh"
+  if [ ! -f "$gtk_hook" ]; then
+    echo "GTK launch hook not found in ${image_name}" >&2
+    exit 1
+  fi
+  echo "==> Configuring AppImage GTK backend default in ${image_name}"
+  LC_ALL=C perl -0777 -i -pe '
+    BEGIN { $replacement = q{export GDK_BACKEND="${GDK_BACKEND-wayland,x11}"}; }
+    $count = s/^[ \t]*export[ \t]+GDK_BACKEND=[^\r\n]*/$replacement/gm;
+    die "Expected exactly one GDK_BACKEND assignment in GTK hook; review upstream changes\n"
+      unless $count == 1;
+  ' "$gtk_hook"
+  bash -n "$gtk_hook"
+
+  # AppRun.wrapped sets both GST_PLUGIN_SYSTEM_PATH_1_0 and
+  # GST_PLUGIN_SYSTEM_PATH to bundle directories even without media plugins
+  # (tauri-apps/tauri#15665). Neutralize both: disabling only the versioned name
+  # leaves the unversioned override blocking default host plugin discovery.
+#
+  # AppRun.wrapped is ELF, not a shell script. Rename variables with equal-length
+  # byte replacements to preserve offsets; deleting matching lines corrupts it.
   apprun_wrapped="$image_work_dir/squashfs-root/AppRun.wrapped"
   if [ ! -f "$apprun_wrapped" ]; then
     echo "AppRun.wrapped not found in ${image_name}" >&2
     exit 1
   fi
-  gst_path_var='GST_PLUGIN_SYSTEM_PATH_1_0'
-  disabled_gst_path_var='LAP_IGNORE_GST_PLUGIN_PATH'
-  if [ "${#gst_path_var}" -ne "${#disabled_gst_path_var}" ]; then
-    echo "Internal error: replacement GStreamer variable has a different length" >&2
-    exit 1
-  fi
-  if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped"; then
-    echo "==> Disabling AppImageKit GStreamer plugin-path override in ${image_name}"
-    LC_ALL=C perl -0777 -i -pe "s/${gst_path_var}/${disabled_gst_path_var}/g" "$apprun_wrapped"
-    if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped" || \
-      ! LC_ALL=C grep -aq "$disabled_gst_path_var" "$apprun_wrapped"; then
-      echo "Failed to disable GStreamer plugin path override in ${image_name}" >&2
+  apprun_size_before="$(wc -c < "$apprun_wrapped")"
+  # Handle the longer name first: the unversioned name is its prefix.
+  gst_path_replacements=(
+    'GST_PLUGIN_SYSTEM_PATH_1_0:LAP_IGNORE_GST_PLUGIN_PATH'
+    'GST_PLUGIN_SYSTEM_PATH:LAP_IGNORE_2ND_GST_PTH'
+  )
+  for gst_path_replacement in "${gst_path_replacements[@]}"; do
+    gst_path_var="${gst_path_replacement%%:*}"
+    disabled_gst_path_var="${gst_path_replacement#*:}"
+    if [ "${#gst_path_var}" -ne "${#disabled_gst_path_var}" ]; then
+      echo "Internal error: replacement GStreamer variable has a different length" >&2
       exit 1
     fi
-  else
-    # Upstream (Tauri/linuxdeploy) may stop hardcoding this variable in a future
-    # version; treat its absence as a no-op rather than failing the build.
-    echo "GStreamer plugin path override not found in ${image_name}; nothing to do" >&2
+    if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped"; then
+      echo "==> Disabling ${gst_path_var} override in ${image_name}"
+      LC_ALL=C perl -0777 -i -pe "s/${gst_path_var}/${disabled_gst_path_var}/g" "$apprun_wrapped"
+      if LC_ALL=C grep -aq "$gst_path_var" "$apprun_wrapped" || \
+        ! LC_ALL=C grep -aq "$disabled_gst_path_var" "$apprun_wrapped"; then
+        echo "Failed to disable GStreamer plugin path override in ${image_name}" >&2
+        exit 1
+      fi
+    else
+      # Already patched or no longer emitted upstream: no replacement needed.
+      echo "${gst_path_var} override not found in ${image_name}; nothing to do" >&2
+    fi
+  done
+  if [ "$(wc -c < "$apprun_wrapped")" -ne "$apprun_size_before" ] || \
+    LC_ALL=C grep -aFq 'GST_PLUGIN_SYSTEM_PATH' "$apprun_wrapped"; then
+    echo "GStreamer patch changed binary size or left a plugin path override in ${image_name}" >&2
+    exit 1
   fi
-
-  # linuxdeploy follows WebKitGTK's ELF dependencies and copies GStreamer, GLib,
-  # and their transitive support libraries. It does not discover GStreamer's
-  # runtime-loaded plugins or scanner, so a bundled core and host plugins can
-  # have incompatible ABIs. A bundled older library can likewise be
-  # incompatible with whatever newer host library ends up loading it: the host
-  # libgio needs a libmount exporting MOUNT_2_40, the host libglib needs a
-  # versioned libpcre2-8, and so on. Remove these partial stacks so GTK,
-  # WebKitGTK, GStreamer, and GLib all resolve their common runtime libraries
-  # from the host (full set validated in tauri-apps/tauri#15665).
+  # linuxdeploy copies WebKitGTK's linked media libraries without the matching
+  # runtime-loaded plugins/scanner. Remove that partial stack and selected
+  # shared dependencies: #271 exposed successive GStreamer, GLib, libmount,
+  # and PCRE2 mismatches. This list follows those reports and tauri#15665; it
+  # does not guarantee compatibility with every host or cover all dependencies.
+  # The scan below handles regular files directly under the current usr/lib
+  # layout; revisit it if the bundler changes library paths or symlink layouts.
   host_runtime_lib_patterns=(
     'libwayland-cursor.so*'
     'libwayland-egl.so*'
@@ -184,6 +213,7 @@ for appimage in "${APPIMAGES[@]}"; do
   chmod +x "$replacement"
   mv "$replacement" "$appimage"
 
+  # Generate delta metadata from the final bytes, after patching and repacking.
   if [ -n "$ZSYNC_URL" ]; then
     zsync_url="${ZSYNC_URL//\{name\}/$image_name}"
     echo "==> Generating .zsync for ${image_name}"
