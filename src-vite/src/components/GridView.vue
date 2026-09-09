@@ -105,7 +105,7 @@
           </div>
         </Transition>
         <div v-if="contentReady" class="flex flex-col items-center gap-2">
-          <img src="@/assets/images/lazycat-300.png" class="w-32 object-contain opacity-30" alt="" />
+          <IconSearch class="w-8 h-8" />
           <span class="text-sm">{{ emptyMessage }}</span>
           <span class="text-xs">{{ emptyHint }}</span>
         </div>
@@ -142,6 +142,7 @@ import {
   IconFolder,
   IconLocation,
   IconPhoto,
+  IconSearch,
   IconStarFilled,
   IconVideo,
 } from '@/common/icons';
