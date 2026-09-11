@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "Source folder",
-    "source_placeholder": "Choose a source folder",
-    "choose_folder": "Choose folder…",
-    "destination": "Destination folder",
+    "section_folders": "Select folder",
+    "section_status": "Import status",
+    "to_import": "To import",
+    "files_progress": "{processed} / {total} files ({size})",
+    "source": "Source",
+    "source_placeholder": "Select a source folder",
+    "destination": "Destination",
     "folder_layout": "Folder layout",
     "layout_day": "By day — YYYY/YYYY-MM-DD",
     "layout_month": "By month — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "Importing files",
     "complete": "Import complete",
     "cancelled": "Import cancelled",
-    "failed": "Failed: {count}"
+    "continue": "Continue",
+    "imported": "Imported: {count}",
+    "skipped": "Skipped: {count}",
+    "failed": "Failed: {count}",
+    "error_nested": "The source and destination folders cannot contain one another",
+    "error_destination_outside": "The destination folder must be inside the album",
+    "error_source": "Cannot access the source folder",
+    "error_failed": "Import failed: {message}"
   },
   "welcome": {
     "title": "Welcome to Lap",

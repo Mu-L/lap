@@ -2146,6 +2146,13 @@ impl AFile {
     }
 
     fn new(folder_id: i64, file_path: &str, file_type: i64) -> Result<Self, String> {
+        Self::new_with_raw_info(folder_id, file_path, file_type, None)
+    }
+
+    fn new_with_raw_info(folder_id: i64, file_path: &str, file_type: i64, raw_info: Option<t_libraw::RawInfo>) -> Result<Self, String> {
+        let raw_info = if file_type == 3 {
+            raw_info.or_else(|| t_libraw::get_raw_info(file_path).ok())
+        } else { None };
         let file_info = t_utils::FileInfo::new(file_path)?;
 
         // get dimensions and duration based on file type
@@ -2239,7 +2246,11 @@ impl AFile {
                 content_identifier = video_metadata.content_identifier;
             }
             3 => {
-                let (w, h) = t_image::get_raw_dimensions(file_path)?;
+                let (w, h) = match raw_info.as_ref().and_then(|info| info.dimensions)
+                    .filter(|(w, h)| *w > 0 && *h > 0) {
+                    Some(dimensions) => dimensions,
+                    None => t_image::get_raw_dimensions(file_path)?,
+                };
                 width = w;
                 height = h;
             }
@@ -2371,7 +2382,7 @@ impl AFile {
             // that the permissive EXIF reader scans, so it is robust against
             // RAW files whose EXIF data is stored outside the preview image.
             if file_type == 3 {
-                if let Ok(meta) = t_libraw::get_raw_meta(file_path) {
+                if let Some(meta) = raw_info.as_ref().map(|info| info.meta.clone()) {
                     if e_make.is_none() {
                         e_make = meta.make;
                     }
@@ -2425,24 +2436,25 @@ impl AFile {
                 || e_lens_model.is_none()
             {
                 if let Some(data) = file_header_deref {
+                    let tiff_base = Self::find_tiff_base(data);
                     if e_make.is_none() {
-                        e_make = Self::scrape_ascii_from_tag(data, 0x010f);
+                        e_make = Self::scrape_ascii_from_tag(data, tiff_base, 0x010f);
                     }
                     if e_model.is_none() {
-                        e_model = Self::scrape_ascii_from_tag(data, 0x0110);
+                        e_model = Self::scrape_ascii_from_tag(data, tiff_base, 0x0110);
                     }
                     if e_date_time.is_none() {
-                        e_date_time = Self::scrape_ascii_from_tag(data, 0x9003)
-                            .or_else(|| Self::scrape_ascii_from_tag(data, 0x0132));
+                        e_date_time = Self::scrape_ascii_from_tag(data, tiff_base, 0x9003)
+                            .or_else(|| Self::scrape_ascii_from_tag(data, tiff_base, 0x0132));
                     }
                     if e_software.is_none() {
-                        e_software = Self::scrape_ascii_from_tag(data, 0x0131);
+                        e_software = Self::scrape_ascii_from_tag(data, tiff_base, 0x0131);
                     }
                     if e_lens_model.is_none() {
-                        e_lens_model = Self::scrape_ascii_from_tag(data, 0xa434);
+                        e_lens_model = Self::scrape_ascii_from_tag(data, tiff_base, 0xa434);
                     }
                     if e_lens_make.is_none() {
-                        e_lens_make = Self::scrape_ascii_from_tag(data, 0xa433);
+                        e_lens_make = Self::scrape_ascii_from_tag(data, tiff_base, 0xa433);
                     }
                     // Extra Orientation fallback for Sony MakerNotes (Tag 0x2000)
                     if e_orientation.is_none() || e_orientation == Some(1) {
@@ -2462,13 +2474,8 @@ impl AFile {
             }
 
             // Re-update taken_date if we found e_date_time via binary fallback
-            if taken_date == file_info.modified {
-                if let Some(dt) = e_date_time.as_ref() {
-                    if let Some(ts) = t_utils::meta_date_to_timestamp(dt) {
-                        taken_date = Some(ts);
-                    }
-                }
-            }
+            taken_date = Self::capture_date_with_fallback(
+                taken_date, file_info.modified, e_date_time.as_deref());
         } else if file_type == 2 {
             taken_date = e_date_time
                 .as_ref()
@@ -2584,14 +2591,52 @@ impl AFile {
         Ok(file)
     }
 
+    fn capture_date_with_fallback(taken: Option<i64>, modified: Option<i64>, date: Option<&str>) -> Option<i64> {
+        if taken == modified {
+            date.and_then(t_utils::meta_date_to_timestamp).or(taken)
+        } else { taken }
+    }
+
     /// Read the capture timestamp used by Lap before a file is imported.
     /// This keeps date-organized imports consistent with the timestamp shown
     /// after the same file has been indexed.
-    pub fn capture_timestamp_for_path(file_path: &str, file_type: i64) -> Result<i64, String> {
-        let file = Self::new(0, file_path, file_type)?;
-        file.taken_date
-            .or(file.modified_at)
-            .ok_or_else(|| format!("Could not read a date from: {}", file_path))
+    pub fn capture_timestamp_with_raw_info(file_path: &str, file_type: i64, raw_info: Option<&t_libraw::RawInfo>) -> Result<i64, String> {
+        let modified = t_utils::systemtime_to_timestamp(
+            std::fs::metadata(file_path).map_err(|e| e.to_string())?.modified().ok());
+        let taken = if file_type == 2 {
+            t_video::get_video_metadata(file_path)?.e_date_time
+                .as_deref().and_then(t_utils::meta_date_to_timestamp).or(modified)
+        } else if file_type == 1 || file_type == 3 {
+            use std::io::Read;
+            let header = std::fs::File::open(file_path).ok().and_then(|mut file| {
+                let mut bytes = vec![0; 128 * 1024];
+                file.read(&mut bytes).ok().map(|n| { bytes.truncate(n); bytes })
+            });
+            let exif = if let Some(bytes) = header.as_deref() {
+                t_image::read_exif_from_bytes_permissive(bytes).or_else(|| {
+                    (file_type == 1 && t_image::is_jpeg_path(file_path))
+                        .then(|| t_image::read_exif_permissive(file_path)).flatten()
+                })
+            } else { t_image::read_exif_permissive(file_path) };
+            let mut date = Self::get_exif_field(&exif, Tag::DateTimeOriginal);
+            let mut taken = date.as_deref().and_then(t_utils::meta_date_to_timestamp).or(modified);
+            if file_type == 3 && taken == modified {
+                let timestamp = match raw_info {
+                    Some(info) => info.meta.timestamp,
+                    None => t_libraw::get_raw_meta(file_path).ok().and_then(|meta| meta.timestamp),
+                };
+                taken = timestamp.or(taken);
+            }
+            if date.is_none() {
+                if let Some(bytes) = header.as_deref() {
+                    let tiff_base = Self::find_tiff_base(bytes);
+                    date = Self::scrape_ascii_from_tag(bytes, tiff_base, 0x9003)
+                        .or_else(|| Self::scrape_ascii_from_tag(bytes, tiff_base, 0x0132));
+                }
+            }
+            Self::capture_date_with_fallback(taken, modified, date.as_deref())
+        } else { modified };
+        taken.ok_or_else(|| format!("Could not read a date from: {}", file_path))
     }
 
     fn extract_gps_data(exif: &Option<exif::Exif>) -> (Option<f64>, Option<f64>, Option<f64>) {
@@ -2716,11 +2761,12 @@ impl AFile {
         }
     }
 
-    fn scrape_ascii_from_tag(data: &[u8], tag_id: u16) -> Option<String> {
-        // Find the TIFF base (where the EXIF/TIFF header starts)
-        let tiff_base = data
-            .windows(4)
-            .position(|w| w == b"II\x2a\x00" || w == b"MM\x00\x2a")?;
+    fn find_tiff_base(data: &[u8]) -> Option<usize> {
+        data.windows(4).position(|w| w == b"II\x2a\x00" || w == b"MM\x00\x2a")
+    }
+
+    fn scrape_ascii_from_tag(data: &[u8], tiff_base: Option<usize>, tag_id: u16) -> Option<String> {
+        let tiff_base = tiff_base?;
 
         let target_le = [(tag_id & 0xFF) as u8, (tag_id >> 8) as u8, 0x02, 0x00];
         let target_be = [(tag_id >> 8) as u8, (tag_id & 0xFF) as u8, 0x00, 0x02];
@@ -3518,6 +3564,13 @@ impl AFile {
         file_type: i64,
         last_scan_time: i64,
     ) -> Result<(Self, i32), String> {
+        Self::add_to_db_with_raw_info(folder_id, file_path, file_type, last_scan_time, None)
+    }
+
+    pub fn add_to_db_with_raw_info(
+        folder_id: i64, file_path: &str, file_type: i64, last_scan_time: i64,
+        raw_info: Option<t_libraw::RawInfo>,
+    ) -> Result<(Self, i32), String> {
         // Check if the file exists
         let existing_file = Self::fetch(folder_id, file_path)?;
         if let Some(mut file) = existing_file {
@@ -3592,7 +3645,7 @@ impl AFile {
         }
 
         // insert the new file into the database
-        let mut new_file_struct = Self::new(folder_id, file_path, file_type)?;
+        let mut new_file_struct = Self::new_with_raw_info(folder_id, file_path, file_type, raw_info)?;
         new_file_struct.last_scan_time = Some(last_scan_time);
         let inserted = new_file_struct.insert()?;
 

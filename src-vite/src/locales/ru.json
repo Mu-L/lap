@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "Исходная папка",
+    "section_folders": "Выбор папки",
+    "section_status": "Состояние импорта",
+    "to_import": "К импорту",
+    "files_progress": "{processed} / {total} файлов ({size})",
+    "source": "Источник",
     "source_placeholder": "Выберите исходную папку",
-    "choose_folder": "Выбрать папку…",
-    "destination": "Целевая папка",
+    "destination": "Назначение",
     "folder_layout": "Структура папок",
     "layout_day": "По дням — YYYY/YYYY-MM-DD",
     "layout_month": "По месяцам — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "Импорт файлов",
     "complete": "Импорт завершён",
     "cancelled": "Импорт отменён",
-    "failed": "Ошибок: {count}"
+    "continue": "Продолжить",
+    "imported": "Импортировано: {count}",
+    "skipped": "Пропущено: {count}",
+    "failed": "Ошибок: {count}",
+    "error_nested": "Исходная и целевая папки не могут содержать друг друга",
+    "error_destination_outside": "Целевая папка должна находиться внутри альбома",
+    "error_source": "Не удается получить доступ к исходной папке",
+    "error_failed": "Не удалось импортировать: {message}"
   },
   "welcome": {
     "title": "Добро пожаловать в Lap",

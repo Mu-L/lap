@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "来源文件夹",
+    "section_folders": "选择文件夹",
+    "section_status": "导入状态",
+    "to_import": "待导入",
+    "files_progress": "{processed} / {total} 个文件（{size}）",
+    "source": "来源",
     "source_placeholder": "选择来源文件夹",
-    "choose_folder": "选择文件夹…",
-    "destination": "目标文件夹",
+    "destination": "目标",
     "folder_layout": "文件夹结构",
     "layout_day": "按天 — YYYY/YYYY-MM-DD",
     "layout_month": "按月 — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "正在导入文件",
     "complete": "导入完成",
     "cancelled": "已取消导入",
-    "failed": "失败：{count}"
+    "continue": "继续导入",
+    "imported": "已导入：{count}",
+    "skipped": "已跳过：{count}",
+    "failed": "失败：{count}",
+    "error_nested": "源文件夹和目标文件夹不能互相包含",
+    "error_destination_outside": "目标文件夹必须在相册内",
+    "error_source": "无法访问源文件夹",
+    "error_failed": "导入失败：{message}"
   },
   "welcome": {
     "title": "欢迎使用 Lap",

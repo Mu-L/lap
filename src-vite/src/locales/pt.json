@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "Pasta de origem",
-    "source_placeholder": "Escolha uma pasta de origem",
-    "choose_folder": "Escolher pasta…",
-    "destination": "Pasta de destino",
+    "section_folders": "Selecionar pasta",
+    "section_status": "Status da importação",
+    "to_import": "Para importar",
+    "files_progress": "{processed} / {total} arquivos ({size})",
+    "source": "Origem",
+    "source_placeholder": "Selecionar pasta de origem",
+    "destination": "Destino",
     "folder_layout": "Estrutura de pastas",
     "layout_day": "Por dia — YYYY/YYYY-MM-DD",
     "layout_month": "Por mês — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "Importando arquivos",
     "complete": "Importação concluída",
     "cancelled": "Importação cancelada",
-    "failed": "Falhos: {count}"
+    "continue": "Continuar",
+    "imported": "Importados: {count}",
+    "skipped": "Ignorados: {count}",
+    "failed": "Falhos: {count}",
+    "error_nested": "As pastas de origem e destino não podem se conter",
+    "error_destination_outside": "A pasta de destino deve estar dentro do álbum",
+    "error_source": "Não foi possível acessar a pasta de origem",
+    "error_failed": "Falha na importação: {message}"
   },
   "welcome": {
     "title": "Bem-vindo ao Lap",

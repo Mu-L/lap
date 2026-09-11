@@ -7157,6 +7157,7 @@ let contentUpdateSeq = 0;
 async function updateContent(force = false, preserveMultiSelection = selectMode.value) {
   const updateSeq = ++contentUpdateSeq;
   const newIndex = config.main.sidebarIndex;
+  const nextAlbumId = newIndex === SIDEBAR.ALBUM ? Number(libConfig.album.id || 0) : 0;
   const isCurrentAlbumIndexing =
     newIndex === SIDEBAR.ALBUM &&
     libConfig.activePane !== 'collection' &&

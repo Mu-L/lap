@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "Quellordner",
-    "source_placeholder": "Quellordner auswählen",
-    "choose_folder": "Ordner auswählen…",
-    "destination": "Zielordner",
+    "section_folders": "Ordner auswählen",
+    "section_status": "Importstatus",
+    "to_import": "Zu importieren",
+    "files_progress": "{processed} / {total} Dateien ({size})",
+    "source": "Quelle",
+    "source_placeholder": "Quellordner wählen",
+    "destination": "Ziel",
     "folder_layout": "Ordnerstruktur",
     "layout_day": "Nach Tag — YYYY/YYYY-MM-DD",
     "layout_month": "Nach Monat — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "Dateien werden importiert",
     "complete": "Import abgeschlossen",
     "cancelled": "Import abgebrochen",
-    "failed": "Fehlgeschlagen: {count}"
+    "continue": "Fortsetzen",
+    "imported": "Importiert: {count}",
+    "skipped": "Übersprungen: {count}",
+    "failed": "Fehlgeschlagen: {count}",
+    "error_nested": "Quell- und Zielordner dürfen sich nicht gegenseitig enthalten",
+    "error_destination_outside": "Der Zielordner muss sich im Album befinden",
+    "error_source": "Auf den Quellordner kann nicht zugegriffen werden",
+    "error_failed": "Import fehlgeschlagen: {message}"
   },
   "welcome": {
     "title": "Willkommen bei Lap",

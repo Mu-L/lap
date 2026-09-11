@@ -200,10 +200,13 @@
     }
   },
   "import_organize": {
-    "source": "読み込み元フォルダー",
+    "section_folders": "フォルダーを選択",
+    "section_status": "インポート状況",
+    "to_import": "インポート予定",
+    "files_progress": "{processed} / {total} ファイル（{size}）",
+    "source": "読み込み元",
     "source_placeholder": "読み込み元フォルダーを選択",
-    "choose_folder": "フォルダーを選択…",
-    "destination": "保存先フォルダー",
+    "destination": "保存先",
     "folder_layout": "フォルダー構成",
     "layout_day": "日別 — YYYY/YYYY-MM-DD",
     "layout_month": "月別 — YYYY/YYYY-MM",
@@ -214,7 +217,14 @@
     "importing": "ファイルを読み込み中",
     "complete": "読み込み完了",
     "cancelled": "読み込みをキャンセルしました",
-    "failed": "失敗: {count}"
+    "continue": "続行",
+    "imported": "読み込み済み: {count}",
+    "skipped": "スキップ: {count}",
+    "failed": "失敗: {count}",
+    "error_nested": "ソースフォルダーと宛先フォルダーは互いに含めることはできません",
+    "error_destination_outside": "宛先フォルダーはアルバム内にある必要があります",
+    "error_source": "ソースフォルダーにアクセスできません",
+    "error_failed": "インポートに失敗しました: {message}"
   },
   "welcome": {
     "title": "Lap へようこそ",

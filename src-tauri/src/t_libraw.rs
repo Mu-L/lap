@@ -408,6 +408,7 @@ impl RawHandle {
 }
 
 /// Metadata extracted from a RAW file via LibRaw.
+#[derive(Clone)]
 pub struct RawMeta {
     pub make: Option<String>,
     pub model: Option<String>,
@@ -464,6 +465,18 @@ pub fn get_raw_dimensions(file_path: &str) -> Result<(u32, u32), String> {
 
 pub fn get_raw_dimensions_with_flip(file_path: &str) -> Result<(u32, u32, i32), String> {
     RawHandle::open(file_path)?.dimensions_with_flip()
+}
+
+/// Small owned metadata snapshot; never retains a LibRaw decoder or pixel buffer.
+#[derive(Clone)]
+pub struct RawInfo {
+    pub dimensions: Option<(u32, u32)>,
+    pub meta: RawMeta,
+}
+
+pub fn get_raw_info(file_path: &str) -> Result<RawInfo, String> {
+    let raw = RawHandle::open(file_path)?;
+    Ok(RawInfo { dimensions: raw.dimensions().ok(), meta: raw.meta()? })
 }
 
 pub fn get_raw_meta(file_path: &str) -> Result<RawMeta, String> {

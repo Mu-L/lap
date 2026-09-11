@@ -640,8 +640,10 @@ pub fn fetch_folder(
 
 /// count all files in a folder (include all sub-folders)
 #[tauri::command]
-pub fn count_folder(path: &str) -> (u64, u64, u64, u64, u64, u64, u64) {
-    t_utils::count_folder_files(path)
+pub async fn count_folder(path: String) -> Result<(u64, u64, u64, u64, u64, u64, u64), String> {
+    tauri::async_runtime::spawn_blocking(move || t_utils::count_folder_files(&path))
+        .await
+        .map_err(|e| format!("Failed to count folder: {}", e))
 }
 
 /// create a new folder
@@ -1678,6 +1680,7 @@ pub fn import_and_organize(
     source_path: String,
     destination_path: String,
     layout: String,
+    completed_paths: Vec<String>,
 ) -> Result<(), String> {
     {
         let mut import = state.0.lock().map_err(|_| "Import cancellation state is unavailable")?;
@@ -1694,6 +1697,7 @@ pub fn import_and_organize(
             &source_path,
             &destination_path,
             &layout,
+            completed_paths.into_iter().collect(),
             |progress| { let _ = app_handle.emit("import-organize-progress", progress); },
             || cancellation.lock().map(|import| import.cancelled).unwrap_or(true),
         );

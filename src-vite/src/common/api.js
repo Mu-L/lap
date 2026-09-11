@@ -1288,8 +1288,8 @@ export async function importFile(filePath, folderId, folderPath) {
   }
 }
 
-export async function importAndOrganize(albumId, sourcePath, destinationPath, layout) {
-  return await invoke('import_and_organize', { albumId, sourcePath, destinationPath, layout });
+export async function importAndOrganize(albumId, sourcePath, destinationPath, layout, completedPaths = []) {
+  return await invoke('import_and_organize', { albumId, sourcePath, destinationPath, layout, completedPaths });
 }
 
 export async function cancelImportAndOrganize() {

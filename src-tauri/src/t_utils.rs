@@ -1274,14 +1274,35 @@ pub fn import_file(source_path: &str, dest_folder: &str) -> Option<String> {
     }
 }
 
+// Compare in fixed-size chunks; unreadable files must never be treated as duplicates.
+fn import_files_equal(left: &Path, right: &Path, cancelled: &impl Fn() -> bool) -> std::io::Result<bool> {
+    let mut left = fs::File::open(left)?;
+    let mut right = fs::File::open(right)?;
+    let size = left.metadata()?.len();
+    if size != right.metadata()?.len() { return Ok(false); }
+    let mut remaining = size;
+    let mut a = [0u8; 65536];
+    let mut b = [0u8; 65536];
+    while remaining > 0 {
+        if cancelled() { return Ok(false); }
+        let len = remaining.min(a.len() as u64) as usize;
+        left.read_exact(&mut a[..len])?;
+        right.read_exact(&mut b[..len])?;
+        if a[..len] != b[..len] { return Ok(false); }
+        remaining -= len as u64;
+    }
+    Ok(true)
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportOrganizeProgress {
     pub phase: String,
-    pub current_path: Option<String>,
     pub processed: usize,
     pub total: usize,
+    pub total_size: u64,
     pub imported: usize,
+    pub skipped: usize,
     pub failed: usize,
     pub cancelled: bool,
 }
@@ -1289,8 +1310,10 @@ pub struct ImportOrganizeProgress {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ImportOrganizeResult {
+    pub completed_paths: Vec<String>,
     pub total: usize,
     pub imported: usize,
+    pub skipped: usize,
     pub failed: usize,
     pub cancelled: bool,
 }
@@ -1303,6 +1326,7 @@ pub fn import_and_organize<F, C>(
     source_path: &str,
     destination_path: &str,
     layout: &str,
+    completed_paths: HashSet<String>,
     mut report_progress: F,
     is_cancelled: C,
 ) -> Result<ImportOrganizeResult, String>
@@ -1310,6 +1334,8 @@ where
     F: FnMut(ImportOrganizeProgress),
     C: Fn() -> bool,
 {
+    let started = Instant::now();
+    let mut aae_cache = t_apple_sidecar::ImportAaeCache::default();
     let album = Album::get_album_by_id(album_id)?;
     let source = fs::canonicalize(source_path)
         .map_err(|e| format!("Cannot access source folder: {}", e))?;
@@ -1339,66 +1365,155 @@ where
         .collect::<Vec<_>>();
 
     report_progress(ImportOrganizeProgress {
-        phase: "preparing".to_string(), current_path: None, processed: 0, total: 0,
-        imported: 0, failed: 0, cancelled: false,
+        phase: "preparing".to_string(), processed: 0, total: 0, total_size: 0,
+        imported: 0, skipped: 0, failed: 0, cancelled: false,
     });
-    let mut files = Vec::new();
+    // Resume only files successfully imported by this dialog, including renamed collisions.
+    let mut completed_paths = completed_paths;
+    let mut last_progress = Instant::now();
+    let mut files: Vec<(PathBuf, i64, String, Option<crate::t_libraw::RawInfo>)> = Vec::new();
+    let mut failed = 0;
+    let mut total_size: u64 = 0;
     for entry in WalkDir::new(&source)
         .into_iter()
         .filter_entry(is_visible_or_root)
     {
+        if last_progress.elapsed() >= Duration::from_millis(100) {
+            report_progress(ImportOrganizeProgress {
+                phase: "preparing".to_string(), processed: files.len() + failed,
+                total: files.len() + failed, total_size, imported: 0, skipped: 0, failed, cancelled: false,
+            });
+            last_progress = Instant::now();
+        }
         if is_cancelled() {
             report_progress(ImportOrganizeProgress {
-                phase: "preparing".to_string(), current_path: None, processed: 0, total: files.len(),
-                imported: 0, failed: 0, cancelled: true,
+                phase: "preparing".to_string(), processed: files.len() + failed, total: files.len() + failed, total_size,
+                imported: 0, skipped: 0, failed, cancelled: true,
             });
-            return Ok(ImportOrganizeResult { total: files.len(), imported: 0, failed: 0, cancelled: true });
+            return Ok(ImportOrganizeResult { completed_paths: completed_paths.into_iter().collect(), total: files.len() + failed, imported: 0, skipped: 0, failed, cancelled: true });
         }
         let Ok(entry) = entry else { continue; };
         if !entry.file_type().is_file() { continue; }
         let path = entry.into_path();
-        if let Some(file_type) = get_file_type(&path.to_string_lossy()) {
-            files.push((path, file_type));
-        }
-    }
-    let total = files.len();
-    let mut imported = 0;
-    let mut failed = 0;
-
-    for (processed, (path, file_type)) in files.into_iter().enumerate() {
-        if is_cancelled() {
-            report_progress(ImportOrganizeProgress {
-                phase: "importing".to_string(), current_path: None, processed, total, imported, failed, cancelled: true,
-            });
-            return Ok(ImportOrganizeResult { total, imported, failed, cancelled: true });
-        }
-
+        let Some(file_type) = get_file_type(&path.to_string_lossy()) else { continue; };
+        let file_size = path.metadata().map(|m| m.len()).unwrap_or(0);
         let path_string = path.to_string_lossy().to_string();
-        let result = (|| -> Result<String, String> {
-            let timestamp = AFile::capture_timestamp_for_path(&path_string, file_type)?;
+        if completed_paths.contains(&path_string) { continue; }
+        total_size += file_size;
+        let raw_info = if file_type == 3 && layout != "none" {
+            crate::t_libraw::get_raw_info(&path_string).ok()
+        } else { None };
+        let relative_folder = match (|| -> Result<String, String> {
+            if layout == "none" { return Ok(String::new()); }
+            let timestamp = AFile::capture_timestamp_with_raw_info(&path_string, file_type, raw_info.as_ref())?;
             let date = Local.timestamp_opt(timestamp, 0).single()
                 .ok_or_else(|| format!("Invalid capture date: {}", path_string))?;
-            let relative_folder = match layout {
+            Ok(match layout {
                 "day" => date.format("%Y/%Y-%m-%d").to_string(),
                 "month" => date.format("%Y/%Y-%m").to_string(),
                 "year" => date.format("%Y").to_string(),
-                "none" => String::new(),
                 _ => return Err("Invalid import folder layout".to_string()),
-            };
-            let target_folder = destination_folder.join(&relative_folder);
-            fs::create_dir_all(&target_folder).map_err(|e| format!("Cannot create destination folder: {}", e))?;
-            let mut folder = AFolder::add_to_db(album_id, &album_root.to_string_lossy())?;
-            for component in destination_components.iter().map(String::as_str)
-                .chain(relative_folder.split('/').filter(|component| !component.is_empty()))
-            {
-                let parent = Path::new(&folder.path).join(component);
-                folder = AFolder::add_to_db(album_id, &parent.to_string_lossy())?;
+            })
+        })() {
+            Ok(relative_folder) => relative_folder,
+            Err(_) => {
+                failed += 1;
+                continue;
             }
+        };
+        files.push((path, file_type, relative_folder, raw_info));
+    }
+    eprintln!("Import preparation: {:?}, files: {}", started.elapsed(), files.len() + failed);
+    let import_started = Instant::now();
+    let mut compare_time = Duration::ZERO;
+    let mut copy_time = Duration::ZERO;
+    let mut database_time = Duration::ZERO;
+    let total = files.len() + failed;
+    let mut processed = failed;
+    let mut imported = 0;
+    let mut skipped = 0;
+    let mut folder_ids: HashMap<PathBuf, i64> = HashMap::new();
+    let mut candidates: HashMap<PathBuf, HashMap<u64, Vec<PathBuf>>> = HashMap::new();
+    report_progress(ImportOrganizeProgress {
+        phase: "importing".to_string(), processed,
+        total, total_size, imported, skipped, failed, cancelled: false,
+    });
+
+    for (path, file_type, relative_folder, raw_info) in files {
+        if is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "importing".to_string(), processed, total, total_size, imported, skipped, failed, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { completed_paths: completed_paths.into_iter().collect(), total, imported, skipped, failed, cancelled: true });
+        }
+
+        let path_string = path.to_string_lossy().to_string();
+        let target_folder = destination_folder.join(&relative_folder);
+        let result = (|| -> Result<bool, String> {
+            // Cache file sizes once per target directory. Include successful copies below.
+            if !candidates.contains_key(&target_folder) {
+                let mut by_size: HashMap<u64, Vec<PathBuf>> = HashMap::new();
+                if target_folder.exists() {
+                    for entry in fs::read_dir(&target_folder).map_err(|e| e.to_string())? {
+                        let entry = entry.map_err(|e| e.to_string())?;
+                        let metadata = entry.metadata().map_err(|e| e.to_string())?;
+                        if metadata.is_file() && get_file_type(&entry.path().to_string_lossy()).is_some() {
+                            by_size.entry(metadata.len()).or_default().push(entry.path());
+                        }
+                    }
+                }
+                candidates.insert(target_folder.clone(), by_size);
+            }
+            let size = path.metadata().map_err(|e| e.to_string())?.len();
+            let folder_id = if let Some(&id) = folder_ids.get(&target_folder) {
+                id
+            } else {
+                fs::create_dir_all(&target_folder).map_err(|e| format!("Cannot create destination folder: {}", e))?;
+
+                let mut folder = AFolder::add_to_db(album_id, &album_root.to_string_lossy())?;
+                for component in destination_components.iter().map(String::as_str)
+                    .chain(relative_folder.split('/').filter(|component| !component.is_empty()))
+                {
+                    let parent = Path::new(&folder.path).join(component);
+                    folder = AFolder::add_to_db(album_id, &parent.to_string_lossy())?;
+                }
+                let id = folder.id.ok_or_else(|| "Imported folder is missing its database id".to_string())?;
+                folder_ids.insert(target_folder.clone(), id);
+                id
+            };
+            if let Some(matches) = candidates[&target_folder].get(&size) {
+                for candidate in matches {
+                    if is_cancelled() { return Err("Import cancelled".to_string()); }
+                    let compare_started = Instant::now();
+                    let duplicate = import_files_equal(&path, candidate, &is_cancelled).unwrap_or(false)
+                        && {
+                            let left = aae_cache.paths(&path);
+                            let right = aae_cache.paths(candidate);
+                            left.len() == right.len() && left.iter().zip(&right)
+                                .all(|(a, b)| import_files_equal(a, b, &is_cancelled).unwrap_or(false))
+                        };
+                    compare_time += compare_started.elapsed();
+                    if duplicate {
+                        let database_started = Instant::now();
+                        let destination = candidate.to_string_lossy().to_string();
+                        if AFile::fetch(folder_id, &destination)?.is_none() {
+                            let candidate_type = get_file_type(&destination)
+                                .ok_or_else(|| format!("Unsupported import candidate: {}", destination))?;
+                            AFile::add_to_db(folder_id, &destination, candidate_type, chrono::Utc::now().timestamp_millis())?;
+                        }
+                        database_time += database_started.elapsed();
+                        return Ok(true);
+                    }
+                }
+            }
+            if is_cancelled() { return Err("Import cancelled".to_string()); }
+            let copy_started = Instant::now();
             let destination = import_file(&path_string, &target_folder.to_string_lossy())
                 .ok_or_else(|| format!("Failed to copy file: {}", path_string))?;
-            let copied_sidecars = match t_apple_sidecar::copy_apple_aae_sidecars_for_import(
+            let copied_sidecars = match t_apple_sidecar::copy_apple_aae_paths_for_import(
                 &path_string,
                 &destination,
+                aae_cache.paths(&path),
             ) {
                 Ok(sidecars) => sidecars,
                 Err(error) => {
@@ -1406,32 +1521,46 @@ where
                     return Err(error);
                 }
             };
-            let folder_id = folder.id.ok_or_else(|| "Imported folder is missing its database id".to_string())?;
-            if let Err(error) = AFile::add_to_db(folder_id, &destination, file_type, chrono::Utc::now().timestamp_millis()) {
+            copy_time += copy_started.elapsed();
+            let database_started = Instant::now();
+            if let Err(error) = AFile::add_to_db_with_raw_info(folder_id, &destination, file_type, chrono::Utc::now().timestamp_millis(), raw_info) {
                 let _ = fs::remove_file(&destination);
                 for sidecar in copied_sidecars {
                     let _ = fs::remove_file(sidecar);
                 }
                 return Err(error);
             }
-            Ok(destination)
+            database_time += database_started.elapsed();
+            aae_cache.record(&copied_sidecars);
+            candidates.get_mut(&target_folder).unwrap().entry(size).or_default()
+                .push(PathBuf::from(&destination));
+            Ok(false)
         })();
-        let current_path = match result {
-            Ok(destination) => {
-                imported += 1;
-                destination
+        if result.is_err() && is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "importing".to_string(), processed,
+                total, total_size, imported, skipped, failed, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { completed_paths: completed_paths.into_iter().collect(), total, imported, skipped, failed, cancelled: true });
+        }
+        match result {
+            Ok(duplicate) => {
+                if duplicate { skipped += 1; } else { imported += 1; }
+                completed_paths.insert(path_string);
             }
             Err(_) => {
                 failed += 1;
-                path_string.clone()
             }
         };
+        processed += 1;
         report_progress(ImportOrganizeProgress {
-            phase: "importing".to_string(), current_path: Some(current_path), processed: processed + 1, total, imported, failed, cancelled: false,
+            phase: "importing".to_string(), processed, total, total_size, imported, skipped, failed, cancelled: false,
         });
     }
 
-    Ok(ImportOrganizeResult { total, imported, failed, cancelled: false })
+    eprintln!("Import successful steps: comparison {:?}, copy/sidecars {:?}, file database {:?}", compare_time, copy_time, database_time);
+    eprintln!("Import processing: {:?}, imported: {}, skipped: {}, failed: {}", import_started.elapsed(), imported, skipped, failed);
+    Ok(ImportOrganizeResult { completed_paths: completed_paths.into_iter().collect(), total, imported, skipped, failed, cancelled: false })
 }
 
 /// Map an image MIME type to the canonical file extension.
