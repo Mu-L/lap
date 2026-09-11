@@ -120,21 +120,21 @@
               <span class="sidebar-item-label">
                 {{ getPersonDisplayName(person) }}
               </span>
-              <span v-if="person.count" :class="['sidebar-item-count', selectedPerson?.id === person.id ? 'hidden' : 'group-hover:hidden']">
-                {{ person.count.toLocaleString() }}
-              </span>
-
-              <div :class="[
-                  'ml-auto flex flex-row items-center text-base-content/30',
-                  selectedPerson?.id === person.id ? '' : 'hidden group-hover:flex'
-                ]"
-              >
-                <ContextMenu
-                  :ref="(el: any) => { if (el) personContextMenus[person.id] = el }"
-                  :iconMenu="IconMore"
-                  :menuItems="getMoreMenuItems()"
-                  :smallIcon="true"
-                />
+              <div class="ml-auto flex flex-row items-center text-base-content/30">
+                <span v-if="person.count" class="sidebar-item-count shrink-0">
+                  {{ person.count.toLocaleString() }}
+                </span>
+                <div :class="[
+                    selectedPerson?.id === person.id ? '' : 'hidden group-hover:flex'
+                  ]"
+                >
+                  <ContextMenu
+                    :ref="(el: any) => { if (el) personContextMenus[person.id] = el }"
+                    :iconMenu="IconMore"
+                    :menuItems="getMoreMenuItems()"
+                    :smallIcon="true"
+                  />
+                </div>
               </div>
             </template>
           </div>

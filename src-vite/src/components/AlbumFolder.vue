@@ -67,8 +67,7 @@
           <div class="ml-auto flex flex-row items-center text-base-content/30">
             <IconHeartFilled v-if="child.is_favorite" class="mr-1 w-4 h-4 shrink-0 text-primary/70" />
             <span
-              v-if="allowContextMenu && getFolderFileCount(child.path) > 0"
-              v-show="!shouldShowFolderMenu(child)"
+              v-if="getFolderFileCount(child.path) > 0"
               class="sidebar-item-count shrink-0"
             >
               {{ getFolderFileCount(child.path).toLocaleString() }}

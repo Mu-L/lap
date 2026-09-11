@@ -56,22 +56,22 @@
           <IconSearch class="mx-1 h-5 shrink-0" />
           
           <span class="sidebar-item-label">{{ typeof item === 'string' ? item : item.text }}</span>
-          <span
-            v-if="hasSearchHistoryCount(item)"
-            class="sidebar-item-count"
-            :class="libConfig.search.searchHistoryIndex === index ? 'hidden' : 'group-hover:hidden'"
-          >{{ formatSearchResultCount(getSearchHistoryCount(item)) }}</span>
-          <div
-            :class="[
-              'ml-auto flex flex-row items-center text-base-content/30',
-              libConfig.search.searchHistoryIndex === index ? '' : 'hidden group-hover:flex'
-            ]"
-          >
-            <ContextMenu
-              :iconMenu="IconMore"
-              :menuItems="() => getSearchHistoryMenuItems(index)"
-              :smallIcon="true"
-            />
+          <div class="ml-auto flex flex-row items-center text-base-content/30">
+            <span
+              v-if="hasSearchHistoryCount(item)"
+              class="sidebar-item-count shrink-0"
+            >{{ formatSearchResultCount(getSearchHistoryCount(item)) }}</span>
+            <div
+              :class="[
+                libConfig.search.searchHistoryIndex === index ? '' : 'hidden group-hover:flex'
+              ]"
+            >
+              <ContextMenu
+                :iconMenu="IconMore"
+                :menuItems="() => getSearchHistoryMenuItems(index)"
+                :smallIcon="true"
+              />
+            </div>
           </div>
         </div>  
     </div>

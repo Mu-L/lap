@@ -68,17 +68,19 @@
               @blur="handleRenameTag"
             />
             <span v-else class="sidebar-item-label">{{ tag.name }}</span>
-            <span v-if="!isRenamingTag && getTagDisplayCount(tag) > 0" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ getTagDisplayCount(tag).toLocaleString() }}</span>
-            <div
-              v-if="!isRenamingTag"
-              :class="['ml-auto flex flex-row items-center text-base-content/30', selectedTag?.id === tag.id ? '' : 'hidden group-hover:flex']"
-            >
-              <ContextMenu
-                :ref="(el: any) => { if (el) tagContextMenus[tag.id] = el }"
-                :iconMenu="IconMore"
-                :menuItems="getMoreMenuItems()"
-                :smallIcon="true"
-              />
+            <div class="ml-auto flex flex-row items-center text-base-content/30">
+              <span v-if="!isRenamingTag && getTagDisplayCount(tag) > 0" class="sidebar-item-count shrink-0">{{ getTagDisplayCount(tag).toLocaleString() }}</span>
+              <div
+                v-if="!isRenamingTag"
+                :class="[selectedTag?.id === tag.id ? '' : 'hidden group-hover:flex']"
+              >
+                <ContextMenu
+                  :ref="(el: any) => { if (el) tagContextMenus[tag.id] = el }"
+                  :iconMenu="IconMore"
+                  :menuItems="getMoreMenuItems()"
+                  :smallIcon="true"
+                />
+              </div>
             </div>
           </div>
         </li>

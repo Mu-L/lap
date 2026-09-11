@@ -105,26 +105,25 @@
             @blur="commitRename(collection)"
           />
           <span v-else class="sidebar-item-label">{{ collection.name }}</span>
-          <span
-            v-if="renamingId !== collection.id && getCollectionDisplayCount(collection) > 0"
-            :class="[
-              'sidebar-item-count ml-auto',
-              selectedId === collection.id ? 'hidden' : 'group-hover:hidden',
-            ]"
-          >
-            {{ getCollectionDisplayCount(collection).toLocaleString() }}
-          </span>
-          <div
-            v-if="renamingId !== collection.id"
-            :class="[
-              selectedId === collection.id ? '' : 'hidden group-hover:block',
-            ]"
-          >
-            <ContextMenu
-              :iconMenu="IconMore"
-              :menuItems="collectionMenuItems(collection)"
-              :smallIcon="true"
-            />
+          <div class="ml-auto flex flex-row items-center text-base-content/30">
+            <span
+              v-if="renamingId !== collection.id && getCollectionDisplayCount(collection) > 0"
+              class="sidebar-item-count shrink-0"
+            >
+              {{ getCollectionDisplayCount(collection).toLocaleString() }}
+            </span>
+            <div
+              v-if="renamingId !== collection.id"
+              :class="[
+                selectedId === collection.id ? '' : 'hidden group-hover:block',
+              ]"
+            >
+              <ContextMenu
+                :iconMenu="IconMore"
+                :menuItems="collectionMenuItems(collection)"
+                :smallIcon="true"
+              />
+            </div>
           </div>
           </div>
         </VueDraggable>

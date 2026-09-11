@@ -171,17 +171,13 @@
             </div>
 
             <!-- Right side: Count and Status Icons -->
-            <div class="ml-auto">
+            <div class="ml-auto flex flex-row items-center text-base-content/30">
               <span
                 v-if="props.showTotalCount !== false && getAlbumDisplayCount(album) > 0"
-                class="sidebar-item-count"
-                :class="selection.albumId.value === album.id && selection.selected.value ? 'hidden' : 'group-hover:hidden'"
+                class="sidebar-item-count shrink-0"
               >
                 {{ getAlbumDisplayCount(album).toLocaleString() }}
               </span>
-            </div>  
-
-            <div class="flex flex-row items-center text-base-content/30">
               <div v-if="isMainPane"
                 :class="[
                   selection.albumId.value === album.id && selection.selected.value ? '' : 'hidden group-hover:block'
