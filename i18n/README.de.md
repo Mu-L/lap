@@ -52,16 +52,21 @@ brew install --cask lap
 
 ## Funktionen
 
-- **Flexibles Durchsuchen der Bibliothek** mit Timeline-, Ordner-, Standort-, Kamera-, Objektiv-, Tag-, Favoriten-, Bewertungs-, Motiv- und Gesichtsfiltern.
-- **Smart-Alben** speichern regelbasierte Ansichten mit eigener Gruppierung, Sortierung und Reihenfolge.
-- **Sammlungen**: Organisieren Sie Dateien in flexiblen Sammlungen, ohne die Originale zu verschieben oder zu duplizieren.
-- **Lokale KI-Suche** für Textanfragen, visuelle Ähnlichkeit, Motive, Gesichts-Clustering und optionale mehrsprachige Suche in über 50 Sprachen.
-- **Apple Live Photos** erkennt gekoppelte HEIC/MOV-Live-Photos, spielt sie im Viewer ab und hält verknüpfte MOV- und AAE-Seitendateien beim Umbenennen, Verschieben, Kopieren und Löschen zusammen.
-- **RAW- + JPEG/HEIC-Paare** gruppieren optional eine RAW-Datei und die gleichnamige JPEG- oder HEIC-Begleitdatei im selben Ordner als ein Element. Die Originale bleiben getrennte Dateien; beim Umbenennen, Verschieben, Kopieren, Einfügen und Löschen werden beide Dateien zusammen behandelt.
-- **Ordnerorientierter Workflow** mit mehreren Bibliotheken, Drag-and-drop-Import, Kopieren-und-Einfügen-Import, Dateisystem-Synchronisierung und sicheren Verschiebe-/Kopier-/Löschvorgängen.
-- **Auswahl- und Vergleichswerkzeuge** einschließlich eines Vierfach-Bildvergleichs im Viewer.
-- **Aufräumwerkzeuge** zum Finden von Duplikaten und zum stapelweisen Verschieben unerwünschter Dateien in den Papierkorb.
-- **Integrierte Bearbeitung** für Zuschneiden, Drehen, Spiegeln, Größenänderung und grundlegende Bildanpassungen.
+- **Flexible Bibliotheksansichten** nach Datum, Ordner, Ort, Kamera, Objektiv, Tags, Bewertungen und Gesichtern, mit zufälliger Sortierung und Filter für kleine Bilder.
+- **Interaktive Kartenansicht** für Fotos und Videos mit Standortdaten, gruppiert nach den aktuellen Filtern.
+- **Intelligente Alben** speichern regelbasierte Ansichten mit eigener Gruppierung und Sortierung.
+- **Sammlungen und Tags** zum gemeinsamen Organisieren ausgewählter Dateien, ohne Originale zu verschieben oder zu kopieren.
+- **Lokale KI-Suche** mit Textanfragen, visueller Ähnlichkeit, Motiven, Gesichtsgruppierung und optionaler Suche in über 50 Sprachen.
+- **Apple Live Photos und Google Motion Photos** mit Bewegungswiedergabe und gemeinsamem Filter für intelligente Alben.
+- **RAW + JPEG/HEIC-Paare** als ein Eintrag, dessen zugehörige Dateien bei Dateiaktionen zusammenbleiben.
+- **Wählbare RAW-Miniaturen und Vorschauen** aus RAW-Rendering oder eingebetteter Kameravorschau.
+- **Ordnerbasierter Workflow** mit mehreren Bibliotheken, Import per Drag-and-drop oder Zwischenablage, Dateisystemsynchronisierung und sicheren Dateiaktionen.
+- **Import nach Datum** in Tages-, Monats-, Jahres- oder einzelne Ordner, mit ursprünglichen Dateinamen und Überspringen von Duplikaten.
+- **Auswahl- und Vergleichswerkzeuge** mit einem Bildvergleich in vier Bereichen.
+- **Duplikatbereinigung** mit Übersicht des freigebbaren Speicherplatzes und gruppenübergreifendem Löschen.
+- **Anpassbare Anzeige** mit Miniaturen bis 1024 px, einstellbarer Rastergröße und Ecken sowie Schnellvorschau oder separaten Anzeigefenstern.
+- **Desktop-Integration** mit mehreren externen Apps und Hintergrundbildauswahl unter macOS, Windows und GNOME Linux.
+- **Integrierte Bearbeitung** zum Zuschneiden, Drehen, Spiegeln, Skalieren und für grundlegende Bildanpassungen.
 - **Breite Formatunterstützung** für über 60 Foto-, RAW- und Videoformate.
 
 ## Metadaten, Sammlungen und das Verschieben von Dateien

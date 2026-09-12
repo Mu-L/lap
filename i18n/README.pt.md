@@ -52,17 +52,22 @@ brew install --cask lap
 
 ## Recursos
 
-- **Navegação flexível na biblioteca** com filtros por linha do tempo, pasta, local, câmera, lente, tag, favorito, classificação, assunto e rosto.
-- **Álbuns inteligentes** salvam visualizações baseadas em regras com agrupamento, ordenação e ordem personalizados.
-- **Coleções**: organize arquivos em coleções flexíveis sem mover ou duplicar os originais.
-- **Busca local com IA** para comandos de texto, similaridade visual, assuntos, agrupamento de rostos e busca multilíngue opcional em mais de 50 idiomas.
-- **Live Photos da Apple** reconhece pares HEIC/MOV, reproduz no visualizador e mantém arquivos auxiliares MOV e AAE juntos ao renomear, mover, copiar e excluir.
-- **Pares RAW + JPEG/HEIC** agrupam opcionalmente um arquivo RAW e seu arquivo JPEG ou HEIC correspondente com o mesmo nome na mesma pasta como um único item. Os originais permanecem arquivos separados; as operações de renomear, mover, copiar, colar e excluir tratam os dois juntos.
-- **Fluxo de trabalho baseado em pastas** com várias bibliotecas, importação por arrastar e soltar, importação por copiar e colar, sincronização do sistema de arquivos e operações seguras de mover/copiar/excluir.
-- **Ferramentas de seleção e comparação**, incluindo um visualizador de comparação de imagens em quatro painéis.
-- **Ferramentas de limpeza** para encontrar duplicados e mover arquivos indesejados para a lixeira em lote.
-- **Edição integrada** para cortar, girar, inverter, redimensionar e aplicar ajustes básicos de imagem.
-- **Amplo suporte a formatos** para mais de 60 formatos de foto, RAW e vídeo.
+- **Navegação flexível** por data, pasta, local, câmera, lente, tags, avaliações e rostos, com ordem aleatória e filtro de imagens pequenas.
+- **Mapa interativo** para explorar fotos e vídeos geolocalizados em grupos que seguem os filtros atuais.
+- **Álbuns inteligentes** para salvar visualizações baseadas em regras com agrupamento e ordenação personalizados.
+- **Coleções e tags** para organizar arquivos selecionados em lote sem mover ou duplicar os originais.
+- **Busca com IA local** por texto, similaridade visual, temas e agrupamento de rostos, com busca opcional em mais de 50 idiomas.
+- **Apple Live Photos e Google Motion Photos** com reprodução do movimento e um filtro comum nos álbuns inteligentes.
+- **Pares RAW + JPEG/HEIC** exibidos como um único item, mantendo os arquivos associados juntos durante as operações.
+- **Miniaturas e prévias RAW configuráveis** usando renderização RAW ou a prévia incorporada da câmera.
+- **Fluxo baseado em pastas** com várias bibliotecas, importação por arrastar e soltar ou copiar e colar, sincronização e operações seguras com arquivos.
+- **Importação organizada por data** em pastas por dia, mês, ano ou uma única pasta, preservando os nomes originais e ignorando duplicatas.
+- **Ferramentas de seleção e comparação** com um visualizador de imagens de quatro painéis.
+- **Limpeza de duplicatas** com resumo do espaço recuperável e remoção em lote entre grupos.
+- **Visualização personalizável** com miniaturas de até 1024 px, tamanho da grade e cantos ajustáveis, além de prévia rápida ou janelas separadas.
+- **Integração com o desktop** com vários aplicativos externos e seleção de papel de parede no macOS, Windows e GNOME Linux.
+- **Edição integrada** para cortar, girar, inverter, redimensionar e fazer ajustes básicos.
+- **Amplo suporte a formatos** para mais de 60 formatos de fotos, RAW e vídeo.
 
 ## Metadados, coleções e movimentação de arquivos
 

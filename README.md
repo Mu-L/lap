@@ -53,15 +53,20 @@ brew install --cask lap
 
 ## Features
 
-- **Flexible library browsing** with timeline, folder, location, camera, lens, tag, favorite, rating, subject, and face filters.
+- **Flexible library browsing** by date, folder, location, camera, lens, tags, ratings, and faces, with random sorting and a small-image filter.
+- **Interactive Map View** to explore geotagged photos and videos in clusters that follow your current filters.
 - **Smart Albums** save rule-based views with custom grouping, sorting, ordering.
-- **Collections**: Organize files into flexible collections without moving or duplicating the originals.
+- **Collections and tags** to organize selected files in bulk without moving or duplicating the originals.
 - **Local AI search** for text prompts, visual similarity, subjects, face clustering, and optional multilingual search in 50+ languages.
-- **Apple Live Photos** recognize paired HEIC/MOV Live Photos, play them in the viewer, and keep linked MOV and AAE sidecars together during rename, move, copy, and delete operations.
-- **RAW + JPEG/HEIC pairs** optionally group a RAW file and its same-named JPEG or HEIC companion in the same folder as one item. The originals remain separate files, while rename, move, copy, paste, and delete operations keep the pair together.
+- **Apple Live Photos and Google Motion Photos** with motion playback and a unified Smart Album filter.
+- **RAW + JPEG/HEIC pairs** displayed as one item, with linked files kept together during file operations.
+- **Configurable RAW thumbnails and previews** using RAW rendering or the camera's embedded preview.
 - **Folder-first workflow** with multiple libraries, drag-and-drop import, copy-paste import, filesystem sync, and safe move/copy/delete operations.
+- **Date-organized import** with day, month, year, or single-folder layouts, original filenames, and duplicate skipping.
 - **Culling and comparison tools** including a four-pane image comparison viewer.
-- **Cleanup tools** to find duplicates and batch move unwanted files to trash.
+- **Duplicate cleanup** with reclaimable-space summaries and bulk removal across duplicate sets.
+- **Customizable viewing** with thumbnails up to 1024 px, adjustable grid sizes and corners, and Quick Preview or separate viewer windows.
+- **Desktop integration** with multiple external apps and wallpaper selection on macOS, Windows, and GNOME Linux.
 - **Built-in editing** for crop, rotate, flip, resize, and basic image adjustments.
 - **Broad format support** for 60+ photo, RAW, and video formats.
 
