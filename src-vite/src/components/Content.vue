@@ -70,11 +70,12 @@
 
         <!-- sort type options -->
         <DropDownSelect
-          :icon="config.search.sortOrder === 0 ? IconSortingAsc : IconSortingDesc"
+          :icon="isRandomSort ? IconSortingShuffle : (config.search.sortOrder === 0 ? IconSortingAsc : IconSortingDesc)"
           :options="toolbarSortOptions"
           :defaultIndex="toolbarSortType"
           :extendOptions="toolbarSortExtendOptions"
           :defaultExtendIndex="toolbarSortOrder"
+          :extendDisabled="isRandomSort"
           :disabled="isSortControlDisabled"
           :selected="isSmartAlbumSortOverride"
           @select="handleSortTypeSelect"
@@ -813,6 +814,7 @@ import {
   IconPerson,
   IconSortingAsc,
   IconSortingDesc,
+  IconSortingShuffle,
   IconFilter,
 } from '@/common/icons';
 
@@ -1381,7 +1383,30 @@ function getActiveCustomSmartAlbum() {
 
 const isCollectionPane = computed(() => libConfig.activePane === 'collection');
 
+const RANDOM_SORT = 7;
+const RANDOM_SEED_MODULUS = 2_147_483_647;
+
+function createRandomSeed() {
+  const values = new Uint32Array(1);
+  crypto.getRandomValues(values);
+  return values[0] % RANDOM_SEED_MODULUS;
+}
+
+const activeSmartAlbum = computed(() =>
+  !isCollectionPane.value && config.main.sidebarIndex === SIDEBAR.SMART_ALBUM
+    ? getActiveCustomSmartAlbum()
+    : null,
+);
+
+const isRandomSort = computed(() => {
+  const sortType = activeSmartAlbum.value
+    ? activeSmartAlbum.value.sort?.type ?? config.search.sortType
+    : config.search.sortType;
+  return Number(sortType) === RANDOM_SORT;
+});
+
 const effectiveGroupBy = computed(() => {
+  if (isRandomSort.value) return GROUP.NONE;
   const smartAlbum = getActiveCustomSmartAlbum();
   return Number(
     !isCollectionPane.value && config.main.sidebarIndex === SIDEBAR.SMART_ALBUM && smartAlbum
@@ -2999,6 +3024,7 @@ const currentQueryParams = ref({
   searchFileType: 0,
   sortType: 0,
   sortOrder: 0,
+  randomSeed: 0,
   searchFileName: "",
   searchAllSubfolders: "",
   searchFolder: "",
@@ -6572,8 +6598,11 @@ async function getFileList(
   requestId: number,
   sourceContext: { source: 'collection' | 'smart'; collectionId?: number | null; smartParams?: any } | null = null,
 ) { 
+  const randomSeed = createRandomSeed();
   currentQuerySource.value = sourceContext?.source || 'query';
-  currentSmartQueryParams.value = sourceContext?.source === 'smart' ? sourceContext.smartParams : null;
+  currentSmartQueryParams.value = sourceContext?.source === 'smart'
+    ? { ...sourceContext.smartParams, randomSeed }
+    : null;
   currentCollectionId.value = sourceContext?.source === 'collection' ? sourceContext.collectionId || null : null;
   currentSearchFileIds.value = [];
 
@@ -6582,6 +6611,7 @@ async function getFileList(
     searchFileType,
     sortType,
     sortOrder,
+    randomSeed,
     searchFileName,
     searchAllSubfolders,
     searchFolder,
@@ -6734,6 +6764,7 @@ async function getCollectionFileList(collectionId: number, requestId: number) {
     searchFileType: config.search.fileType,
     sortType: config.search.sortType,
     sortOrder: config.search.sortOrder,
+    randomSeed: createRandomSeed(),
     searchFileName: '',
     searchAllSubfolders: '',
     searchFolder: '',
@@ -6822,6 +6853,7 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
     rules,
     sortType: Number(smartAlbum?.sort?.type ?? 0),
     sortOrder: Number(smartAlbum?.sort?.order ?? 1),
+    randomSeed: createRandomSeed(),
     folderSort: Number(config.settings.folderSort || 0),
     calendarSort: Number(config.settings.calendarSort || 0),
     categorySort: Number(config.settings.categorySort || 0),
@@ -9684,6 +9716,7 @@ const isSortControlDisabled = computed(() =>
 
 const isGroupControlDisabled = computed(() =>
   isFixedAiResultView.value ||
+  isRandomSort.value ||
   !isGroupingControlAvailable.value ||
   isScanStreamingMode.value
 );
@@ -9702,7 +9735,7 @@ const isSmartAlbumSortOverride = computed(() => {
 });
 
 const isSmartAlbumGroupOverride = computed(() => {
-  if (!isSmartAlbumView.value) return false;
+  if (!isSmartAlbumView.value || isRandomSort.value) return false;
   const group = getActiveCustomSmartAlbum()?.group;
   return !!group && Number(group.type) !== Number(config.search.groupBy ?? GROUP.NONE);
 });

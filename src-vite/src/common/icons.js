@@ -122,6 +122,7 @@ export { default as IconSortingAsc } from '@/assets/icons/sorting-asc.svg';
 export { default as IconSortingCount } from '@/assets/icons/sorting-count.svg';
 export { default as IconSortingDesc } from '@/assets/icons/sorting-desc.svg';
 export { default as IconSortingName } from '@/assets/icons/sorting-name.svg';
+export { default as IconSortingShuffle } from '@/assets/icons/sort-shuffle.svg';
 export { default as IconUpdate } from '@/assets/icons/update.svg';
 export { default as IconUpdateAlert } from '@/assets/icons/update-alert.svg';
 export { default as IconUpdateDot } from '@/assets/icons/update-dot.svg';

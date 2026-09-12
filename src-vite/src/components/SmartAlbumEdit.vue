@@ -38,13 +38,13 @@
             </label>
             <label class="min-w-0 space-y-1">
               <span class="block text-[10px] uppercase tracking-widest font-bold text-base-content/30">{{ $t('album.smart_edit.order') }}</span>
-              <select v-model.number="sortOrder" class="select select-sm text-xs w-full">
+              <select v-model.number="sortOrder" class="select select-sm text-xs w-full" :disabled="isRandomSort">
                 <option v-for="option in sortOrderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
             <label class="min-w-0 space-y-1">
               <span class="block text-[10px] uppercase tracking-widest font-bold text-base-content/30">{{ $t('album.smart_edit.group') }}</span>
-              <select v-model.number="groupType" class="select select-sm text-xs w-full">
+              <select v-model.number="displayedGroupType" class="select select-sm text-xs w-full" :disabled="isRandomSort">
                 <option v-for="option in groupOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </label>
@@ -179,6 +179,11 @@ const matchMode = ref(props.smartAlbum?.query?.match === 'any' ? 'any' : 'all');
 const sortType = ref(Number(props.smartAlbum?.sort?.type ?? config.search.sortType ?? 0));
 const sortOrder = ref(Number(props.smartAlbum?.sort?.order ?? config.search.sortOrder ?? 1));
 const groupType = ref(Number(props.smartAlbum?.group?.type ?? config.search.groupBy ?? 0));
+const isRandomSort = computed(() => sortType.value === 7);
+const displayedGroupType = computed({
+  get: () => isRandomSort.value ? GROUP.NONE : groupType.value,
+  set: (value: number) => { groupType.value = Number(value); },
+});
 
 const tagOptions = ref<any[]>([]);
 const personOptions = ref<any[]>([]);
@@ -217,7 +222,7 @@ function indexedOptions(labels: unknown, fallbacks: string[]) {
 
 const sortOptions = computed(() => indexedOptions(
   localeMsg.value.toolbar.filter?.sort_type_options,
-  ['Taken Date', 'Created Date', 'Modified Date', 'Name', 'Size', 'Dimension', 'Duration'],
+  ['Taken Date', 'Created Date', 'Modified Date', 'Name', 'Size', 'Dimension', 'Duration', 'Random'],
 ));
 
 const sortOrderOptions = computed(() => indexedOptions(

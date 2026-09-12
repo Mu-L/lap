@@ -1936,6 +1936,8 @@ pub struct QueryParams {
     pub search_file_type: i64,
     pub sort_type: i64,
     pub sort_order: i64,
+    #[serde(default)]
+    pub random_seed: i64,
     pub search_all_subfolders: String,
     pub search_folder: String,
     pub start_date: i64,
@@ -1996,6 +1998,8 @@ pub struct SmartQueryParams {
     pub rules: Vec<SmartRule>,
     pub sort_type: i64,
     pub sort_order: i64,
+    #[serde(default)]
+    pub random_seed: i64,
     #[serde(default)]
     pub calendar_sort: i64,
     #[serde(default)]
@@ -5099,7 +5103,7 @@ impl AFile {
         Ok(ids)
     }
 
-    fn build_order_clause_values(sort_type: i64, sort_order: i64) -> String {
+    fn build_order_clause_values(sort_type: i64, sort_order: i64, random_seed: i64) -> String {
         let dir = if sort_order == 1 { "DESC" } else { "ASC" };
         match sort_type {
             0 => format!("a.taken_date {}, a.id {}", dir, dir),
@@ -5109,13 +5113,23 @@ impl AFile {
             4 => format!("a.size {}, a.id {}", dir, dir),
             5 => format!("a.width {}, a.height {}, a.id {}", dir, dir, dir),
             6 => format!("a.duration {}, a.id {}", dir, dir),
+            // A seed makes random order stable for every request in one virtualized
+            // result set, while a new query can supply a different order.
+            7 => {
+                // SQLite has no XOR operator. `(x | y) - (x & y)` is XOR for
+                // non-negative values, so the seed changes the full ordering
+                // instead of merely rotating it.
+                let id_hash = "((a.id * 1103515245 + 12345) & 2147483647)";
+                let seed = random_seed.rem_euclid(2_147_483_647);
+                format!("((({id_hash} | {seed}) - ({id_hash} & {seed}))), a.id")
+            }
             9 => "a.id ASC".to_string(), // internal: stable append order during scanning
             _ => format!("a.taken_date {}, a.id {}", dir, dir),
         }
     }
 
     fn build_order_clause(params: &QueryParams) -> String {
-        Self::build_order_clause_values(params.sort_type, params.sort_order)
+        Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed)
     }
 
     fn smart_rule_string(value: &JsonValue) -> Option<String> {
@@ -5765,7 +5779,7 @@ impl AFile {
         }
         query.push_str(&format!(
             " ORDER BY {}",
-            Self::build_order_clause_values(params.sort_type, params.sort_order)
+            Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed)
         ));
         query.push_str(" LIMIT ? OFFSET ?");
 
@@ -5847,7 +5861,7 @@ impl AFile {
         query.push_str(" GROUP BY a.id");
         query.push_str(&format!(
             " ORDER BY {}",
-            Self::build_order_clause_values(params.sort_type, params.sort_order)
+            Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed)
         ));
         query.push_str(" LIMIT ? OFFSET ?");
 
@@ -5905,7 +5919,7 @@ impl AFile {
         query.push_str(" GROUP BY a.id");
         query.push_str(&format!(
             " ORDER BY {}",
-            Self::build_order_clause_values(params.sort_type, params.sort_order)
+            Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed)
         ));
 
         let final_params: Vec<&dyn ToSql> = sql_params.iter().map(|p| p.as_ref()).collect();
@@ -5936,7 +5950,7 @@ impl AFile {
         }
         query.push_str(&format!(
             " ORDER BY {}",
-            Self::build_order_clause_values(params.sort_type, params.sort_order)
+            Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed)
         ));
 
         let final_params: Vec<&dyn ToSql> = sql_params.iter().map(|p| p.as_ref()).collect();
@@ -5974,7 +5988,7 @@ impl AFile {
                 {}
             )
             SELECT position FROM ranked_files WHERE id = ?",
-            Self::build_order_clause_values(params.sort_type, params.sort_order),
+            Self::build_order_clause_values(params.sort_type, params.sort_order, params.random_seed),
             joins,
             where_clause,
             if needs_group { " GROUP BY a.id" } else { "" }

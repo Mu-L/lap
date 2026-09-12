@@ -420,7 +420,8 @@
         "Nom",
         "Taille",
         "Dimension",
-        "Durée"
+        "Durée",
+        "Aléatoire"
       ],
       "similarity": "Similarité",
       "sort_order_options": [
