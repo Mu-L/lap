@@ -5811,7 +5811,8 @@ watch(() => config.settings.grid.style, () => {
 
 watch(
   () => Boolean(config.settings.grid.showFilmStrip),
-  () => {
+  (showFilmStrip) => {
+    if (!showFilmStrip) stopSlideShow();
     resetGroupingState();
     void nextTick(() => gridViewRef.value?.refreshLayout?.());
   },
@@ -9319,7 +9320,9 @@ const handleSelectMode = (value: any) => {
 };
 
 watch(isMapView, (active) => {
-  if (active && selectMode.value) handleSelectMode(false);
+  if (!active) return;
+  stopSlideShow();
+  if (selectMode.value) handleSelectMode(false);
 });
 
 const handleInfoNavigateFolder = (folderPath: string) => {
