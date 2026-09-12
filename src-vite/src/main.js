@@ -38,9 +38,14 @@ if (isMainWindow) {
   config.$subscribe((_mutation, state) => {
     void emit('config-settings-synced', JSON.parse(JSON.stringify(state.settings)))
   })
-} else if (!isSettingsWindow) {
+} else {
   listen('config-settings-synced', (event) => {
-    Object.assign(config.settings, event.payload)
+    if (isSettingsWindow) {
+      // Settings also needs language updates made from the welcome screen.
+      config.setLanguage(event.payload.language)
+    } else {
+      Object.assign(config.settings, event.payload)
+    }
   })
 }
 

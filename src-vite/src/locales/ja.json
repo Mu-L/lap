@@ -227,8 +227,6 @@
     "error_failed": "インポートに失敗しました: {message}"
   },
   "welcome": {
-    "title": "Lap へようこそ",
-    "description": "あなたのローカルフォトライブラリ。高速で検索可能、常にあなたの管理下に。",
     "add_album_title": "新しいアルバムから始めましょう",
     "add_album_description": "フォルダを選択して、Lapに写真と動画を整理させましょう。",
     "smart_album_title": "スマートアルバムで整理",

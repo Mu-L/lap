@@ -988,6 +988,7 @@ const clickEditAlbum = async (folderPathParam: string, newName: string, newDescr
     // Add new album
     const newAlbum = await addAlbum(folderPathParam);
     if (newAlbum) {
+      config.leftPanel.show = true;
       // Update album name and description if different from folder name
       if (newName !== newAlbum.name || newDescription) {
         await editAlbum(newAlbum.id, newName, newDescription);

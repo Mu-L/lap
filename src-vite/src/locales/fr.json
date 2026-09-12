@@ -227,8 +227,6 @@
     "error_failed": "Échec de l'importation : {message}"
   },
   "welcome": {
-    "title": "Bienvenue sur Lap",
-    "description": "Votre photothèque locale. Rapide, consultable et toujours sous votre contrôle.",
     "add_album_title": "Commencez avec un nouvel album",
     "add_album_description": "Sélectionnez un dossier et laissez Lap organiser vos photos et vidéos.",
     "smart_album_title": "Organiser avec des albums intelligents",

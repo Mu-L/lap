@@ -18,7 +18,7 @@
 
       <!-- left pane -->
       <div
-        v-if="config.leftPanel.show && !uiStore.isFullScreen"
+        v-if="!uiStore.isFullScreen"
         ref="leftPanelRootRef"
         tabindex="-1"
         :class="[
@@ -100,7 +100,7 @@
 
           <!-- panel-->
           <div
-            v-if="leftPanelMounted"
+            v-if="leftPanelMounted || libraryEmpty"
             class="absolute inset-y-0 left-16 pt-10 px-1 border-l border-base-content/5 flex flex-col overflow-hidden transition-[transform,opacity] duration-200 ease-in-out"
             :class="leftPanelVisualExpanded ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'"
             :style="{ width: `calc(${Number(config.leftPanel.width || 260) / 16}rem - 4rem)` }"
@@ -142,8 +142,8 @@
       <div v-if="!uiStore.isFullScreen"
         class="w-1 transition-colors shrink-0"
         :class="{
-          'hover:bg-primary cursor-col-resize': config.leftPanel.show && leftPanelLayoutExpanded,
-          'bg-primary': config.leftPanel.show && leftPanelLayoutExpanded && isDraggingSplitter,
+          'hover:bg-primary cursor-col-resize': leftPanelLayoutExpanded,
+          'bg-primary': leftPanelLayoutExpanded && isDraggingSplitter,
         }" 
         @mousedown="startDraggingSplitter"
         @mouseup="stopDraggingSplitter"
@@ -253,7 +253,10 @@ const uiStore = useUIStore();
 const panelRef = ref<any>(null);
 const contentRef = ref<any>(null);
 const leftPanelRootRef = ref<HTMLElement | null>(null);
-const showPanel = ref(true);
+const showPanel = computed({
+  get: () => config.leftPanel.show,
+  set: (value: boolean) => { config.leftPanel.show = value; },
+});
 const LEFT_PANEL_ANIMATION_MS = 200;
 const leftPanelMounted = ref(showPanel.value);
 const leftPanelVisualExpanded = ref(showPanel.value);
@@ -436,7 +439,6 @@ onMounted(async () => {
 
   unlistenAddAlbumRequested = await listen('add-album-requested', async () => {
     if (config.main.sidebarIndex !== SIDEBAR.ALBUM) config.main.sidebarIndex = SIDEBAR.ALBUM;
-    showPanel.value = true;
     await nextTick();
     (panelRef.value as any)?.clickNewAlbum?.();
   });
@@ -525,9 +527,7 @@ function handleHomeKeyDown(event: KeyboardEvent) {
 
   event.preventDefault();
   event.stopPropagation();
-  if (!libraryEmpty.value) {
-    showPanel.value = !showPanel.value;
-  }
+  showPanel.value = !showPanel.value;
 }
 
 const doSwitchLibrary = async (libraryId: string) => {
@@ -608,7 +608,7 @@ function activateMainPanel() {
 
 // Dragging the splitter
 function startDraggingSplitter(event: MouseEvent) {
-  if(!config.leftPanel.show || !leftPanelLayoutExpanded.value) return; // no expanded left pane
+  if(!leftPanelLayoutExpanded.value) return; // no expanded left pane
 
   isDraggingSplitter.value = true;
   document.addEventListener('mousemove', handleMouseMove);

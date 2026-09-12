@@ -227,8 +227,6 @@
     "error_failed": "导入失败：{message}"
   },
   "welcome": {
-    "title": "欢迎使用 Lap",
-    "description": "您的本地照片库。快速、可搜索，始终由您掌控。",
     "add_album_title": "从新建相册开始",
     "add_album_description": "选择一个文件夹，让 Lap 为您整理照片和视频。",
     "smart_album_title": "智能整理照片",

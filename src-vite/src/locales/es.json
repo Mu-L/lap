@@ -227,8 +227,6 @@
     "error_failed": "Error al importar: {message}"
   },
   "welcome": {
-    "title": "Bienvenido a Lap",
-    "description": "Tu biblioteca de fotos local. Rápida, buscable y siempre bajo tu control.",
     "add_album_title": "Comienza con un álbum nuevo",
     "add_album_description": "Selecciona una carpeta y deja que Lap organice tus fotos y videos.",
     "smart_album_title": "Organiza con álbumes inteligentes",

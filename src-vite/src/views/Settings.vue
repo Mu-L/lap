@@ -318,15 +318,6 @@
                 </option>
               </select>
             </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.image_search.similarity') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.image_search.similarity_hint') }}</div>
-              </div>
-              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.imageSearch.thresholdIndex">
-                <option v-for="(option, index) in similarityOptions" :key="index" :value="option.value">{{ option.label }}</option>
-              </select>
-            </div>
             <div v-if="isDownloadingMultilingualModel" class="px-1 pt-1 space-y-1">
               <div class="flex items-center justify-between text-xs text-base-content/30">
                 <span>{{ $t('settings.image_search.downloading_multilingual_model') }}</span>
@@ -347,6 +338,15 @@
                   <IconClose class="w-3.5 h-3.5" />
                 </button>
               </div>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.image_search.similarity') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.image_search.similarity_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.imageSearch.thresholdIndex">
+                <option v-for="(option, index) in similarityOptions" :key="index" :value="option.value">{{ option.label }}</option>
+              </select>
             </div>
           </div>
 
@@ -1498,7 +1498,7 @@ watch(() => config.settings.scale, (newValue) => {
 watch(() => config.settings.language, (newValue) => {
   locale.value = newValue;
   emit('settings-language-changed', newValue);
-});
+}, { immediate: true });
 watch(() => config.settings.showToolTip, (newValue) => {
   emit('settings-showToolTip-changed', newValue);
 });

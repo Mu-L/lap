@@ -227,8 +227,6 @@
     "error_failed": "Import failed: {message}"
   },
   "welcome": {
-    "title": "Welcome to Lap",
-    "description": "Your local photo library. Fast, searchable, and always under your control.",
     "add_album_title": "Start with a new album",
     "add_album_description": "Select a folder and let Lap organize your photos and videos.",
     "smart_album_title": "Organize with smart albums",

@@ -18,7 +18,7 @@ export const useConfigStore = defineStore('configStore', {
     },
 
     leftPanel: {
-      show: true,                 // show left pane
+      show: false,                // left content panel expanded
       width: 320,                 // left pane width
     },
 
@@ -135,7 +135,7 @@ export const useConfigStore = defineStore('configStore', {
         labelPrimary: 1,         // card view: primary label (1: Name)
         labelSecondary: 3,       // card view: secondary label (3: Dimension)
         thumbnailBadge: 0,       // thumbnail badge (0: empty, 1: file format, 2: ISO, 3: shutter, 4: aperture, 5: focal length, 6: exposure)
-        previewPosition: 0,      // filmstrip view: preview position (0: top, 1: bottom, 2: left, 3: right)
+        previewPosition: 1,      // filmstrip view: preview position (0: top, 1: bottom, 2: left, 3: right)
       },
       
       // image view settings

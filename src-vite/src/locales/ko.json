@@ -227,8 +227,6 @@
     "error_failed": "가져오기 실패: {message}"
   },
   "welcome": {
-    "title": "Lap에 오신 것을 환영합니다",
-    "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",
     "add_album_title": "새 앨범으로 시작하세요",
     "add_album_description": "폴더를 선택하고 Lap이 사진과 동영상을 정리하도록 하세요.",
     "smart_album_title": "스마트 앨범으로 정리",
