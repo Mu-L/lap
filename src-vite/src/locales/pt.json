@@ -611,7 +611,8 @@
       "first_image": "Primeira foto",
       "last_image": "Última foto"
     },
-    "album_exists": "Este álbum já existe"
+    "album_exists": "Este álbum já existe",
+    "album_nested": "Esta pasta sobrepõe-se a outro álbum"
   },
   "statusbar": {
     "files_summary": "{count} arquivos ({size})"

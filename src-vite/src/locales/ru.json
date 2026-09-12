@@ -611,7 +611,8 @@
       "first_image": "Первое фото",
       "last_image": "Последнее фото"
     },
-    "album_exists": "Альбом уже существует"
+    "album_exists": "Альбом уже существует",
+    "album_nested": "Эта папка пересекается с другим альбомом"
   },
   "statusbar": {
     "files_summary": "Файлов: {count} ({size})"

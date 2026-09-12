@@ -611,7 +611,8 @@
       "first_image": "Already the first photo",
       "last_image": "Already the last photo"
     },
-    "album_exists": "This album already exists"
+    "album_exists": "This album already exists",
+    "album_nested": "This folder overlaps another album"
   },
   "statusbar": {
     "files_summary": "{count} files ({size})"

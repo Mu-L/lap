@@ -152,7 +152,7 @@ import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { countFolder, getAlbum, getAllAlbums, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { useToast } from '@/common/toast';
-import { formatFileSize, formatTimestamp, openFolderDialog, getFolderName } from '@/common/utils';
+import { formatFileSize, formatTimestamp, openFolderDialog, getFolderName, isWithinRootPath } from '@/common/utils';
 import { useUIStore } from '@/stores/uiStore';
 import { useLibraryStore } from '@/stores/libraryStore';
 import { getAlbumScanState } from '@/common/scanStatus';
@@ -377,6 +377,14 @@ const clickOk = async () => {
       const exists = albums?.some((album: any) => album.path === selectedFolder.value);
       if (exists) {
         toast.warning(t('tooltip.album_exists'));
+        return;
+      }
+      const isNested = albums?.some((album: any) =>
+        isWithinRootPath(selectedFolder.value, album.path)
+        || isWithinRootPath(album.path, selectedFolder.value)
+      );
+      if (isNested) {
+        toast.warning(t('tooltip.album_nested'));
         return;
       }
     }

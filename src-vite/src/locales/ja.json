@@ -611,7 +611,8 @@
       "first_image": "最初の写真です",
       "last_image": "最後の写真です"
     },
-    "album_exists": "このアルバムは既に存在します"
+    "album_exists": "このアルバムは既に存在します",
+    "album_nested": "このフォルダは別のアルバムと重複しています"
   },
   "statusbar": {
     "files_summary": "{count} ファイル ({size})"

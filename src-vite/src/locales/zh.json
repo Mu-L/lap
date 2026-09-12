@@ -611,7 +611,8 @@
       "first_image": "已经是第一张照片",
       "last_image": "已经是最后一张照片"
     },
-    "album_exists": "此相册已存在"
+    "album_exists": "此相册已存在",
+    "album_nested": "该文件夹与其他相册重叠"
   },
   "statusbar": {
     "files_summary": "{count} 个文件 ({size})"

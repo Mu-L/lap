@@ -267,6 +267,22 @@ impl Album {
             ));
         }
 
+        // Reject an album that overlaps an existing album (nested inside it or
+        // containing it). A folder can only belong to one album tree;
+        // overlapping albums break folder sync/refresh.
+        let new_path = Path::new(path);
+        for album in Self::get_all_albums()? {
+            let existing_path = Path::new(&album.path);
+            if new_path != existing_path
+                && (new_path.starts_with(existing_path) || existing_path.starts_with(new_path))
+            {
+                return Err(format!(
+                    "Cannot add '{}': it overlaps the existing album '{}' ({}).",
+                    path, album.name, album.path
+                ));
+            }
+        }
+
         // Insert the new album into the database
         Self::new(path)?.insert()?;
 
