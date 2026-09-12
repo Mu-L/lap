@@ -187,6 +187,7 @@
       v-if="showAddToCollectionDialog"
       :fileIds="collectionFileIds"
       @applied="handleCollectionsAdded"
+      @deleted="handleCollectionDeleted"
       @cancel="showAddToCollectionDialog = false"
     />
 
@@ -1363,6 +1364,23 @@ async function handleCollectionsAdded({ fileIds, results, changedCollectionIds =
   void emit('collection-files-dropped', { fileIds: [...changedFileIds] });
   if (failed > 0) toast.error(t('collection.add_failed_toast', { count: failed }));
   showAddToCollectionDialog.value = false;
+}
+
+async function handleCollectionDeleted(collectionId: number) {
+  // Deleting a collection may have removed the current file from its last
+  // collection, so re-check membership for the active panes. The dialog stays
+  // open (the delete action doesn't close it).
+  void collectionId;
+  const updatedIds = new Set<number>();
+  for (const pane of allPanes) {
+    const currentFileId = getFileIdByPane(pane);
+    if (currentFileId <= 0 || updatedIds.has(currentFileId)) continue;
+    updatedIds.add(currentFileId);
+    const collectionVersion = Number(getFileInfoByPane(pane)?.collectionVersion || 0) + 1;
+    const hasCollections = Boolean((await getFileCollections(currentFileId))?.length);
+    applyFileMetaToPanes(currentFileId, { has_collections: hasCollections, collectionVersion });
+    syncFileMetaToContent(currentFileId, { has_collections: hasCollections, collectionVersion });
+  }
 }
 
 const onEditComment = async (newComment: any) => {

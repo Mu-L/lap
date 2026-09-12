@@ -717,8 +717,8 @@ const statusBadges = computed<ThumbnailBadge[]>(() => {
   }
   
   if (props.file.has_tags) metaIcons.push({ icon: IconTag });
-  if (props.file.comments?.length > 0) metaIcons.push({ icon: IconComment });
   if (props.file.has_collections) metaIcons.push({ icon: IconBookmark });
+  if (props.file.comments?.length > 0) metaIcons.push({ icon: IconComment });
   if (normalizedRotate.value > 0) {
     metaIcons.push({
       icon: IconRotate,

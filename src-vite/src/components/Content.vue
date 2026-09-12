@@ -723,7 +723,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDelete, getQueryFilePosition, getFolderSearchExcluded,
-         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile } from '@/common/api';
+         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getFileCollections, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import {
   gridSizeFromPosition,
@@ -9791,7 +9791,7 @@ async function syncTagStates(fileStates: Array<{ file_id: number; has_tags: bool
   }
 }
 
-function handleCollectionsAdded({ fileIds = [], results, removedCollectionIds = [], failed = 0 }: { fileIds?: number[]; results: any[]; removedCollectionIds?: number[]; failed?: number }) {
+async function handleCollectionsAdded({ fileIds = [], results, removedCollectionIds = [], failed = 0 }: { fileIds?: number[]; results: any[]; removedCollectionIds?: number[]; failed?: number }) {
   showAddToCollectionDialog.value = false;
   const addedFileIds = new Set(results.flatMap(result => result?.addedFileIds || []).map(Number));
   const skippedFileIds = new Set(results.flatMap(result => result?.skippedFileIds || []).map(Number));
@@ -9805,6 +9805,19 @@ function handleCollectionsAdded({ fileIds = [], results, removedCollectionIds = 
       file.collectionVersion = Number(file.collectionVersion || 0) + 1;
     });
     void tauriEmit('collection-files-dropped', { fileIds: [...addedFileIds] });
+  }
+  if (removedCollectionIds.length > 0) {
+    const removedFileIds = fileIds.map(Number).filter((id: number) => id > 0 && !addedFileIds.has(id));
+    for (const fileId of removedFileIds) {
+      const collections = await getFileCollections(fileId);
+      const hasCollections = Array.isArray(collections) && collections.length > 0;
+      const file = fileList.value.find(f => Number(f?.id) === fileId);
+      if (!file) continue;
+      file.has_collections = hasCollections;
+      // Bump even when still in another collection so FileInfo re-fetches the
+      // now-shrunk membership list, not just when the badge flips on/off.
+      file.collectionVersion = Number(file.collectionVersion || 0) + 1;
+    }
   }
   if (currentQuerySource.value === 'collection' && removedCollectionIds.includes(Number(currentCollectionId.value))) {
     const removedIds = new Set(fileIds.map(Number));
@@ -9822,11 +9835,15 @@ function handleCollectionsAdded({ fileIds = [], results, removedCollectionIds = 
 }
 
 function handleCollectionDeleted(collectionId: number) {
-  if (Number(currentCollectionId.value) !== Number(collectionId)) return;
-  libConfig.activePane = 'main';
-  libConfig.collection.selectedId = null;
-  config.main.sidebarIndex = SIDEBAR.LIBRARY;
-  libConfig.library.item = LIB_ITEM.ALL;
+  if (Number(currentCollectionId.value) === Number(collectionId)) {
+    libConfig.activePane = 'main';
+    libConfig.collection.selectedId = null;
+    config.main.sidebarIndex = SIDEBAR.LIBRARY;
+    libConfig.library.item = LIB_ITEM.ALL;
+  }
+  // Deleting a collection changes has_collections for every file in it, so
+  // refresh the file list to clear stale collection badges / membership.
+  void tauriEmit('refresh-content');
 }
 
 // Helper to yield to main thread
