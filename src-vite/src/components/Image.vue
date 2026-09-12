@@ -686,7 +686,7 @@ function setImageSlot(
     height: layoutHeight,
   };
 
-  if (props.rotate % 180 === 90) {
+  if (Math.abs(props.rotate % 180) === 90) {
     imageSizeRotated.value[slotIndex] = {
       width: layoutHeight,
       height: layoutWidth,
@@ -1499,7 +1499,7 @@ watch(() => imageRotate.value[activeImage.value], (newValue) => {
   const imgSize = imageSize.value[imgIndex];
   
   // swap image width and height
-  if (newValue % 180 === 90) {
+  if (Math.abs(newValue % 180) === 90) {
     imageSizeRotated.value[imgIndex] = { 
       width: imgSize.height, 
       height: imgSize.width 
@@ -1667,8 +1667,8 @@ const onImageReady = (nextIndex: number, preserveLoading: boolean = false) => {
   }
 };
 
-const rotateRight = () => {
-  imageRotate.value[activeImage.value] += 90;
+const rotateView = (delta = 90) => {
+  imageRotate.value[activeImage.value] += delta;
 };
 
 const toggleZoomFit = () => {
@@ -2139,7 +2139,7 @@ defineExpose({
   zoomIn, 
   zoomOut,
   zoomActual,
-  rotateRight,
+  rotateView,
   getViewportState,
   applyViewportState,
   getCurrentImageSrc: () => imageSrc.value[activeImage.value] || '',

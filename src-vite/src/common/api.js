@@ -1381,7 +1381,7 @@ export async function checkFileExists(filePath) {
 // set file rotate
 export async function setFileRotate(fileId, fileRotate) {
   try {
-    const result = await invoke('set_file_rotate', { fileId, rotate: fileRotate % 360 });
+    const result = await invoke('set_file_rotate', { fileId, rotate: ((fileRotate % 360) + 360) % 360 });
     if(result) {
       return result;
     };

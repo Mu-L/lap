@@ -46,6 +46,7 @@ export type ShortcutActionId =
   | 'meta.collection'
   | 'meta.comment'
   | 'meta.rotate'
+  | 'meta.rotateCounterclockwise'
   | 'meta.info'
   | 'view.quickPreview'
   | 'view.close'
@@ -326,7 +327,12 @@ export const SHORTCUTS: readonly ShortcutDefinition[] = [
   {
     id: 'meta.rotate',
     contexts: ['content', 'media-viewer', 'image-viewer'],
-    defaultBindings: [{ code: 'KeyR', allowShift: true, label: 'R' }],
+    defaultBindings: [{ code: 'KeyR', label: 'R' }],
+  },
+  {
+    id: 'meta.rotateCounterclockwise',
+    contexts: ['content', 'media-viewer', 'image-viewer'],
+    defaultBindings: [{ code: 'KeyR', modifiers: ['shift'], label: { mac: '⇧R', windows: 'Shift+R', linux: 'Shift+R' } }],
   },
   {
     id: 'meta.info',

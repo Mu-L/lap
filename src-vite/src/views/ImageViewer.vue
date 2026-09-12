@@ -455,18 +455,18 @@ onMounted(async() => {
 
 
   unlistenGridView = await listen('message-from-content', (event) => {
-    const { message, fileId: targetFileId, changes } = event.payload as any;
+    const { message, fileId: targetFileId, changes, rotateDelta = 90 } = event.payload as any;
     console.log('message-from-content:', message, targetFileId);
     switch (message) {
       case 'rotate':
         for (const pane of allPanes) {
           if (targetFileId !== getFileIdByPane(pane)) continue;
-          getViewerRef(pane)?.rotateRight();
+          getViewerRef(pane)?.rotateView(rotateDelta);
           const target = getFileInfoByPane(pane);
-          if (target) target.rotate = (target.rotate || 0) + 90;
+          if (target) target.rotate = (target.rotate || 0) + rotateDelta;
         }
         if (targetFileId === fileId.value) {
-          iconRotate.value += 90;
+          iconRotate.value += rotateDelta;
         }
         break;
       case 'update-file-meta':
@@ -667,9 +667,10 @@ function handleKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (matchesShortcut('meta.rotate', event, shortcutPlatform)) {
+  if (matchesShortcut('meta.rotate', event, shortcutPlatform)
+    || matchesShortcut('meta.rotateCounterclockwise', event, shortcutPlatform)) {
     event.preventDefault();
-    void clickRotate(getActiveFilePane());
+    void clickRotate(getActiveFilePane(), event.shiftKey ? -90 : 90);
     return;
   }
 
@@ -1299,16 +1300,16 @@ const setCurrentFileCullingFlag = async (cullingFlag: number, pane: Pane = 'left
   void emit('culling-status-updated');
 };
 
-const clickRotate = async (pane: Pane = 'left') => {
+const clickRotate = async (pane: Pane = 'left', rotateDelta = 90) => {
   const target = getFileInfoByPane(pane);
   const currentFileId = getFileIdByPane(pane);
   if (!target || currentFileId <= 0) return;
 
-  const rotate = (Number(target.rotate) || 0) + 90;
+  const rotate = (Number(target.rotate) || 0) + rotateDelta;
   applyFileMetaToPanes(currentFileId, { rotate });
   for (const targetPane of allPanes) {
     if (getFileIdByPane(targetPane) === currentFileId) {
-      getViewerRef(targetPane)?.rotateRight?.();
+      getViewerRef(targetPane)?.rotateView?.(rotateDelta);
     }
   }
   await setFileRotate(currentFileId, rotate);

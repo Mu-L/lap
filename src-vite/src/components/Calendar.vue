@@ -36,7 +36,7 @@
                 :class="['p-1 w-6 h-6 shrink-0 transition-transform', isYearExpanded(item.year) ? 'rotate-90' : '']"
                 @click.stop="toggleYear(item.year)"
               />
-              <span class="sidebar-item-label">{{ item.year }}</span>
+              <span class="sidebar-item-label">{{ formatDate(item.year, 1, 1, localeMsg.format.year) }}</span>
               <span class="sidebar-item-count">{{ item.count.toLocaleString() }}</span>
             </div>
             <ul v-if="isYearExpanded(item.year)">
@@ -117,6 +117,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getTakenDates } from '@/common/api';
+import { formatDate } from '@/common/utils';
 import { SIDEBAR } from '@/common/constants';
 import { IconCalendarDay, IconRight } from '@/common/icons';
 

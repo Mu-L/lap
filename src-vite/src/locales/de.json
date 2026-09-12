@@ -709,7 +709,7 @@
       "tag": "Tags...",
       "collection": "Sammlungen...",
       "comment": "Kommentare...",
-      "rotate": "Vorschau drehen"
+      "rotate": "Ansicht drehen"
     },
     "sort": {
       "sort_by_name": "Nach Name",
@@ -1446,7 +1446,8 @@
         "edit_tags": "Tags bearbeiten",
         "edit_collections": "Sammlungen bearbeiten",
         "edit_comment": "Kommentar bearbeiten",
-        "rotate": "Vorschau drehen",
+        "rotate": "Ansicht im Uhrzeigersinn drehen",
+        "rotate_counterclockwise": "Ansicht gegen den Uhrzeigersinn drehen",
         "thumbnail_increase": "Miniaturansicht vergrößern",
         "thumbnail_decrease": "Miniaturansicht verkleinern"
       }

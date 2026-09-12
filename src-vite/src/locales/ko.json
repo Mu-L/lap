@@ -709,7 +709,7 @@
       "tag": "태그...",
       "collection": "컬렉션...",
       "comment": "메모...",
-      "rotate": "미리보기 회전"
+      "rotate": "보기 회전"
     },
     "sort": {
       "sort_by_name": "이름순",
@@ -1446,7 +1446,8 @@
         "edit_tags": "태그 편집",
         "edit_collections": "컬렉션 편집",
         "edit_comment": "메모 편집",
-        "rotate": "미리보기 회전",
+        "rotate": "보기 시계 방향 회전",
+        "rotate_counterclockwise": "보기 반시계 방향 회전",
         "thumbnail_increase": "썸네일 확대",
         "thumbnail_decrease": "썸네일 축소"
       }

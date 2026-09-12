@@ -161,7 +161,7 @@
             :icon="IconRotate"
             :disabled="fileIndex < 0 || isSlideShow || !canInteract"
             :iconStyle="{ transform: `rotate(${file?.rotate ?? 0}deg)`, transition: 'transform 0.3s' }"
-            :selected="file?.rotate % 360 > 0 && !isSlideShow"
+            :selected="(file?.rotate ?? 0) % 360 !== 0 && !isSlideShow"
             :tooltip="$t('menu.meta.rotate')"
             :shortcut="shortcut('meta.rotate')"
             @click="$emit('item-action', { action: 'rotate', index: fileIndex })"
@@ -1050,7 +1050,7 @@ const handleMenuOpenChange = (isOpen: boolean) => {
 const zoomIn = () => mediaRef.value?.zoomIn();
 const zoomOut = () => mediaRef.value?.zoomOut();
 const zoomActual = () => mediaRef.value?.zoomActual();
-const rotateRight = () => mediaRef.value?.rotateRight();
+const rotateView = (delta = 90) => mediaRef.value?.rotateView(delta);
 const togglePlay = () => mediaRef.value?.togglePlay?.();
 const getViewportState = () => mediaRef.value?.getViewportState?.();
 const applyViewportState = (viewport: any, silent = false) => mediaRef.value?.applyViewportState?.(viewport, silent);
@@ -1181,7 +1181,7 @@ defineExpose({
   zoomIn,
   zoomOut,
   zoomActual,
-  rotateRight,
+  rotateView,
   togglePlay,
   getViewportState,
   applyViewportState,

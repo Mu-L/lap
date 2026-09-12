@@ -4392,10 +4392,11 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (matchesShortcut('meta.rotate', event, shortcutPlatform)) {
+  if (matchesShortcut('meta.rotate', event, shortcutPlatform)
+    || matchesShortcut('meta.rotateCounterclockwise', event, shortcutPlatform)) {
     event.preventDefault();
     if (selectMode.value && selectedCount.value === 0) return;
-    void clickRotate();
+    void rotateSelected(event.shiftKey ? -90 : 90);
     return;
   }
 
@@ -9092,7 +9093,9 @@ watch(() => config.settings.slideShowInterval, () => {
 });
 
 // set file rotate
-const clickRotate = async () => {
+const clickRotate = () => rotateSelected(90);
+
+const rotateSelected = async (rotateDelta: number) => {
   if (selectMode.value && selectedCount.value === 0) return;
   if (selectMode.value && selectedCount.value > 0) {
     const items = await getActionableSelectedItemsForAction();
@@ -9100,25 +9103,25 @@ const clickRotate = async () => {
     if (!await confirmLargeBatch(items.length)) return;
     const result = await batchUpdateFileMetadata({
       fileIds: items.map(item => item.id),
-      rotateDelta: 90,
+      rotateDelta,
     });
     if (result === null) return;
     items.forEach(item => {
-      item.rotate = ((Number(item.rotate) || 0) + 90) % 360;
+      item.rotate = (Number(item.rotate) || 0) + rotateDelta;
     });
     const activeItem = fileList.value[selectedItemIndex.value];
     if (activeItem?.isSelected) {
-      tauriEmit('message-from-content', { message: 'rotate', fileId: activeItem.id });
+      tauriEmit('message-from-content', { message: 'rotate', fileId: activeItem.id, rotateDelta });
       syncFileMetaToImageViewer(activeItem.id, { rotate: activeItem.rotate });
     }
     return;
   }
 
   if (selectedItemIndex.value >= 0) {
-    fileList.value[selectedItemIndex.value].rotate += 90;
+    fileList.value[selectedItemIndex.value].rotate = (Number(fileList.value[selectedItemIndex.value].rotate) || 0) + rotateDelta;
 
     // notify the image viewer
-    tauriEmit('message-from-content', { message: 'rotate', fileId: fileList.value[selectedItemIndex.value].id });
+    tauriEmit('message-from-content', { message: 'rotate', fileId: fileList.value[selectedItemIndex.value].id, rotateDelta });
 
     // update the rotate status in the database
     setFileRotate(fileList.value[selectedItemIndex.value].id, fileList.value[selectedItemIndex.value].rotate);

@@ -709,7 +709,7 @@
       "tag": "タグ...",
       "collection": "コレクション...",
       "comment": "コメント...",
-      "rotate": "プレビューを回転"
+      "rotate": "表示を回転"
     },
     "sort": {
       "sort_by_name": "名前順",
@@ -1446,7 +1446,8 @@
         "edit_tags": "タグを編集",
         "edit_collections": "コレクションを編集",
         "edit_comment": "コメントを編集",
-        "rotate": "プレビューを回転",
+        "rotate": "表示を時計回りに回転",
+        "rotate_counterclockwise": "表示を反時計回りに回転",
         "thumbnail_increase": "サムネイルを拡大",
         "thumbnail_decrease": "サムネイルを縮小"
       }

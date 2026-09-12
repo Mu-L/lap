@@ -966,8 +966,8 @@ const zoomOut = () => {
 const zoomActual = () => {
   zoomAtPosition(0, 0, 1);
 };
-const rotateRight = () => {
-  rotate.value = (rotate.value + 90) % 360;
+const rotateView = (delta = 90) => {
+  rotate.value += delta;
   updateTransform();
 };
 const togglePlay = () => {
@@ -1058,7 +1058,7 @@ defineExpose({
   zoomIn,
   zoomOut,
   zoomActual,
-  rotateRight,
+  rotateView,
   togglePlay,
   getViewportState,
   applyViewportState,

@@ -709,7 +709,7 @@
       "tag": "Tags...",
       "collection": "Collections...",
       "comment": "Comments...",
-      "rotate": "Rotate preview"
+      "rotate": "Rotate view"
     },
     "sort": {
       "sort_by_name": "Sort by name",
@@ -1446,7 +1446,8 @@
         "edit_tags": "Edit tags",
         "edit_collections": "Edit collections",
         "edit_comment": "Edit comment",
-        "rotate": "Rotate preview",
+        "rotate": "Rotate view (clockwise)",
+        "rotate_counterclockwise": "Rotate view (counterclockwise)",
         "thumbnail_increase": "Increase thumbnail size",
         "thumbnail_decrease": "Decrease thumbnail size"
       }
