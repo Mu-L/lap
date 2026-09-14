@@ -718,7 +718,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFilesByIds, getGroupedQueryRows, getGroupedFilePosition, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
          copyImages, renameFile, moveFile, moveFileOutsideLibrary, copyFile, deleteFile, deleteFilePermanently, batchDeleteFiles, editFileComment, getFileThumb, getFileThumbs, getFileInfo,
-         setFileRotate, setFileFavorite, setFileRating, setFileCullingFlag, batchUpdateFileMetadata, getTagsForFile, searchSimilarImages, generateEmbedding,
+         setFileRotate, setFileFavorite, setFileRating, setFileCullingFlag, batchUpdateFileMetadata, getTagsForFile, getTagGroupName, searchSimilarImages, generateEmbedding,
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover, setDesktopWallpaper,
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
@@ -3043,6 +3043,7 @@ const currentQueryParams = ref({
   rating: -1,
   cullingFlag: -1,
   tagId: 0,
+  tagGroupId: 0,
   personId: 0,
   smallFileFilter: 0,
 });
@@ -4865,6 +4866,7 @@ function buildScanStreamQueryParams() {
     isFavorite: false,
     rating: -1,
     tagId: 0,
+    tagGroupId: 0,
     personId: 0,
   };
 }
@@ -5685,6 +5687,7 @@ watch(
     personId: libConfig.person.id,
     calendar: [config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
     tagId: libConfig.tag.id,
+    tagGroupId: libConfig.tag.groupId,
     location: [libConfig.location.admin1, libConfig.location.name],
     camera: [config.camera.isCamera, libConfig.camera.make, libConfig.camera.model, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel],
   }),
@@ -5715,7 +5718,7 @@ watch(
     config.settings.folderSort, config.settings.calendarSort, config.settings.categorySort, config.search.groupBy, // group sorting and filtering
     libConfig.person.id,                                                              // person
     config.calendar.view, libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date, // calendar
-    libConfig.tag.id, // tag
+    libConfig.tag.id, libConfig.tag.groupId, libConfig.tag.activateTick, // tag
     libConfig.location.admin1, libConfig.location.name,                               // location
     libConfig.camera.make, libConfig.camera.model,                                    // camera 
     config.camera.isCamera, (libConfig.camera as any).lensMake, (libConfig.camera as any).lensModel, // lens
@@ -6590,6 +6593,7 @@ async function getFileList(
     rating = -1,
     cullingFlag = -1,
     tagId = 0,
+    tagGroupId = 0,
     personId = 0,
     smallFileFilter = Number(config.settings.smallFileFilter || 0),
     gpsMinLat = null,
@@ -6632,6 +6636,7 @@ async function getFileList(
     rating,
     cullingFlag,
     tagId,
+    tagGroupId,
     personId,
     smallFileFilter,
     gpsMinLat,
@@ -6785,6 +6790,7 @@ async function getCollectionFileList(collectionId: number, requestId: number) {
     isFavorite: false,
     rating: -1,
     tagId: 0,
+    tagGroupId: 0,
     personId: 0,
   };
 
@@ -7046,6 +7052,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     isFavorite: false,
     rating: -1,
     tagId: 0,
+    tagGroupId: 0,
     personId: 0,
     groupBy: 0,
   };
@@ -7482,7 +7489,19 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
     }
   } 
   else if(newIndex === SIDEBAR.TAG) {
-    if (libConfig.tag.id === null) {
+    if (libConfig.tag.groupId) {
+      const groupId = libConfig.tag.groupId;
+      getTagGroupName(groupId).then(name => {
+        if (requestId !== currentContentRequestId) return;
+        if (name) {
+          contentTitle.value = name;
+          getFileList({ tagGroupId: groupId }, requestId);
+        } else {
+          contentTitle.value = "";
+          showEmptyContent(requestId);
+        }
+      }).catch(() => { if (requestId === currentContentRequestId) showEmptyContent(requestId); });
+    } else if (libConfig.tag.id === null) {
       contentTitle.value = "";
       showEmptyContent(requestId);
     } else {

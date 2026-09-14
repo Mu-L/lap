@@ -31,6 +31,7 @@ mod t_lens;
 mod t_libraw;
 mod t_menu;
 mod t_migration;
+mod t_tag_groups;
 mod t_motion_photo;
 mod t_pasteboard;
 mod t_protocol;
@@ -357,6 +358,12 @@ async fn main() {
             t_cmds::set_file_culling_flag,
             t_cmds::batch_update_file_metadata,
             // tag
+            t_cmds::get_tag_group_name,
+            t_cmds::get_tag_groups,
+            t_cmds::save_tag_group,
+            t_cmds::reorder_tag_groups,
+            t_cmds::delete_tag_group,
+            t_cmds::move_tags_to_group,
             t_cmds::get_all_tags,
             t_cmds::get_tag_counts,
             t_cmds::get_tag_name,

@@ -219,6 +219,10 @@ impl Default for CullingState {
 #[serde(rename_all = "camelCase")]
 pub struct TagState {
     pub id: Option<i64>,
+    #[serde(default)]
+    pub group_id: Option<i64>,
+    #[serde(default)]
+    pub collapsed_group_ids: Vec<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -242,6 +246,8 @@ impl Default for TagState {
     fn default() -> Self {
         Self {
             id: None,
+            group_id: None,
+            collapsed_group_ids: Vec::new(),
         }
     }
 }

@@ -194,6 +194,7 @@ export { default as IconPhotoSearch } from '@/assets/icons/photo-search.svg';
 export { default as IconSettings } from '@/assets/icons/settings.svg';
 export { default as IconSparkles } from '@/assets/icons/sparkles.svg';
 export { default as IconTag } from '@/assets/icons/tag.svg';
+export { default as IconTagAdd } from '@/assets/icons/tag-add.svg';
 export { default as IconVideo } from '@/assets/icons/video.svg';
 export { default as IconVideoSlash } from '@/assets/icons/video-slash.svg';
 

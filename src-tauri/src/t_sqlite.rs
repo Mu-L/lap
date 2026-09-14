@@ -1976,6 +1976,8 @@ pub struct QueryParams {
     #[serde(default = "default_culling_flag")]
     pub culling_flag: i64,
     pub tag_id: i64,
+    #[serde(default)]
+    pub tag_group_id: i64,
     pub person_id: i64,
     // GPS bounding box filter (e.g. for "photos in this map area")
     #[serde(default)]
@@ -4619,6 +4621,10 @@ impl AFile {
             sql_params.push(Box::new(params.culling_flag));
         }
 
+        if params.tag_group_id > 0 {
+            conditions.push("EXISTS (SELECT 1 FROM afile_tags ft JOIN atags t ON t.id = ft.tag_id WHERE ft.file_id = a.id AND t.group_id = ?)".to_string());
+            sql_params.push(Box::new(params.tag_group_id));
+        }
         if params.tag_id > 0 {
             joins.push("INNER JOIN afile_tags at ON a.id = at.file_id");
             conditions.push("at.tag_id = ?".to_string());
@@ -7712,6 +7718,8 @@ pub struct ATag {
     pub id: i64,
     pub name: String,
     pub count: Option<i64>,
+    pub group_id: i64,
+    pub group_name: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -7733,39 +7741,28 @@ impl ATag {
             id: row.get(0)?,
             name: row.get(1)?,
             count: row.get(2)?,
+            group_id: row.get(3)?,
+            group_name: row.get(4)?,
         })
     }
 
-    /// Add a new tag. If the tag already exists, return the existing one.
-    pub fn add(name: &str) -> Result<Self, String> {
+    pub fn add(name: &str, group_id: Option<i64>) -> Result<Self, String> {
         let trimmed = name.trim();
-        if trimmed.is_empty() {
-            return Err("Tag name cannot be empty".to_string());
+        if trimmed.is_empty() || trimmed.chars().count() > 255 {
+            return Err("Tag name must contain 1–255 characters".to_string());
         }
-        let conn = open_conn()?;
-        // First, try to fetch the tag to see if it already exists.
-        let existing_tag = conn
-            .query_row(
-                "SELECT id, name, 0 as count FROM atags WHERE name = ?1 COLLATE NOCASE",
-                params![trimmed],
-                Self::from_row,
-            )
-            .optional()
-            .map_err(|e| e.to_string())?;
-
-        if let Some(tag) = existing_tag {
-            Ok(tag)
-        } else {
-            // The tag doesn't exist, so insert it.
-            conn.execute("INSERT INTO atags (name) VALUES (?1)", params![trimmed])
-                .map_err(|e| e.to_string())?;
-            let id = conn.last_insert_rowid();
-            Ok(Self {
-                id,
-                name: trimmed.to_string(),
-                count: Some(0),
-            })
-        }
+        let mut conn = open_conn()?;
+        let tx = conn.transaction().map_err(|e| e.to_string())?;
+        let group_id: i64 = match group_id {
+            Some(id) => id,
+            None => tx.query_row("SELECT id FROM atag_groups WHERE is_default = 1", [], |r| r.get(0)).map_err(|e| e.to_string())?,
+        };
+        let exists: bool = tx.query_row("SELECT EXISTS(SELECT 1 FROM atags WHERE name = ? COLLATE NOCASE)", [trimmed], |r| r.get(0)).map_err(|e| e.to_string())?;
+        if exists { return Err("A tag with this name already exists".to_string()); }
+        tx.execute("INSERT INTO atags(name, group_id) VALUES (?1, ?2)", params![trimmed, group_id]).map_err(|e| e.to_string())?;
+        let tag = tx.query_row("SELECT t.id, t.name, 0, t.group_id, g.name FROM atags t JOIN atag_groups g ON g.id = t.group_id WHERE t.id = ?", [tx.last_insert_rowid()], Self::from_row).map_err(|e| e.to_string())?;
+        tx.commit().map_err(|e| e.to_string())?;
+        Ok(tag)
     }
 
     /// Get all tags from the db
@@ -7792,7 +7789,7 @@ impl ATag {
             _ => "atags.name ASC".to_string(),
         };
         let query = format!(
-            "SELECT atags.id, atags.name, 0 AS count FROM atags ORDER BY {order_clause}",
+            "SELECT atags.id, atags.name, 0 AS count, atags.group_id, g.name FROM atags JOIN atag_groups g ON g.id = atags.group_id ORDER BY {order_clause}",
         );
         let mut stmt = conn.prepare(query.as_str()).map_err(|e| e.to_string())?;
 
@@ -7828,6 +7825,31 @@ impl ATag {
         rows.collect::<Result<HashMap<_, _>, _>>().map_err(|e| e.to_string())
     }
 
+    /// Count distinct visible files for every tag group.
+    pub fn get_group_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+        Self::get_group_counts_on(&*open_conn()?, small_file_filter)
+    }
+
+    fn get_group_counts_on(conn: &Connection, small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+        let query = format!(
+            "SELECT t.group_id, COUNT(DISTINCT a.id)
+             FROM afile_tags ft
+             JOIN atags t ON t.id = ft.tag_id
+             JOIN afiles a ON a.id = ft.file_id
+             JOIN afolders b ON b.id = a.folder_id
+             WHERE {}{}{} AND {}
+             GROUP BY t.group_id",
+            AFile::live_photo_companion_exclusion_condition(),
+            AFile::small_file_filter_sql(small_file_filter, "a"),
+            AFile::inaccessible_album_filter("b"),
+            AFile::search_exclusion_condition("b"),
+        );
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+        let rows = stmt.query_map([], |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)))
+            .map_err(|e| e.to_string())?;
+        rows.collect::<Result<HashMap<_, _>, _>>().map_err(|e| e.to_string())
+    }
+
     /// Get tag name by id
     pub fn get_name(tag_id: i64) -> Result<String, String> {
         let conn = open_conn()?;
@@ -7846,8 +7868,9 @@ impl ATag {
         let conn = open_conn()?;
         let mut stmt = conn
             .prepare(
-                "SELECT t.id, t.name, 0 as count
+                "SELECT t.id, t.name, 0 as count, t.group_id, g.name
                 FROM atags t
+                JOIN atag_groups g ON g.id = t.group_id
                 INNER JOIN afile_tags ft ON t.id = ft.tag_id
                 WHERE ft.file_id = ?1
                 ORDER BY t.name ASC",
@@ -9851,6 +9874,41 @@ fn move_or_copy(src: &Path, dst: &Path) -> Result<(), String> {
             })?;
             fs::remove_file(src)
                 .map_err(|e| format!("Failed to remove source file '{}': {}", src.display(), e))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tag_group_query_tests {
+    use super::*;
+
+    #[test]
+    fn group_filter_and_counts_deduplicate_and_honor_visibility() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("CREATE TABLE afolders(id INTEGER PRIMARY KEY, album_id INTEGER, path TEXT, is_excluded_from_search INTEGER);
+            INSERT INTO afolders VALUES(1, 1, '/visible', 0), (2, 1, '/excluded', 1);
+            CREATE TABLE afiles(id INTEGER PRIMARY KEY, folder_id INTEGER, live_photo_video_id INTEGER, width INTEGER, height INTEGER);
+            INSERT INTO afiles VALUES(1,1,NULL,1000,1000), (2,1,NULL,100,100), (3,1,NULL,1000,1000), (4,2,NULL,1000,1000), (5,1,3,1000,1000), (6,1,NULL,1000,1000);
+            CREATE TABLE atags(id INTEGER PRIMARY KEY, group_id INTEGER);
+            INSERT INTO atags VALUES(10,1), (11,1), (12,2);
+            CREATE TABLE afile_tags(file_id INTEGER, tag_id INTEGER, PRIMARY KEY(file_id,tag_id));
+            INSERT INTO afile_tags VALUES(1,10), (1,11), (2,10), (3,10), (4,10), (5,10), (6,12);").unwrap();
+        let mut params: QueryParams = serde_json::from_value(serde_json::json!({
+            "searchFileName":"", "searchFileType":0, "sortType":0, "sortOrder":0,
+            "searchAllSubfolders":"", "searchFolder":"", "startDate":0, "endDate":0,
+            "calendarSort":0, "make":"", "model":"", "lensMake":"", "lensModel":"",
+            "locationAdmin1":"", "locationName":"", "isFavorite":false, "rating":-1,
+            "tagId":0, "personId":0, "tagGroupId":1, "smallFileFilter":160
+        })).unwrap();
+        for (filter, expected) in [(160, vec![1_i64, 5]), (0, vec![1_i64, 2, 5])] {
+            params.small_file_filter = filter;
+            let (joins, conditions, values) = AFile::build_search_query_parts(&params);
+            let mut stmt = conn.prepare(&format!("SELECT a.id FROM afiles a JOIN afolders b ON b.id = a.folder_id {joins} {conditions} ORDER BY a.id")).unwrap();
+            let ids: Vec<i64> = stmt.query_map(rusqlite::params_from_iter(values.iter()), |r| r.get(0)).unwrap().collect::<Result<_, _>>().unwrap();
+            assert_eq!(ids, expected);
+            let counts = ATag::get_group_counts_on(&conn, filter).unwrap();
+            assert_eq!(counts[&1], expected.len() as i64);
+            assert_eq!(counts[&2], 1);
         }
     }
 }

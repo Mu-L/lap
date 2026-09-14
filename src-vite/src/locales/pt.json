@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "Renomear",
-      "delete": "Excluir"
+      "delete": "Excluir",
+      "new_group": "Novo grupo",
+      "edit_group": "Editar grupo",
+      "delete_group": "Excluir grupo",
+      "search": "Pesquisar tags ou grupos",
+      "clear_search": "Limpar pesquisa",
+      "active_tag": "Tag selecionada neste grupo",
+      "name": "Nome",
+      "locate": "Localizar tag",
+      "empty": "Nenhuma tag",
+      "move_to": "Mover para grupo",
+      "delete_message": "Excluir “{name}”? As tags serão movidas para Default. As tags dos arquivos serão mantidas.",
+      "exists_in": "Esta tag já existe em “{group}”.",
+      "name_exists": "Já existe um grupo com este nome.",
+      "new_tag_group": "Grupo da nova tag"
     },
     "meta": {
       "favorite": "Favoritar",

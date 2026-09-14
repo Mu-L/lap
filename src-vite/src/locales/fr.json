@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "Renommer",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "new_group": "Nouveau groupe",
+      "edit_group": "Modifier le groupe",
+      "delete_group": "Supprimer le groupe",
+      "search": "Rechercher des tags ou groupes",
+      "clear_search": "Effacer la recherche",
+      "active_tag": "Tag sélectionné dans ce groupe",
+      "name": "Nom",
+      "locate": "Afficher le tag",
+      "empty": "Aucun tag",
+      "move_to": "Déplacer vers un groupe",
+      "delete_message": "Supprimer « {name} » ? Ses tags seront déplacés vers Default. Les tags des fichiers seront conservés.",
+      "exists_in": "Ce tag existe déjà dans « {group} ».",
+      "name_exists": "Un groupe portant ce nom existe déjà.",
+      "new_tag_group": "Groupe du nouveau tag"
     },
     "meta": {
       "favorite": "Favori",

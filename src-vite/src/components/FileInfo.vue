@@ -253,13 +253,14 @@
             />
 
             <!-- Tags -->
-            <template v-if="fileInfo?.tags?.length">
+            <template v-if="displayTags.length">
               <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('file_info.tags') }}</div>
               <div class="group/field flex items-center min-h-6 gap-1">
                 <div class="text-[12px] text-base-content/75 flex flex-wrap gap-1 flex-1 min-w-0 cursor-pointer" @click.stop="emit('quickEditTag')">
                   <span
-                    v-for="tag in fileInfo.tags"
+                    v-for="tag in displayTags"
                     :key="tag.id"
+                    :title="tag.group_name"
                     class="badge badge-sm badge-outline border-base-content/20 bg-base-content/5 font-medium text-base-content/75"
                   >{{ tag.name }}</span>
                 </div>
@@ -449,13 +450,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, watch, onBeforeUnmount } from 'vue';
+import { ref, nextTick, computed, watch, onBeforeUnmount, onMounted } from 'vue';
+import { listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
-import { config } from '@/common/config';
+import { config, libConfig } from '@/common/config';
 import { isWebViewVideoPlaybackDisabled } from '@/common/video';
-import { renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath, getFacesForFile, getPersonThumbnail } from '@/common/api';
+import { getTagsForFile, renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath, getFacesForFile, getPersonThumbnail } from '@/common/api';
 import { 
   extractFileName, 
   getFileExtension,
@@ -521,6 +523,22 @@ const emit = defineEmits([
   'navigateMetadata',
   'navigatePerson',
 ]);
+
+const displayTags = ref<any[]>([]);
+let tagsRequest = 0;
+let tagsDisposed = false;
+let stopTags: (() => void) | undefined;
+async function refreshTags() {
+  const id = props.fileInfo?.id; const library = libConfig._libraryId; const request = ++tagsRequest;
+  if (!id) { displayTags.value = []; return; }
+  const tags = await getTagsForFile(id);
+  if (!tagsDisposed && request === tagsRequest && props.fileInfo?.id === id && libConfig._libraryId === library && tags) displayTags.value = tags;
+}
+watch(() => [props.fileInfo?.id, props.fileInfo?.tags, libConfig._libraryId], () => {
+  displayTags.value = props.fileInfo?.tags || []; void refreshTags();
+}, { immediate: true });
+onMounted(async () => { const stop = await listen('tags-changed', refreshTags); if (tagsDisposed) stop(); else stopTags = stop; });
+onBeforeUnmount(() => { tagsDisposed = true; tagsRequest++; stopTags?.(); });
 
 const toast = useToast();
 const showPreviewPanel = computed(() => config.infoPanel.showPreview);

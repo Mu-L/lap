@@ -148,6 +148,11 @@ fn get_migrations() -> Vec<Migration> {
             description: "Add motion photo offset",
             sql: "",
         },
+        Migration {
+            version: 17,
+            description: "Add tag groups and persistent ordering",
+            sql: "",
+        },
     ]
 }
 
@@ -463,6 +468,8 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
                             format!("Migration 16 failed adding motion_photo_offset: {}", e)
                         })?;
                 }
+            } else if migration.version == 17 {
+                migrate_tag_groups(conn)?;
             } else if !migration.sql.trim().is_empty() {
                 conn.execute_batch(migration.sql)
                     .map_err(|e| format!("Migration {} failed: {}", migration.version, e))?;
@@ -483,4 +490,39 @@ pub fn check_and_migrate(conn: &Connection) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+// Idempotent and atomic, including when a previous migration run was interrupted.
+pub(crate) fn migrate_tag_groups(conn: &Connection) -> Result<(), String> {
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    tx.execute_batch("CREATE TABLE IF NOT EXISTS atag_groups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_default INTEGER NOT NULL DEFAULT 0 CHECK(is_default IN (0, 1))
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_atag_groups_default
+        ON atag_groups(is_default) WHERE is_default = 1;
+    INSERT INTO atag_groups(name, is_default)
+        SELECT 'Default', 1 WHERE NOT EXISTS (SELECT 1 FROM atag_groups WHERE is_default = 1);")
+        .map_err(|e| e.to_string())?;
+    if !table_has_column(&tx, "atags", "group_id")? {
+        tx.execute_batch("ALTER TABLE atags ADD COLUMN group_id INTEGER REFERENCES atag_groups(id);")
+            .map_err(|e| e.to_string())?;
+    }
+    tx.execute_batch("UPDATE atags SET group_id = (SELECT id FROM atag_groups WHERE is_default = 1)
+        WHERE group_id IS NULL;
+        CREATE INDEX IF NOT EXISTS idx_atags_group_id ON atags(group_id);
+        CREATE TRIGGER IF NOT EXISTS protect_default_tag_group_delete BEFORE DELETE ON atag_groups
+        WHEN OLD.is_default = 1 BEGIN SELECT RAISE(ABORT, 'Cannot delete Default'); END;
+        CREATE TRIGGER IF NOT EXISTS protect_default_tag_group_update BEFORE UPDATE ON atag_groups
+        WHEN NEW.is_default != OLD.is_default OR (OLD.is_default = 1 AND NEW.name != OLD.name)
+        BEGIN SELECT RAISE(ABORT, 'Cannot rename or replace Default'); END;
+        CREATE TRIGGER IF NOT EXISTS assign_default_tag_group AFTER INSERT ON atags
+        WHEN NEW.group_id IS NULL BEGIN UPDATE atags
+        SET group_id = (SELECT id FROM atag_groups WHERE is_default = 1) WHERE id = NEW.id; END;
+        CREATE TRIGGER IF NOT EXISTS require_tag_group BEFORE UPDATE OF group_id ON atags
+        WHEN NEW.group_id IS NULL BEGIN SELECT RAISE(ABORT, 'Tag group is required'); END;")
+        .map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())
 }

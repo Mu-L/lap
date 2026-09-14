@@ -2789,6 +2789,36 @@ pub fn batch_update_file_metadata(params: BatchFileMetadataUpdate) -> Result<usi
 
 // tag
 
+#[tauri::command]
+pub fn get_tag_group_name(id: i64) -> Result<String, String> {
+    crate::t_tag_groups::get_name(id)
+}
+
+#[tauri::command]
+pub fn get_tag_groups(small_file_filter: i64) -> Result<Vec<crate::t_tag_groups::TagGroup>, String> {
+    crate::t_tag_groups::get_all(small_file_filter)
+}
+
+#[tauri::command]
+pub fn save_tag_group(id: Option<i64>, name: &str) -> Result<i64, String> {
+    crate::t_tag_groups::save(id, name)
+}
+
+#[tauri::command]
+pub fn reorder_tag_groups(ids: Vec<i64>) -> Result<(), String> {
+    crate::t_tag_groups::reorder(&ids)
+}
+
+#[tauri::command]
+pub fn delete_tag_group(id: i64) -> Result<(), String> {
+    crate::t_tag_groups::delete(id)
+}
+
+#[tauri::command]
+pub fn move_tags_to_group(tag_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
+    crate::t_tag_groups::move_tags(&tag_ids, group_id)
+}
+
 /// get all tags
 #[tauri::command]
 pub fn get_all_tags(sort: i64, small_file_filter: i64) -> Result<Vec<ATag>, String> {
@@ -2810,8 +2840,8 @@ pub fn get_tag_name(tag_id: i64) -> Result<String, String> {
 
 /// create a new tag
 #[tauri::command]
-pub fn create_tag(name: &str) -> Result<ATag, String> {
-    ATag::add(name).map_err(|e| format!("Error while creating tag: {}", e))
+pub fn create_tag(name: &str, group_id: Option<i64>) -> Result<ATag, String> {
+    ATag::add(name, group_id).map_err(|e| format!("Error while creating tag: {}", e))
 }
 
 /// rename a tag

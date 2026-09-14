@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "Rename",
-      "delete": "Delete"
+      "delete": "Delete",
+      "new_group": "New group",
+      "edit_group": "Edit group",
+      "delete_group": "Delete group",
+      "search": "Search tags or groups",
+      "clear_search": "Clear search",
+      "active_tag": "Selected tag in this group",
+      "name": "Name",
+      "locate": "Locate tag",
+      "empty": "No tags yet",
+      "move_to": "Move to group",
+      "delete_message": "Delete “{name}”? Its tags will move to Default. Tags on files will be kept.",
+      "exists_in": "This tag already exists in “{group}”.",
+      "name_exists": "A group with this name already exists.",
+      "new_tag_group": "Group for new tag"
     },
     "meta": {
       "favorite": "Favorite",

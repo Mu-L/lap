@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "重命名",
-      "delete": "删除"
+      "delete": "删除",
+      "new_group": "新建分组",
+      "edit_group": "编辑分组",
+      "delete_group": "删除分组",
+      "search": "搜索标签或分组",
+      "clear_search": "清空搜索",
+      "active_tag": "该分组内有选中的标签",
+      "name": "名称",
+      "locate": "定位标签",
+      "empty": "暂无标签",
+      "move_to": "移动到分组",
+      "delete_message": "删除“{name}”？组内标签将移至 Default，文件上的标签将保留。",
+      "exists_in": "该标签已存在于“{group}”。",
+      "name_exists": "已存在同名分组。",
+      "new_tag_group": "新标签所属分组"
     },
     "meta": {
       "favorite": "收藏",

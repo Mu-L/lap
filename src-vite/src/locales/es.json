@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "Renombrar",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "new_group": "Nuevo grupo",
+      "edit_group": "Editar grupo",
+      "delete_group": "Eliminar grupo",
+      "search": "Buscar etiquetas o grupos",
+      "clear_search": "Borrar búsqueda",
+      "active_tag": "Etiqueta seleccionada en este grupo",
+      "name": "Nombre",
+      "locate": "Localizar etiqueta",
+      "empty": "Sin etiquetas",
+      "move_to": "Mover al grupo",
+      "delete_message": "¿Eliminar «{name}»? Sus etiquetas se moverán a Default. Se conservarán las etiquetas de los archivos.",
+      "exists_in": "Esta etiqueta ya existe en «{group}».",
+      "name_exists": "Ya existe un grupo con este nombre.",
+      "new_tag_group": "Grupo de la nueva etiqueta"
     },
     "meta": {
       "favorite": "Favorito",

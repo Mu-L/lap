@@ -1523,6 +1523,30 @@ export async function batchUpdateFileMetadata(params) {
 
 // tags
 
+export async function getTagGroupName(id) {
+  return invoke('get_tag_group_name', { id });
+}
+
+export async function getTagGroups(smallFileFilter = config.settings.smallFileFilter) {
+  return invoke('get_tag_groups', { smallFileFilter });
+}
+
+export async function saveTagGroup(id, name) {
+  return invoke('save_tag_group', { id, name });
+}
+
+export async function reorderTagGroups(ids) {
+  return invoke('reorder_tag_groups', { ids });
+}
+
+export async function deleteTagGroup(id) {
+  return invoke('delete_tag_group', { id });
+}
+
+export async function moveTagsToGroup(tagIds, groupId) {
+  return invoke('move_tags_to_group', { tagIds, groupId });
+}
+
 // get all tags
 export async function getAllTags(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
@@ -1560,9 +1584,9 @@ export async function getTagName(tagId) {
 }
 
 // create a new tag
-export async function createTag(name) {
+export async function createTag(name, groupId = null) {
   try {
-    const result = await invoke('create_tag', { name });
+    const result = await invoke('create_tag', { name, groupId });
     return result;
   } catch (error) {
     console.error('Failed to create tag:', error);

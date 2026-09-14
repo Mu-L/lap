@@ -702,7 +702,21 @@
     },
     "tag": {
       "rename": "이름 변경",
-      "delete": "삭제"
+      "delete": "삭제",
+      "new_group": "그룹 만들기",
+      "edit_group": "그룹 편집",
+      "delete_group": "그룹 삭제",
+      "search": "태그 또는 그룹 검색",
+      "clear_search": "검색 지우기",
+      "active_tag": "이 그룹에 선택한 태그가 있습니다",
+      "name": "이름",
+      "locate": "태그 찾기",
+      "empty": "태그 없음",
+      "move_to": "그룹으로 이동",
+      "delete_message": "“{name}”을 삭제하시겠습니까? 태그는 Default로 이동하며 파일의 태그는 유지됩니다.",
+      "exists_in": "이 태그는 “{group}”에 이미 있습니다.",
+      "name_exists": "같은 이름의 그룹이 이미 있습니다.",
+      "new_tag_group": "새 태그의 그룹"
     },
     "meta": {
       "favorite": "즐겨찾기",
