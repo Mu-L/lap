@@ -456,7 +456,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { isWebViewVideoPlaybackDisabled } from '@/common/video';
+import { isWebViewVideoPlaybackDisabled, getGStreamerAvailability } from '@/common/video';
 import { getTagsForFile, renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath, getFacesForFile, getPersonThumbnail } from '@/common/api';
 import { 
   extractFileName, 
@@ -656,14 +656,18 @@ function setPreviewMode(mode: 'thumbnail' | 'histogram') {
   config.infoPanel.previewMode = mode;
 }
 
+let videoPreviewRequest = 0;
 async function playPreviewVideo() {
+  const request = ++videoPreviewRequest;
+  const available = await getGStreamerAvailability();
+  if (request !== videoPreviewRequest || !available) return;
   if (!canPreviewVideo.value || !previewVideoPath.value || showVideoPreview.value) return;
   isVideoPreviewReady.value = false;
   showVideoPreview.value = true;
   await nextTick();
 
   const video = previewVideoRef.value;
-  if (!video) return;
+  if (!video || request !== videoPreviewRequest) return;
 
   video.src = getAssetSrc(previewVideoPath.value);
   video.muted = true;
@@ -682,6 +686,7 @@ function playVideoPreviewOnHover() {
 }
 
 function stopPreviewVideo() {
+  videoPreviewRequest++;
   const video = previewVideoRef.value;
   if (video) {
     video.pause();

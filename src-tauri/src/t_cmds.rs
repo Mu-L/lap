@@ -218,6 +218,55 @@ pub fn get_ffmpeg_backed_image_extensions() -> Vec<String> {
         .collect()
 }
 
+/// Whether the host GStreamer stack can create `autoaudiosink`, which WebKitGTK
+/// needs for in-webview video playback (#313). The Linux AppImage ships no
+/// GStreamer of its own, so when the host lacks the element WebKitGTK crashes
+/// its WebProcess on a NULL element instead of degrading gracefully. Report
+/// "unavailable" only when the probe positively confirms the element is
+/// missing; if the probe tool itself is absent, keep current behavior.
+#[tauri::command]
+pub fn check_gstreamer_available() -> bool {
+    use std::sync::OnceLock;
+    static AVAILABLE: OnceLock<bool> = OnceLock::new();
+    *AVAILABLE.get_or_init(probe_gstreamer_available)
+}
+
+fn probe_gstreamer_available() -> bool {
+    if !cfg!(target_os = "linux") {
+        return true;
+    }
+    match Command::new("gst-inspect-1.0")
+        .args(["autoaudiosink"])
+        .env("LC_ALL", "C")
+        .stdout(std::process::Stdio::null())
+        .output()
+    {
+        Ok(output) => !gstreamer_element_missing(output.status.code(), &output.stderr),
+        Err(_) => true,
+    }
+}
+
+fn gstreamer_element_missing(exit_code: Option<i32>, stderr: &[u8]) -> bool {
+    exit_code.is_some_and(|code| code != 0)
+        && String::from_utf8_lossy(stderr).lines().any(|line|
+            line.trim() == "No such element or plugin 'autoaudiosink'")
+}
+
+#[cfg(test)]
+mod gstreamer_probe_tests {
+    use super::gstreamer_element_missing;
+
+    #[test]
+    fn only_explicit_missing_element_disables_preview() {
+        let missing = b"No such element or plugin 'autoaudiosink'\n";
+        assert!(gstreamer_element_missing(Some(255), missing));
+        assert!(!gstreamer_element_missing(Some(0), missing));
+        assert!(!gstreamer_element_missing(None, missing));
+        assert!(!gstreamer_element_missing(Some(127), b"error while loading shared libraries"));
+        assert!(!gstreamer_element_missing(Some(1), b"unknown failure"));
+    }
+}
+
 /// set last selected item index
 #[tauri::command]
 pub fn set_last_selected_item_index(index: i64) -> Result<(), String> {

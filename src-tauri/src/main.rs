@@ -221,6 +221,7 @@ async fn main() {
             t_cmds::get_app_config,
             t_cmds::get_supported_format_extensions,
             t_cmds::get_ffmpeg_backed_image_extensions,
+            t_cmds::check_gstreamer_available,
             t_cmds::set_last_selected_item_index,
             t_cmds::get_db_storage_dir,
             t_cmds::is_using_custom_db_storage,

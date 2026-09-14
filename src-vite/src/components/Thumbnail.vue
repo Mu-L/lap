@@ -233,7 +233,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { THUMBNAIL_BADGE } from '@/common/constants';
 import { isMac, shortenFilename, formatFileSize, formatDimensionText, formatDuration, formatTimestamp, formatCaptureSettings, formatCaptureSettingValue, formatCameraInfo, getAssetSrc, getThumbUrl, getFileExtension } from '@/common/utils';
-import { isWebViewVideoPlaybackDisabled } from '@/common/video';
+import { isWebViewVideoPlaybackDisabled, getGStreamerAvailability } from '@/common/video';
 import { claimHoverPreview, releaseHoverPreview } from '@/common/hoverPreview';
 import ContextMenu from '@/components/ContextMenu.vue';
 import { useFileMenuItems } from '@/common/fileMenu';
@@ -422,11 +422,16 @@ function stopMediaPreview() {
   releaseHoverPreview(stopMediaPreview);
 }
 
+let videoPreviewRequest = 0;
+
 function startVideoPreview() {
   if (!canPreviewVideo.value || previewTimer || showVideoPreview.value) return;
 
+  const request = ++videoPreviewRequest;
   previewTimer = setTimeout(async () => {
     previewTimer = null;
+    const available = await getGStreamerAvailability();
+    if (request !== videoPreviewRequest || !available) return;
     if (!canPreviewVideo.value || !previewVideoPath.value) return;
 
     isVideoPreviewReady.value = false;
@@ -434,7 +439,7 @@ function startVideoPreview() {
     await nextTick();
 
     const video = previewVideoRef.value;
-    if (!video) return;
+    if (!video || request !== videoPreviewRequest) return;
 
     video.src = getAssetSrc(previewVideoPath.value);
     video.muted = true;
@@ -448,6 +453,7 @@ function startVideoPreview() {
 }
 
 function stopVideoPreview() {
+  videoPreviewRequest++;
   if (previewTimer) {
     clearTimeout(previewTimer);
     previewTimer = null;
