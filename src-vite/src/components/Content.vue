@@ -5855,7 +5855,7 @@ function toggleMapView() {
   config.settings.grid.viewMode = isMapView.value ? 'grid' : 'map';
 }
 
-function openMapClusterTempView(payload: { minLat: number; maxLat: number; minLon: number; maxLon: number; count: number; view: { lat: number; lon: number; zoom: number } }) {
+function openMapClusterTempView(payload: { fileIds?: number[]; minLat: number; maxLat: number; minLon: number; maxLon: number; count: number; view: { lat: number; lon: number; zoom: number } }) {
   if (tempViewMode.value === 'none') backupState.value = createViewBackup();
   mapTempViewState.value = payload.view;
   currentThumbRequestId++;
@@ -5874,6 +5874,11 @@ function openMapClusterTempView(payload: { minLat: number; maxLat: number; minLo
     gpsMinLon: payload.minLon,
     gpsMaxLon: payload.maxLon,
   };
+
+  if (payload.fileIds) {
+    void getMapSearchClusterFileList(payload.fileIds, gpsParams, requestId, true);
+    return;
+  }
 
   if (currentQuerySource.value === 'search') {
     void getMapSearchClusterFileList(currentSearchFileIds.value, gpsParams, requestId);
@@ -6712,7 +6717,7 @@ async function getFileList(
   }
 }
 
-async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<string, any>, requestId: number) {
+async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<string, any>, requestId: number, exactMembers = false) {
   currentQuerySource.value = 'search';
   currentSmartQueryParams.value = null;
   currentCollectionId.value = null;
@@ -6725,6 +6730,7 @@ async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<
 
     const inCluster = (files || []).filter((file: any) => {
       if (!passesSmallFileFilter(file)) return false;
+      if (exactMembers) return true;
       if (file.gps_latitude == null || file.gps_longitude == null || file.gps_latitude === '' || file.gps_longitude === '') return false;
       const lat = Number(file.gps_latitude);
       const lon = Number(file.gps_longitude);

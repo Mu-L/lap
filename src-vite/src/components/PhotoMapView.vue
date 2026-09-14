@@ -72,7 +72,7 @@ const showAppleMapsButton = computed(() => !isQueryMap.value && isMac && validLa
 
 const DETAIL_ZOOM = 13
 const DETAIL_LIMIT = 500
-const CLUSTER_SIZE = 76
+const MARKER_FADE_MS = 200
 // Leaflet resolves a one-point bounds to its maximum zoom. Keep surrounding
 // map context and avoid requesting an unsupported raster detail level instead.
 const SINGLE_POINT_FIT_ZOOM = 13
@@ -86,15 +86,30 @@ let tileErrorFallbackTriggered = false
 let pointRequestToken = 0
 let detailRequestToken = 0
 let detailTimer = null
+let detailBounds = null
+let clusterOpenRequestId = 0
 let visibleFiles = []
 let sourceFiles = null
 let needsRefresh = false
+let photoMarkers = new Map()
+const retiringMarkers = new Map()
+const fadeFrames = new Set()
+let clusterWorker = null
+let clusterRequestId = 0
+let clusterRenderFrame = null
+const clusterSources = new Map()
 
 onMounted(async () => {
   map = L.map(mapEl.value, { center: [20, 0], zoom: 2, keyboard: false, zoomControl: false, maxZoom: activeMaxZoom.value })
   map.attributionControl.setPrefix('')
   L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
+  clusterWorker = new Worker(new URL('../common/mapClusters.worker.js', import.meta.url), { type: 'module' })
+  clusterWorker.onmessage = ({ data }) => {
+    if (!map || !props.active || data.requestId !== clusterRequestId) return
+    if (data.error) { console.error('Photo clustering failed:', data.error); return }
+    applyPhotoClusters(data.clusters)
+  }
   map.on('zoomend', onMapChanged)
   map.on('moveend', onMapChanged)
   resizeObserver = new ResizeObserver(() => map?.invalidateSize())
@@ -114,7 +129,19 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleMapKeyDown, true)
   if (detailTimer) clearTimeout(detailTimer)
   resizeObserver?.disconnect()
+  clusterOpenRequestId++
+  clusterWorker?.terminate()
+  clusterWorker = null
+  if (clusterRenderFrame !== null) cancelAnimationFrame(clusterRenderFrame)
+  clusterSources.clear()
+  pointRequestToken++
+  detailRequestToken++
+  for (const timer of retiringMarkers.values()) clearTimeout(timer)
+  for (const frame of fadeFrames) cancelAnimationFrame(frame)
+  retiringMarkers.clear()
+  photoMarkers.clear()
   map?.remove()
+  map = null
 })
 
 watch(() => [config.infoPanel.mapTheme, config.settings.mapProvider, config.settings.tiandituToken], updateTheme)
@@ -132,6 +159,8 @@ watch(() => [props.lat, props.lon], () => {
 })
 watch(() => props.active, (active) => {
   if (!active) {
+    clusterOpenRequestId++
+    clusterRequestId++
     pointRequestToken++
     detailRequestToken++
     if (detailTimer) clearTimeout(detailTimer)
@@ -153,6 +182,12 @@ watch(() => props.active, (active) => {
 
 async function loadPoints(fitToResults) {
   if (!map) return
+  clusterOpenRequestId++
+  clusterRequestId++
+  detailRequestToken++
+  if (detailTimer) clearTimeout(detailTimer)
+  detailBounds = null
+  visibleFiles = []
   const token = ++pointRequestToken
   const restoreView = fitToResults ? props.restoreView : null
   loading.value = true
@@ -203,39 +238,41 @@ function onMapChanged() {
 }
 
 function scheduleDetailFetch() {
-  if (zoom.value < DETAIL_ZOOM) return
+  detailRequestToken++
   if (detailTimer) clearTimeout(detailTimer)
+  if (zoom.value < DETAIL_ZOOM || !props.active) return
   detailTimer = setTimeout(fetchVisibleFiles, 200)
 }
 
+function bufferedMapBounds(padding) {
+  const bounds = map.getPixelBounds()
+  return L.latLngBounds(
+    map.unproject(bounds.min.subtract([padding, padding])),
+    map.unproject(bounds.max.add([padding, padding])),
+  )
+}
+
 async function fetchVisibleFiles() {
-  if (!map || zoom.value < DETAIL_ZOOM) return
-  if (getVisiblePointCount() > DETAIL_LIMIT) {
-    visibleFiles = []
-    renderMarkers()
-    return
-  }
-  if (sourceFiles) {
-    const bounds = map.getBounds()
-    visibleFiles = sourceFiles.filter(file => (
-      file.gps_latitude != null
-      && file.gps_longitude != null
-      && bounds.contains([file.gps_latitude, file.gps_longitude])
-    ))
-    renderMarkers()
-    return
-  }
+  if (!map || !props.active || zoom.value < DETAIL_ZOOM) return
+  // Reuse complete data until even the rendered buffer leaves the loaded area.
+  if (detailBounds?.contains(bufferedMapBounds(176))) return
+  const bounds = bufferedMapBounds(352)
   const token = ++detailRequestToken
-  const bounds = map.getBounds()
-  const files = await getQueryFiles({
-    ...props.queryParams,
-    gpsMinLat: bounds.getSouth(),
-    gpsMaxLat: bounds.getNorth(),
-    gpsMinLon: bounds.getWest(),
-    gpsMaxLon: bounds.getEast(),
-  }, 0, DETAIL_LIMIT)
-  if (token !== detailRequestToken) return
-  visibleFiles = files || []
+  let files
+  if (sourceFiles) {
+    files = sourceFiles.filter(file => validLatLon(file.gps_latitude, file.gps_longitude)
+      && bounds.contains([file.gps_latitude, file.gps_longitude]))
+  } else {
+    files = await getQueryFiles({
+      ...props.queryParams,
+      gpsMinLat: bounds.getSouth(), gpsMaxLat: bounds.getNorth(),
+      gpsMinLon: bounds.getWest(), gpsMaxLon: bounds.getEast(),
+    }, 0, DETAIL_LIMIT + 1)
+  }
+  if (token !== detailRequestToken || !map || !props.active || !files) return
+  // Never render a truncated detail set as though it were the complete region.
+  detailBounds = files.length <= DETAIL_LIMIT ? bounds : null
+  visibleFiles = files.length <= DETAIL_LIMIT ? files : []
   renderMarkers()
 }
 
@@ -276,52 +313,103 @@ function aggregateFiles(files) {
 }
 
 function renderMarkers() {
-  if (!map || !markerLayer) return
-  markerLayer.clearLayers()
-  if (zoom.value >= DETAIL_ZOOM && visibleFiles.length > 0 && getVisiblePointCount() <= DETAIL_LIMIT) {
-    for (const file of visibleFiles) addPhotoMarker(file.gps_latitude, file.gps_longitude, file.id, 1)
-    return
-  }
-
-  const clusters = new Map()
-  const bounds = map.getBounds()
-  for (const point of points.value) {
-    if (!bounds.contains([point.lat, point.lon])) continue
-    const pixel = map.project([point.lat, point.lon], map.getZoom())
-    const key = `${Math.floor(pixel.x / CLUSTER_SIZE)}:${Math.floor(pixel.y / CLUSTER_SIZE)}`
-    const cluster = clusters.get(key)
-    if (!cluster) {
-      clusters.set(key, {
-        ...point,
-        representativeCount: point.count,
-        minLat: point.lat - 0.01,
-        maxLat: point.lat + 0.01,
-        minLon: point.lon - 0.01,
-        maxLon: point.lon + 0.01,
-      })
-    } else {
-      cluster.count += point.count
-      cluster.minLat = Math.min(cluster.minLat, point.lat - 0.01)
-      cluster.maxLat = Math.max(cluster.maxLat, point.lat + 0.01)
-      cluster.minLon = Math.min(cluster.minLon, point.lon - 0.01)
-      cluster.maxLon = Math.max(cluster.maxLon, point.lon + 0.01)
-      if (point.count > cluster.representativeCount) {
-        cluster.file_id = point.file_id
-        cluster.lat = point.lat
-        cluster.lon = point.lon
-        cluster.representativeCount = point.count
-      }
-    }
-  }
-  for (const cluster of clusters.values()) addPhotoMarker(cluster.lat, cluster.lon, cluster.file_id, cluster.count, cluster)
+  if (!map || !clusterWorker || !props.active || !isQueryMap.value) return
+  // Invalidate pending results immediately, then combine zoomend/moveend.
+  clusterRequestId++
+  if (clusterRenderFrame !== null) return
+  clusterRenderFrame = requestAnimationFrame(() => {
+    clusterRenderFrame = null
+    requestPhotoClusters()
+  })
 }
 
-function getVisiblePointCount() {
-  if (!map) return 0
-  const bounds = map.getBounds()
-  return points.value.reduce((count, point) => (
-    bounds.contains([point.lat, point.lon]) ? count + point.count : count
-  ), 0)
+function requestPhotoClusters() {
+  if (!map || !clusterWorker || !props.active || !isQueryMap.value) return
+  const useDetails = zoom.value >= DETAIL_ZOOM && visibleFiles.length > 0
+    && detailBounds?.contains(bufferedMapBounds(176))
+  const source = useDetails ? 'details' : 'overview'
+  const input = useDetails ? visibleFiles : points.value
+  const previous = clusterSources.get(source)
+  let cached = previous
+  if (!cached || cached.input !== input || cached.maxZoom !== activeMaxZoom.value) {
+    const candidates = useDetails
+      ? visibleFiles.filter(file => validLatLon(file.gps_latitude, file.gps_longitude)).map(file => ({
+        lat: Number(file.gps_latitude), lon: Number(file.gps_longitude), file_id: Number(file.id), count: 1,
+        fileIds: [Number(file.id)],
+      })).sort((a, b) => a.file_id - b.file_id)
+      : points.value.map(point => ({ lat: point.lat, lon: point.lon, file_id: point.file_id, count: point.count, pointIds: [point.file_id] }))
+    const signature = useDetails ? JSON.stringify(candidates) : null
+    const unchanged = cached && cached.maxZoom === activeMaxZoom.value
+      && useDetails && cached.signature === signature
+    cached = {
+      input, signature, maxZoom: activeMaxZoom.value,
+      version: unchanged ? cached.version : (cached?.version || 0) + 1,
+      candidates,
+    }
+    clusterSources.set(source, cached)
+  }
+  const pixelBounds = map.getPixelBounds()
+  clusterWorker.postMessage({
+    requestId: clusterRequestId, source, version: cached.version,
+    points: previous?.version === cached.version ? undefined : cached.candidates,
+    maxZoom: cached.maxZoom, zoom: map.getZoom(), padding: useDetails ? 0.0001 : 0.01,
+    bounds: { min: { x: pixelBounds.min.x, y: pixelBounds.min.y }, max: { x: pixelBounds.max.x, y: pixelBounds.max.y } },
+  })
+}
+
+function applyPhotoClusters(clusters) {
+  const nextMarkers = new Map()
+  for (const cluster of clusters) {
+    const key = JSON.stringify([cluster, config.settings.thumbnailSize])
+    const marker = photoMarkers.get(key) || addPhotoMarker(cluster.lat, cluster.lon, cluster.file_id, cluster.count, cluster)
+    nextMarkers.set(key, marker)
+  }
+  for (const [key, marker] of photoMarkers) {
+    if (nextMarkers.has(key)) continue
+    const element = marker.getElement()
+    element?.classList.remove('map-photo-marker-visible')
+    if (element) element.style.pointerEvents = 'none'
+    marker.off()
+    retiringMarkers.set(marker, setTimeout(() => {
+      markerLayer?.removeLayer(marker)
+      retiringMarkers.delete(marker)
+    }, MARKER_FADE_MS))
+  }
+  photoMarkers = nextMarkers
+}
+
+// SQLite ROUND uses half-away-from-zero; local aggregateFiles uses Math.round.
+function gpsCell(file, local) {
+  const round = local ? Math.round : value => Math.sign(value) * Math.floor(Math.abs(value) + 0.5)
+  return `${round(Number(file.gps_latitude) * 100)}:${round(Number(file.gps_longitude) * 100)}`
+}
+
+async function openPhotoCluster(cluster) {
+  if (!map) return
+  const requestId = ++clusterOpenRequestId
+  const view = { lat: map.getCenter().lat, lon: map.getCenter().lng, zoom: map.getZoom() }
+  let fileIds = cluster.fileIds
+  if (!fileIds) {
+    // Resolve only on click: keep full photo records out of the overview index.
+    const localFiles = sourceFiles
+    const queryParams = { ...props.queryParams }
+    const ids = new Set(cluster.pointIds.map(Number))
+    const representatives = localFiles
+      ? localFiles.filter(file => ids.has(Number(file.id)))
+      : await getFilesByIds([...ids])
+    if (!representatives || requestId !== clusterOpenRequestId || !map || !props.active) return
+    const cells = new Set(representatives.map(file => gpsCell(file, !!localFiles)))
+    const files = localFiles || await getQueryFiles({
+      ...queryParams,
+      gpsMinLat: cluster.minLat, gpsMaxLat: cluster.maxLat,
+      gpsMinLon: cluster.minLon, gpsMaxLon: cluster.maxLon,
+    }, 0, 0)
+    if (!files || requestId !== clusterOpenRequestId || !map || !props.active) return
+    fileIds = files.filter(file => file.gps_latitude != null && file.gps_longitude != null
+      && cells.has(gpsCell(file, !!localFiles))).map(file => Number(file.id))
+  }
+  if (requestId !== clusterOpenRequestId || !props.active) return
+  emit('open-cluster', { ...cluster, fileIds, count: fileIds.length, view })
 }
 
 function addPhotoMarker(lat, lon, fileId, count, cluster = null) {
@@ -333,27 +421,43 @@ function addPhotoMarker(lat, lon, fileId, count, cluster = null) {
     html: `<div class="map-photo-marker"><img src="${getThumbUrl(fileId, false, config.settings.thumbnailSize || 512)}" />${count > 1 ? `<span>${count > 999 ? '999+' : count}</span>` : ''}</div>`,
   })
   const marker = L.marker([lat, lon], { icon, keyboard: false }).addTo(markerLayer)
+  const element = marker.getElement()
+  element?.style.setProperty('--map-photo-fade-duration', `${MARKER_FADE_MS}ms`)
+  // Wait for the photo itself: otherwise its opacity animation can finish
+  // while the thumbnail request is still pending.
+  const show = () => {
+    if (!map || retiringMarkers.has(marker) || !markerLayer.hasLayer(marker)) return
+    const frame = requestAnimationFrame(() => {
+      fadeFrames.delete(frame)
+      const paintFrame = requestAnimationFrame(() => {
+        fadeFrames.delete(paintFrame)
+        if (!map || retiringMarkers.has(marker) || !markerLayer.hasLayer(marker)) return
+        element?.classList.add('map-photo-marker-visible')
+      })
+      fadeFrames.add(paintFrame)
+    })
+    fadeFrames.add(frame)
+  }
+  const image = element?.querySelector('img')
+  if (!image || image.complete) show()
+  else {
+    image.addEventListener('load', show, { once: true })
+    image.addEventListener('error', show, { once: true })
+  }
   marker.on('click', () => {
     if (!cluster || Number(count) === 1) {
+      clusterOpenRequestId++
       emit('select-file', fileId)
       return
     }
-    emit('open-cluster', {
-      ...(cluster || {
-      minLat: lat - 0.0001,
-      maxLat: lat + 0.0001,
-      minLon: lon - 0.0001,
-      maxLon: lon + 0.0001,
-      count,
-      }),
-      view: { lat: map.getCenter().lat, lon: map.getCenter().lng, zoom: map.getZoom() },
-    })
+    void openPhotoCluster(cluster)
   })
   marker.on('dblclick', (event) => {
     if (cluster && Number(count) !== 1) return
     L.DomEvent.stop(event.originalEvent)
     emit('preview-file', fileId)
   })
+  return marker
 }
 
 function updateTheme() {

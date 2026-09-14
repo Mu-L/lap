@@ -167,10 +167,20 @@ html, body {
 }
 
 .map-photo-marker {
+  opacity: 0;
+  transition: opacity var(--map-photo-fade-duration, 200ms) ease;
   position: relative;
   width: 64px;
   height: 64px;
   overflow: visible;
+}
+
+.map-photo-marker-visible .map-photo-marker {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-photo-marker { transition: none; }
 }
 
 .map-photo-marker::after {
