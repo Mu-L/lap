@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('collection.edit_collections')" :width="600" @cancel="close">
+  <ModalDialog :title="$t('collection.edit_collections')" :width="500" @cancel="close">
     <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div class="grow h-8 flex items-center rounded-box overflow-hidden bg-base-100 border border-neutral-content/30 focus-within:border-primary">
@@ -9,22 +9,39 @@
             <IconClose class="w-4 h-4" />
           </button>
         </div>
-        <div class="w-1/2 h-8 flex items-center rounded-box overflow-hidden bg-base-100 border border-neutral-content/30 focus-within:border-primary">
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <span class="text-xs uppercase tracking-widest font-bold text-base-content/30 select-none">{{ $t('collection.title') }} ({{ collections.length }})</span>
+        <button
+          type="button"
+          class="p-1 rounded-box text-base-content/40 hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:cursor-not-allowed"
+          :title="$t('collection.add')"
+          :aria-label="$t('collection.add')"
+          :disabled="creatingCollection || applying || collections.length >= config.main.maxCollectionCount"
+          @click="startNewCollection"
+        >
+          <IconAdd class="w-5 h-5 cursor-pointer" />
+        </button>
+      </div>
+      <div class="min-h-48 max-h-[50vh] overflow-y-auto rounded-box p-2 bg-base-100/30 border border-base-content/10 select-none">
+        <div v-if="isAddingCollection" class="px-7 py-1 flex items-center gap-1 text-primary">
+          <IconBookmark class="w-4 h-4 shrink-0" />
           <input
             ref="newCollectionNameInput"
             v-model="newCollectionName"
-            :placeholder="$t('collection.enter_new_collection_name')"
-            class="w-full bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
-            @keydown.enter="addNewCollection"
+            type="text"
+            maxlength="64"
+            class="input input-sm px-2 min-w-0 flex-1 text-sm"
+            :aria-label="$t('collection.add')"
+            :readonly="creatingCollection"
+            @click.stop
+            @keydown.stop
+            @keydown.enter.prevent="!$event.isComposing && addNewCollection()"
+            @keydown.escape.prevent="cancelNewCollection"
+            @blur="onNewCollectionBlur"
+            @input="newCollectionNameEdited = true"
           />
-          <button v-if="newCollectionName" class="mr-1 p-1 text-base-content/30 hover:text-base-content/70" @click="newCollectionName = ''">
-            <IconClose class="w-4 h-4" />
-          </button>
         </div>
-        <TButton :icon="IconAdd" :tooltip="$t('collection.add')" :disabled="creatingCollection || collections.length >= config.main.maxCollectionCount" @click="addNewCollection" />
-      </div>
-      <div v-if="collections.length" class="text-[10px] uppercase tracking-widest font-bold text-base-content/30 select-none">{{ $t('collection.title') }} ({{ collections.length }})</div>
-      <div class="min-h-24 max-h-52 overflow-y-auto rounded-box p-1 bg-base-100/30 border border-base-content/5 select-none">
         <div
           v-for="collection in visibleCollections"
           :key="collection.id"
@@ -80,14 +97,14 @@
             </button>
           </div>
         </div>
-        <div v-if="visibleCollections.length === 0" class="min-h-24 flex items-center justify-center text-sm text-base-content/30">
+        <div v-if="visibleCollections.length === 0 && !isAddingCollection" class="min-h-24 flex items-center justify-center text-sm text-base-content/30">
           {{ $t('collection.not_found') }}
         </div>
       </div>
     </section>
     <div class="mt-4 flex justify-end gap-3">
       <button class="t-button-default" @click="close">{{ $t('msgbox.cancel') }}</button>
-      <button class="t-button-primary" :disabled="changes.size === 0 || applying" @click="apply">{{ $t('msgbox.ok') }}</button>
+      <button class="t-button-primary" :disabled="changes.size === 0 || applying || creatingCollection || isAddingCollection" @click="apply">{{ $t('msgbox.ok') }}</button>
     </div>
   </ModalDialog>
   <MessageBox
@@ -112,7 +129,6 @@ import { IconAdd, IconBookmark, IconClose, IconEdit, IconSearch, IconTrash } fro
 import { config, libConfig } from '@/common/config';
 import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
-import TButton from '@/components/TButton.vue';
 import { useUIStore } from '@/stores/uiStore';
 
 const props = defineProps<{ fileIds: number[] }>();
@@ -123,9 +139,11 @@ const selectionCounts = ref(new Map<number, number>());
 const changes = ref(new Map<number, 'add' | 'remove'>());
 const applying = ref(false);
 const creatingCollection = ref(false);
+const isAddingCollection = ref(false);
 const searchInput = ref<HTMLInputElement | null>(null);
 const newCollectionNameInput = ref<HTMLInputElement | null>(null);
 const newCollectionName = ref('');
+const newCollectionNameEdited = ref(false);
 const renamingId = ref<number | null>(null);
 const renameValue = ref('');
 const renameInput = ref<HTMLInputElement | HTMLInputElement[] | null>(null);
@@ -223,23 +241,64 @@ async function loadSelectionCounts() {
   selectionCounts.value = new Map(counts.map((entry: any) => [Number(entry.collection_id), Number(entry.count)]));
 }
 
+async function startNewCollection() {
+  if (creatingCollection.value || applying.value || collections.value.length >= config.main.maxCollectionCount) return;
+  if (isAddingCollection.value) {
+    newCollectionNameInput.value?.focus();
+    return;
+  }
+  cancelRename();
+  query.value = '';
+  const names = new Set(collections.value.map(collection => String(collection.name).toLocaleLowerCase()));
+  const baseName = t('collection.add');
+  let name = baseName;
+  let index = 0;
+  while (names.has(name.toLocaleLowerCase())) name = `${baseName} ${++index}`;
+  newCollectionName.value = name;
+  newCollectionNameEdited.value = false;
+  isAddingCollection.value = true;
+  await nextTick();
+  newCollectionNameInput.value?.focus();
+  newCollectionNameInput.value?.select();
+}
+
+function cancelNewCollection() {
+  if (creatingCollection.value) return;
+  isAddingCollection.value = false;
+  newCollectionName.value = '';
+  newCollectionNameEdited.value = false;
+}
+
+function onNewCollectionBlur() {
+  if (!newCollectionNameEdited.value) cancelNewCollection();
+  else addNewCollection();
+}
+
 async function addNewCollection() {
   const name = newCollectionName.value.trim();
-  if (!name || creatingCollection.value || collections.value.length >= config.main.maxCollectionCount) return;
+  if (!isAddingCollection.value || creatingCollection.value || applying.value || collections.value.length >= config.main.maxCollectionCount) return;
+  if (!name) {
+    cancelNewCollection();
+    return;
+  }
   creatingCollection.value = true;
   try {
     const collection = await createCollection(name);
-    if (!collection?.id) return;
+    if (!collection?.id) {
+      toast.error(t('collection.name_save_failed'));
+      return;
+    }
     await loadCollections();
     if (hasSelectedFiles.value) {
       const next = new Map(changes.value);
       next.set(Number(collection.id), 'add');
       changes.value = next;
     }
+    isAddingCollection.value = false;
     newCollectionName.value = '';
     query.value = '';
     await nextTick();
-    newCollectionNameInput.value?.focus();
+    collectionRowRefs.get(Number(collection.id))?.scrollIntoView({ block: 'nearest' });
     await tauriEmit('collections-changed');
   } catch (error) {
     showNameSaveError(error);
@@ -297,7 +356,7 @@ async function confirmDelete() {
 
 async function apply() {
   const fileIds = [...new Set(props.fileIds.map(Number).filter(id => id > 0))];
-  if (!fileIds.length || !changes.value.size || applying.value) return;
+  if (!fileIds.length || !changes.value.size || applying.value || creatingCollection.value || isAddingCollection.value) return;
   applying.value = true;
   try {
     const pendingChanges = [...changes.value];

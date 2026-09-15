@@ -2883,8 +2883,8 @@ pub fn get_tag_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, Strin
 
 /// get tag name by id
 #[tauri::command]
-pub fn get_tag_name(tag_id: i64) -> Result<String, String> {
-    ATag::get_name(tag_id).map_err(|e| format!("Error while getting tag name: {}", e))
+pub fn get_tag_name(tag_id: i64, include_group: Option<bool>) -> Result<String, String> {
+    ATag::get_name(tag_id, include_group.unwrap_or(false)).map_err(|e| format!("Error while getting tag name: {}", e))
 }
 
 /// create a new tag

@@ -7511,7 +7511,7 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
       contentTitle.value = "";
       showEmptyContent(requestId);
     } else {
-      getTagName(libConfig.tag.id).then(tagName => {
+      getTagName(libConfig.tag.id, true).then(tagName => {
         if (requestId !== currentContentRequestId) return;
         if (tagName) {
           contentTitle.value = tagName;

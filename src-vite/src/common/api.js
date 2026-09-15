@@ -1571,9 +1571,9 @@ export async function getTagCounts(smallFileFilter = config.settings.smallFileFi
 }
 
 // get tag name by id
-export async function getTagName(tagId) {
+export async function getTagName(tagId, includeGroup = false) {
   try {
-    const tagName = await invoke('get_tag_name', { tagId });
+    const tagName = await invoke('get_tag_name', { tagId, includeGroup });
     if (tagName) {
       return tagName;
     }

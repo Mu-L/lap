@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('tag.edit_tag')" :width="600" @cancel="clickCancel">
+  <ModalDialog :title="$t('tag.edit_tag')" :width="500" @cancel="clickCancel">
     <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div
@@ -32,93 +32,82 @@
             <IconClose class="w-4 h-4" />
           </button>
         </div>
-        <div
-          :class="[
-            'w-1/2 h-8 flex items-center rounded-box overflow-hidden transition-colors bg-base-100',
-            isNewTagFocused
-              ? 'border-2 border-primary'
-              : 'border border-neutral-content/30 hover:border-neutral-content/70',
-          ]"
-        >
-          <input
-            ref="newTagNameInputRef"
-            type="text"
-            v-model="newTagName"
-            :placeholder="$t('tag.enter_new_tag_name')"
-            class="w-full bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
-            @focus="isNewTagFocused = true"
-            @blur="isNewTagFocused = false"
-            @keydown.enter="addNewTag"
-          />
-          <button
-            v-if="newTagName"
-            type="button"
-            class="mr-1 p-1 rounded-box text-base-content/30 hover:text-base-content/70"
-            @click="
-              newTagName = '';
-              newTagNameInputRef?.focus();
-            "
-          >
-            <IconClose class="w-4 h-4" />
-          </button>
-        </div>
-        <TButton
-          :icon="IconAdd"
-          :tooltip="$t('msgbox.new_tag.title')"
-          :disabled="!canEditTags"
-          @click="addNewTag"
-        />
       </div>
-
-      <label class="flex items-center gap-2 text-sm">
-        {{ $t("menu.tag.new_tag_group") }}
-        <select
-          v-model="newTagGroupId"
-          class="select select-sm select-bordered min-w-0"
-          :aria-label="$t('menu.tag.new_tag_group')"
-        >
-          <option v-for="group in groups" :key="group.id" :value="group.id">
-            {{ group.name }}
-          </option>
-        </select>
-      </label>
-      <p v-if="duplicateTag" class="text-sm text-base-content/60">
-        {{ $t("menu.tag.exists_in", { group: duplicateTag.group_name }) }}
-        <button class="text-primary" @click="locateDuplicate">
-          {{ $t("menu.tag.locate") }}
-        </button>
-      </p>
       <div
         v-if="allTags.length"
-        class="text-[10px] uppercase tracking-widest font-bold text-base-content/30 select-none"
+        class="text-xs uppercase tracking-widest font-bold text-base-content/30 select-none"
       >
         {{ $t("tag.title") }} ({{ allTags.length }})
       </div>
       <div
-        class="min-h-24 max-h-52 overflow-y-auto rounded-box p-1 bg-base-100/30 border border-base-content/5 flex"
+        class="min-h-48 max-h-[50vh] overflow-y-auto rounded-box p-2 bg-base-100/30 border border-base-content/10 flex"
         :class="visibleGroups.length === 0 ? 'items-center justify-center' : ''"
       >
         <div v-if="visibleGroups.length > 0" class="w-full">
           <template v-for="group in visibleGroups" :key="group.id">
-            <button
-              type="button"
-              class="sidebar-item sidebar-item-hover w-full"
-              :aria-expanded="expanded(group.id)"
-              @click="toggleGroup(group.id)"
-            >
-              <IconRight
-                class="p-1 w-6 h-6 shrink-0"
-                :class="expanded(group.id) ? 'rotate-90' : ''"
-              />
-              <span class="sidebar-item-label text-left">{{ group.name }}</span>
-            </button>
+            <div class="group/header flex items-center pr-1 rounded-box hover:bg-base-content/5">
+              <button
+                type="button"
+                class="sidebar-item min-w-0 flex-1 select-none"
+                :aria-expanded="expanded(group.id)"
+                @keydown.enter.stop.prevent="toggleGroup(group.id)"
+                @keydown.space.stop.prevent="toggleGroup(group.id)"
+              >
+                <IconRight
+                  class="p-1 w-6 h-6 shrink-0 transition-transform"
+                  :class="expanded(group.id) ? 'rotate-90' : ''"
+                  @click="toggleGroup(group.id)"
+                />
+                <span class="sidebar-item-label text-left font-medium">{{ group.name }}</span>
+              </button>
+              <div class="relative grid min-w-8 h-8 shrink-0 place-items-center">
+                <span class="sidebar-item-count px-1 tabular-nums group-hover/header:invisible group-focus-within/header:invisible">{{ group.tags.length.toLocaleString() }}</span>
+                <button
+                  type="button"
+                  class="absolute inset-0 flex items-center justify-center rounded-box text-base-content/40 hover:text-primary hover:bg-primary/10 opacity-0 group-hover/header:opacity-100 group-focus-within/header:opacity-100 focus:opacity-100 transition-opacity disabled:cursor-not-allowed"
+                  :title="$t('msgbox.new_tag.title')"
+                  :aria-label="$t('msgbox.new_tag.title')"
+                  :disabled="!canEditTags || isCreatingTag"
+                  @click.stop="startNewTag(group.id)"
+                  @dblclick.stop
+                >
+                  <IconAdd class="w-4 h-4 cursor-pointer" />
+                </button>
+              </div>
+            </div>
             <template v-if="expanded(group.id)">
+              <div v-if="newTagGroupId === group.id" class="pl-14 py-1">
+                <div class="flex items-center gap-2 text-primary">
+                  <IconTag class="w-4 h-4 shrink-0" />
+                  <input
+                    :ref="(el) => { newTagNameInputRef = el as HTMLInputElement | null; }"
+                    v-model="newTagName"
+                    type="text"
+                    maxlength="255"
+                    class="input input-sm px-2 min-w-0 flex-1 text-sm"
+                    :aria-label="$t('msgbox.new_tag.title')"
+                    :readonly="isCreatingTag"
+                    @click.stop
+                    @keydown.stop
+                    @keydown.enter.prevent="!$event.isComposing && addNewTag()"
+                    @keydown.escape.prevent="cancelNewTag"
+                    @blur="onNewTagBlur"
+                    @input="newTagNameEdited = true"
+                  />
+                </div>
+                <p v-if="duplicateTag" class="mt-2 text-xs text-base-content/60" role="status">
+                  {{ $t("menu.tag.exists_in", { group: duplicateTag.group_name }) }}
+                  <button type="button" class="text-primary hover:underline" @click="locateDuplicate">
+                    {{ $t("menu.tag.locate") }}
+                  </button>
+                </p>
+              </div>
               <div
                 v-for="tag in group.tags"
                 :id="`dialog-tag-${tag.id}`"
                 :key="tag.id"
                 :class="[
-                  'group w-full pl-6 p-2 flex items-center gap-2 rounded-box text-left cursor-pointer transition-colors',
+                  'group w-full pl-8 p-2 flex items-center gap-2 rounded-box text-left cursor-pointer transition-colors',
                   {
                     'text-primary': selectedTags.has(tag.id),
                     'bg-base-content/5':
@@ -197,7 +186,7 @@
                 </div>
               </div>
               <div
-                v-if="!group.tags.length"
+                v-if="!group.tags.length && newTagGroupId !== group.id"
                 class="pl-8 py-2 text-xs text-base-content/40"
               >
                 {{ $t("menu.tag.empty") }}
@@ -223,7 +212,7 @@
       <button
         class="t-button-primary"
         :disabled="
-          isLoadingTags || isLoadingCatalog || isApplyingTags || tagLoadFailed
+          isLoadingTags || isLoadingCatalog || isApplyingTags || tagLoadFailed || isCreatingTag || newTagGroupId !== null
         "
         @click="clickOk"
       >
@@ -275,7 +264,6 @@ import {
 } from "@/common/icons";
 import { groupTags, type TagGroup } from "@/common/tagGroups";
 import MessageBox from "./MessageBox.vue";
-import TButton from "./TButton.vue";
 import { libConfig } from "@/common/config";
 import { useUIStore } from "@/stores/uiStore";
 import ModalDialog from "@/components/ModalDialog.vue";
@@ -297,8 +285,9 @@ const tagSearchInputRef = ref<HTMLInputElement | null>(null);
 const newTagNameInputRef = ref<HTMLInputElement | null>(null);
 const tagSearch = ref("");
 const newTagName = ref("");
+const newTagNameEdited = ref(false);
 const isSearchFocused = ref(false);
-const isNewTagFocused = ref(false);
+const isCreatingTag = ref(false);
 const focusedTagIndex = ref(-1); // -1 = no tag focused
 const isInTagList = ref(false); // true = keyboard focus is in tag list
 const isLoadingTags = ref(true);
@@ -327,12 +316,12 @@ const newTagGroupId = ref<number | null>(null);
 const collapsed = ref<number[]>([]);
 const duplicateTag = ref<any>(null);
 const visibleGroups = computed(() =>
-  groupTags(groups.value, allTags.value, tagSearch.value),
+  groupTags(groups.value, allTags.value, newTagGroupId.value !== null ? "" : tagSearch.value),
 );
 const expanded = (id: number) =>
-  !!tagSearch.value.trim() || !collapsed.value.includes(id);
+  newTagGroupId.value === id || !!tagSearch.value.trim() || !collapsed.value.includes(id);
 function toggleGroup(id: number) {
-  if (tagSearch.value.trim()) return;
+  if (tagSearch.value.trim() || newTagGroupId.value === id) return;
   collapsed.value = expanded(id)
     ? [...collapsed.value, id]
     : collapsed.value.filter((value) => value !== id);
@@ -345,6 +334,7 @@ const filteredTags = computed(() =>
 async function locateDuplicate() {
   const tag = duplicateTag.value;
   if (!tag) return;
+  cancelNewTag();
   tagSearch.value = "";
   collapsed.value = collapsed.value.filter((id) => id !== tag.group_id);
   await nextTick();
@@ -402,9 +392,8 @@ async function loadAllTags() {
     if (!tags) throw new Error("load failed");
     catalogLoadFailed.value = false;
     groups.value = allGroups;
-    if (!groups.value.some((group) => group.id === newTagGroupId.value))
-      newTagGroupId.value =
-        groups.value.find((group) => group.is_default)?.id || null;
+    if (newTagGroupId.value !== null && !groups.value.some((group) => group.id === newTagGroupId.value))
+      cancelNewTag();
     const sidebarCounts = libConfig.tag.counts || {};
     allTags.value = tags.map((tag: any) => ({
       ...tag,
@@ -460,36 +449,77 @@ async function loadExistingTagsForFiles(preserveChanges = false) {
   }
 }
 
+async function startNewTag(groupId: number) {
+  if (!canEditTags.value || isCreatingTag.value) return;
+  if (newTagGroupId.value !== null) {
+    newTagNameInputRef.value?.focus();
+    return;
+  }
+  cancelRename();
+  tagSearch.value = "";
+  collapsed.value = collapsed.value.filter((id) => id !== groupId);
+  const names = new Set(allTags.value.map((tag) => tag.name.toLocaleLowerCase()));
+  const baseName = t("msgbox.new_tag.title");
+  let name = baseName;
+  let index = 0;
+  while (names.has(name.toLocaleLowerCase())) name = `${baseName} ${++index}`;
+  newTagName.value = name;
+  newTagNameEdited.value = false;
+  newTagGroupId.value = groupId;
+  duplicateTag.value = null;
+  isInTagList.value = false;
+  focusedTagIndex.value = -1;
+  await nextTick();
+  newTagNameInputRef.value?.focus();
+  newTagNameInputRef.value?.select();
+}
+
+function cancelNewTag() {
+  if (isCreatingTag.value) return;
+  newTagGroupId.value = null;
+  newTagName.value = "";
+  newTagNameEdited.value = false;
+  duplicateTag.value = null;
+}
+
+function onNewTagBlur() {
+  if (!newTagNameEdited.value) cancelNewTag();
+  else addNewTag();
+}
+
 async function addNewTag() {
-  if (!canEditTags.value || !newTagGroupId.value) return;
-  const trimmedName = newTagName.value.trim();
-  if (trimmedName) {
-    const existingTag = allTags.value.find(
-      (tag) => tag.name.toLowerCase() === trimmedName.toLowerCase(),
-    );
-    if (existingTag) {
-      duplicateTag.value = existingTag;
+  if (!canEditTags.value || newTagGroupId.value === null || isCreatingTag.value) return;
+  const name = newTagName.value.trim();
+  if (!name) {
+    cancelNewTag();
+    return;
+  }
+  const existing = allTags.value.find(
+    (tag) => tag.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
+  );
+  if (existing) {
+    duplicateTag.value = existing;
+    return;
+  }
+  isCreatingTag.value = true;
+  try {
+    const newTag = await createTag(name, newTagGroupId.value);
+    if (!newTag) {
+      toast.error(t("tag.name_save_failed"));
       return;
-    } else {
-      const newTag = await createTag(trimmedName, newTagGroupId.value);
-      if (newTag) {
-        duplicateTag.value = null;
-        tagSearch.value = "";
-        collapsed.value = collapsed.value.filter(
-          (id) => id !== newTag.group_id,
-        );
-        allTags.value.push(newTag);
-        toggleTag(newTag.id);
-        await tauriEmit("tags-changed");
-        await nextTick();
-        document
-          .getElementById(`dialog-tag-${newTag.id}`)
-          ?.scrollIntoView({ block: "nearest" });
-      } else {
-        toast.error(t("tag.name_save_failed"));
-      }
     }
-    newTagName.value = ""; // Clear input
+    allTags.value.push(newTag);
+    toggleTag(newTag.id);
+    newTagGroupId.value = null;
+    newTagName.value = "";
+    duplicateTag.value = null;
+    await tauriEmit("tags-changed");
+    await nextTick();
+    document.getElementById(`dialog-tag-${newTag.id}`)?.scrollIntoView({ block: "nearest" });
+  } catch {
+    toast.error(t("tag.name_save_failed"));
+  } finally {
+    isCreatingTag.value = false;
   }
 }
 
@@ -600,6 +630,8 @@ async function clickOk() {
     isLoadingTags.value ||
     isLoadingCatalog.value ||
     isApplyingTags.value ||
+    isCreatingTag.value ||
+    newTagGroupId.value !== null ||
     tagLoadFailed.value
   )
     return;
@@ -622,6 +654,8 @@ async function clickOk() {
 function clickCancel() {
   emit("cancel");
 }
+
+watch(newTagName, () => { duplicateTag.value = null; });
 
 // Reset tag focus when search results change
 watch(filteredTags, () => {
@@ -668,16 +702,6 @@ const handleKeyDown = (e: KeyboardEvent) => {
   const isInAnyInput =
     active === tagSearchInputRef.value || active === newTagNameInputRef.value;
 
-  if (key === "Tab" && active === newTagNameInputRef.value && !e.shiftKey) {
-    e.preventDefault();
-    if (filteredTags.value.length > 0) {
-      enterTagList();
-    } else {
-      tagSearchInputRef.value?.focus();
-    }
-    return;
-  }
-
   // Escape: tag list → search input → close dialog
   if (key === "Escape") {
     if (isInTagList.value) {
@@ -722,7 +746,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
       if (e.shiftKey) {
         isInTagList.value = false;
         focusedTagIndex.value = -1;
-        newTagNameInputRef.value?.focus();
+        tagSearchInputRef.value?.focus();
       } else {
         exitTagList(); // Tab → back to search input (keep focus inside dialog)
       }

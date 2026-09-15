@@ -7851,12 +7851,13 @@ impl ATag {
     }
 
     /// Get tag name by id
-    pub fn get_name(tag_id: i64) -> Result<String, String> {
+    pub fn get_name(tag_id: i64, include_group: bool) -> Result<String, String> {
         let conn = open_conn()?;
         let result = conn
             .query_row(
-                "SELECT name FROM atags WHERE id = ?1",
-                params![tag_id],
+                "SELECT CASE WHEN ?2 THEN g.name || ' > ' || t.name ELSE t.name END
+                 FROM atags t LEFT JOIN atag_groups g ON g.id = t.group_id WHERE t.id = ?1",
+                params![tag_id, include_group],
                 |row| row.get(0),
             )
             .map_err(|e| e.to_string())?;
