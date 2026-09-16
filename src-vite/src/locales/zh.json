@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "网格",
       "section_grid": "网格",
-      "section_open": "打开",
       "dbl_click_thumbnail": "双击缩略图",
       "dbl_click_quick_preview": "快速预览",
       "dbl_click_new_window": "在新窗口中打开",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "胶片栏",
-        "enable_filmstrip": "启用胶片栏视图",
         "preview_position": "胶片栏位置",
         "preview_position_options": [
           "顶部",

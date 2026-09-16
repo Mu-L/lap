@@ -142,6 +142,15 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.dbl_click_thumbnail') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.dblClickAction">
+                <option value="quickPreview">{{ $t('settings.grid.dbl_click_quick_preview') }}</option>
+                <option value="newWindow">{{ $t('settings.grid.dbl_click_new_window') }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.show_thumbnail_badges') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailBadge">
@@ -166,22 +175,6 @@
             </div>
           </div>
 
-          <!-- open -->
-          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
-            <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_open') }}</span>
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.grid.dbl_click_thumbnail') }}</div>
-              </div>
-              <select class="select select-bordered select-sm min-w-40" v-model="config.settings.dblClickAction">
-                <option value="quickPreview">{{ $t('settings.grid.dbl_click_quick_preview') }}</option>
-                <option value="newWindow">{{ $t('settings.grid.dbl_click_new_window') }}</option>
-              </select>
-            </div>
-          </div>
-
           <!-- filmstrip -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
@@ -189,15 +182,9 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.grid.filmstrip_view.enable_filmstrip') }}</div>
-              </div>
-              <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.showFilmStrip" />
-            </div>
-            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.grid.filmstrip_view.preview_position') }}</div>
               </div>
-              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.previewPosition" :disabled="!config.settings.grid.showFilmStrip">
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.previewPosition">
                 <option v-for="(option, index) in filmStripViewPreviewPositionOptions" :key="index" :value="option.value">{{ option.label }}</option>
               </select>
             </div>
@@ -1564,9 +1551,6 @@ watch(() => config.settings.grid.labelSecondary, (newValue) => {
 });
 watch(() => config.settings.grid.thumbnailBadge, (newValue) => {
   emit('settings-gridThumbnailBadge-changed', newValue);
-});
-watch(() => config.settings.grid.showFilmStrip, (newValue) => {
-  emit('settings-showFilmStrip-changed', newValue);
 });
 watch(() => config.settings.grid.previewPosition, (newValue) => {
   emit('settings-filmStripViewPreviewPosition-changed', newValue);

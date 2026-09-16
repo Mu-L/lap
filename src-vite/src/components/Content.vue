@@ -120,7 +120,8 @@
               transform: `rotate(${config.settings.grid.style === 3 ? 90 : 0}deg)`,
             }"
             :tooltip="localeMsg.settings.grid.style_options[config.settings.grid.style]"
-            :disabled="isMapView"
+            :selected="isGridLayoutView"
+            :disabled="tempViewMode === 'map'"
             @click="cycleGridStyle"
           />
 
@@ -132,15 +133,15 @@
               transition: 'transform 0.3s ease-in-out' 
             }" 
             :tooltip="localeMsg.settings.grid.filmstrip_view.title"
-            :selected="config.settings.grid.showFilmStrip"
-            :disabled="isMapView"
+            :selected="isFilmstripView"
+            :disabled="tempViewMode === 'map'"
             @click="toggleFilmstripView"
           />
 
           <TButton
             :icon="IconMapDefault"
             :tooltip="$t('sidebar.map')"
-            :selected="isMapContext"
+            :selected="isMapView"
             @click="toggleMapView"
           />
 
@@ -150,7 +151,7 @@
             :icon="IconSelection"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
-            :disabled="isScanStreamingMode || isMapView"
+            :disabled="isScanStreamingMode || isMapVisible"
             @click="handleSelectMode(!selectMode)"
           />
 
@@ -318,7 +319,7 @@
         </div> <!-- grid view -->
 
         <!-- custom scrollbar -->
-        <div v-if="!isMapView && !showWelcomeContent && !showFilmstripLayout && fileList.length > 0"
+        <div v-if="!isMapVisible && !showWelcomeContent && !showFilmstripLayout && fileList.length > 0"
           class="mt-12 shrink-0" 
           :class="[ config.settings.showStatusBar ? 'mb-8' : 'mb-1' ]"
         >
@@ -1115,7 +1116,7 @@ async function handleSelectionContextMenu({ x, y, index, isSelected }: { x: numb
 
 const groupedModeActive = ref(false);
 const selectedFolderHasChildren = ref(true);
-const gridRows = computed(() => groupedModeActive.value && !config.settings.grid.showFilmStrip ? groupedRows.value : fileList.value);
+const gridRows = computed(() => groupedModeActive.value && !isFilmstripView.value ? groupedRows.value : fileList.value);
 const groupFileIdsCache = new Map<string, number[]>();
 const groupedTimelineGroups = ref<any[]>([]);
 const folderGroupRoots = ref<Array<{ path: string; name?: string }>>([]);
@@ -1425,7 +1426,7 @@ const isSubjectGroupingView = computed(() =>
 );
 
 const isGroupingControlAvailable = computed(() =>
-  !config.settings.grid.showFilmStrip &&
+  !isFilmstripView.value &&
   !isScanStreamingMode.value &&
   tempViewMode.value === 'none' &&
   (libConfig.activePane === 'collection' || (
@@ -1437,7 +1438,7 @@ const isGroupingControlAvailable = computed(() =>
 function isGroupingSupportedForCurrentView() {
   return (
     effectiveGroupBy.value > 0 &&
-    !config.settings.grid.showFilmStrip &&
+    !isFilmstripView.value &&
     !isScanStreamingMode.value &&
     tempViewMode.value === 'none' &&
     currentQuerySource.value !== 'search'
@@ -1840,13 +1841,13 @@ function handleQuickViewMouseLeave() {
 
 function getActivePreviewMode(): 'quick-view' | 'filmstrip' | 'none' {
   if (showQuickView.value) return 'quick-view';
-  if (config.settings.grid.showFilmStrip) return 'filmstrip';
+  if (isFilmstripView.value) return 'filmstrip';
   return 'none';
 }
 
 function getActivePreviewMediaRef() {
   if (showQuickView.value) return quickViewMediaRef.value;
-  if (config.settings.grid.showFilmStrip) return filmStripMediaRef.value;
+  if (isFilmstripView.value) return filmStripMediaRef.value;
   return null;
 }
 
@@ -2334,9 +2335,9 @@ const layoutVersion = ref(0);     // version to force layout update
 let layoutRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 const isGeometryGridStyle = computed(() => config.settings.grid.style === 2 || config.settings.grid.style === 3);
 const usesGeometryNavigation = computed(() =>
-  (groupedModeActive.value && !config.settings.grid.showFilmStrip) ||
+  (groupedModeActive.value && !isFilmstripView.value) ||
   config.settings.grid.style === 2 ||
-  (!config.settings.grid.showFilmStrip && config.settings.grid.style === 3)
+  (!isFilmstripView.value && config.settings.grid.style === 3)
 );
 
 function scheduleLayoutRefresh() {
@@ -3049,7 +3050,9 @@ const currentQueryParams = ref({
 });
 const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('query');
 const isMapView = computed(() => config.settings.grid.viewMode === 'map');
-const isMapVisible = computed(() => isMapView.value && !showQuickView.value);
+const isGridLayoutView = computed(() => config.settings.grid.viewMode === 'grid');
+const isFilmstripView = computed(() => config.settings.grid.viewMode === 'filmstrip');
+const isMapVisible = computed(() => isMapView.value && !showQuickView.value && tempViewMode.value !== 'map');
 const mapViewMounted = ref(isMapView.value);
 const mapTempViewState = ref<{ lat: number; lon: number; zoom: number } | null>(null);
 const currentSmartQueryParams = ref<any | null>(null);
@@ -3113,7 +3116,7 @@ const scanVisiblePrefetchStart = ref(0);
 const scanVisiblePrefetchEnd = ref(0);
 const pendingRestoreScrollTop = ref<number | null>(null);
 
-const isFilmstripVertical = computed(() => config.settings.grid.showFilmStrip && config.settings.grid.previewPosition >= 2);
+const isFilmstripVertical = computed(() => isFilmstripView.value && config.settings.grid.previewPosition >= 2);
 
 const libraryChecked = ref(false);
 
@@ -3256,7 +3259,7 @@ const hasConfirmedEmptyContent = computed(() => (
   && totalFileCount.value === 0
 ));
 const showFilmstripLayout = computed(() => (
-  config.settings.grid.showFilmStrip
+  isFilmstripView.value
   && !showWelcomeContent.value
   && !hasConfirmedEmptyContent.value
 ));
@@ -3309,7 +3312,6 @@ function showLoadingContent(requestId: number) {
 
 // Similar Search Mode State
 const tempViewMode = ref<'none' | 'similar' | 'album' | 'person' | 'camera' | 'lens' | 'location' | 'map'>('none');
-const isMapContext = computed(() => isMapView.value || tempViewMode.value === 'map');
 let suppressPersonContextRefresh = false;
 const dedupQueryParams = computed(() => {
   return { ...currentQueryParams.value };
@@ -3571,7 +3573,7 @@ function handleItemDblClicked(
   }
 
   if (index === selectedItemIndex.value) {
-    if (!config.settings.grid.showFilmStrip) {
+    if (!isFilmstripView.value) {
       // quick view
       showQuickView.value = true;
       quickViewZoomFit.value = true;
@@ -3582,7 +3584,7 @@ function handleItemDblClicked(
   checkUnsavedChanges(() => {
     selectedItemIndex.value = index;
 
-    if (!config.settings.grid.showFilmStrip) {
+    if (!isFilmstripView.value) {
       // quick view
       showQuickView.value = true;
       quickViewZoomFit.value = true;
@@ -4000,7 +4002,7 @@ function handleItemAction(payload: { action: string, index: number }) {
 
 function requestNavigate(direction: 'prev' | 'next') {
   checkUnsavedChanges(() => {
-    const viewer = showQuickView.value ? quickViewMediaRef.value : (config.settings.grid.showFilmStrip ? filmStripMediaRef.value : null);
+    const viewer = showQuickView.value ? quickViewMediaRef.value : (isFilmstripView.value ? filmStripMediaRef.value : null);
     
     if (direction === 'next') {
       if (viewer) {
@@ -4033,7 +4035,7 @@ function performNavigate(direction: 'prev' | 'next') {
 }
 
 function updateScrollPosition(currentScrollTop: number, currentScrollHeight: number) {
-    if (!config.settings.grid.showFilmStrip) {
+    if (!isFilmstripView.value) {
       // Calculate max scroll top
       const totalRows = Math.ceil(scrollbarTotal.value / columnCount.value);
       const topPadding = 48;
@@ -4058,7 +4060,7 @@ function updateScrollPosition(currentScrollTop: number, currentScrollHeight: num
         const maxIndex = Math.max(1, scrollbarTotal.value - scrollbarPageSize.value);
         scrollPosition.value = Math.round(ratio * maxIndex);
       }
-    } else if (config.settings.grid.showFilmStrip) {
+    } else if (isFilmstripView.value) {
       // Fallback for filmstrip or other layouts (horizontal)
       const rowIndex = Math.floor(currentScrollTop / itemSize.value);
       scrollPosition.value = rowIndex * columnCount.value;
@@ -4091,7 +4093,7 @@ function markDedupSourceUpdated(requestId?: number) {
 function handleScrollUpdate(newIndex: number) {
   scrollPosition.value = newIndex;
   
-  if (!config.settings.grid.showFilmStrip && gridViewRef.value) {
+  if (!isFilmstripView.value && gridViewRef.value) {
     // Calculate ratio (0 to 1)
     const maxIndex = Math.max(1, scrollbarTotal.value - scrollbarPageSize.value);
     const ratio = Math.min(1, Math.max(0, newIndex / maxIndex));
@@ -4189,7 +4191,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if (isMapView.value && (event.key === 'Space' || event.key === ' ')) {
+  if (isMapVisible.value && (event.key === 'Space' || event.key === ' ')) {
     event.preventDefault();
     return;
   }
@@ -4330,7 +4332,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  if ((showQuickView.value || config.settings.grid.showFilmStrip) && matchesShortcut('slideshow.toggle', event, shortcutPlatform)) {
+  if ((showQuickView.value || isFilmstripView.value) && matchesShortcut('slideshow.toggle', event, shortcutPlatform)) {
     event.preventDefault();
     toggleSlideShow();
     return;
@@ -4452,7 +4454,7 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     event.preventDefault();
   }
 
-  const isFilmstrip = config.settings.grid.showFilmStrip;
+  const isFilmstrip = isFilmstripView.value;
   const selectionDirection =
     event.key === 'ArrowRight' || (isFilmstrip && event.key === 'ArrowDown')
       ? 'next'
@@ -4477,7 +4479,7 @@ function handleQuickPreviewShortcut(event: { key: string; code?: string }): bool
   }
 
   if (event.key === 'Enter') {
-    if (!showQuickView.value && !config.settings.grid.showFilmStrip) {
+    if (!showQuickView.value && !isFilmstripView.value) {
       showQuickView.value = true;
       quickViewZoomFit.value = true;
     }
@@ -4496,7 +4498,7 @@ function handleQuickPreviewShortcut(event: { key: string; code?: string }): bool
     }
   } else if (getActivePreviewMode() === 'filmstrip') {
     filmStripZoomFit.value = !filmStripZoomFit.value;
-  } else if (!config.settings.grid.showFilmStrip) {
+  } else if (!isFilmstripView.value) {
     showQuickView.value = true;
     quickViewZoomFit.value = true;
   }
@@ -4565,7 +4567,7 @@ const handleKeyDown = (e: any) => {
     return;
   }
 
-  if (isMapView.value && (key === 'Space' || key === ' ')) {
+  if (isMapVisible.value && (key === 'Space' || key === ' ')) {
     return;
   }
 
@@ -5813,9 +5815,9 @@ watch(() => config.settings.grid.style, () => {
 });
 
 watch(
-  () => Boolean(config.settings.grid.showFilmStrip),
-  (showFilmStrip) => {
-    if (!showFilmStrip) stopSlideShow();
+  () => Boolean(isFilmstripView.value),
+  (isFilmstrip) => {
+    if (!isFilmstrip) stopSlideShow();
     resetGroupingState();
     void nextTick(() => gridViewRef.value?.refreshLayout?.());
   },
@@ -5835,11 +5837,10 @@ watch(gridSize, (newSize, oldSize) => {
 
 function toggleFilmstripView() {
   showQuickView.value = false;
-  config.settings.grid.showFilmStrip = !config.settings.grid.showFilmStrip;
-  void tauriEmit('settings-showFilmStrip-changed', config.settings.grid.showFilmStrip);
-  if (config.settings.grid.showFilmStrip) {
-    filmStripZoomFit.value = true;
-  }
+  // Filmstrip is a select-only view: clicking it when already active is a no-op.
+  if (isFilmstripView.value) return;
+  config.settings.grid.viewMode = 'filmstrip';
+  filmStripZoomFit.value = true;
 }
 
 function toggleMapView() {
@@ -5851,8 +5852,10 @@ function toggleMapView() {
     exitTempViewMode();
     return;
   }
-  if (!isMapView.value && selectMode.value) handleSelectMode(false);
-  config.settings.grid.viewMode = isMapView.value ? 'grid' : 'map';
+  // Map is a select-only view: clicking it when already active is a no-op.
+  if (isMapView.value) return;
+  if (selectMode.value) handleSelectMode(false);
+  config.settings.grid.viewMode = 'map';
 }
 
 function openMapClusterTempView(payload: { fileIds?: number[]; minLat: number; maxLat: number; minLon: number; maxLon: number; count: number; view: { lat: number; lon: number; zoom: number } }) {
@@ -5862,7 +5865,6 @@ function openMapClusterTempView(payload: { fileIds?: number[]; minLat: number; m
   tempViewMode.value = 'map';
   showQuickView.value = false;
   contentTitle.value = t('map.photos_in_view', { count: payload.count });
-  config.settings.grid.viewMode = 'grid';
   const requestId = ++currentContentRequestId;
   showLoadingContent(requestId);
   scrollPosition.value = 0;
@@ -5922,6 +5924,12 @@ async function openMapPreviewFile(fileId: number) {
 
 function cycleGridStyle() {
   showQuickView.value = false;
+  // When grid layout isn't the active view (map or filmstrip), just switch to
+  // grid layout; only cycle the style when grid layout is already active.
+  if (config.settings.grid.viewMode !== 'grid') {
+    config.settings.grid.viewMode = 'grid';
+    return;
+  }
   // Cycle between card, tile, justified, and masonry.
   config.settings.grid.style = (config.settings.grid.style + 1) % 4;
   void tauriEmit('settings-gridStyle-changed', config.settings.grid.style);
@@ -7117,7 +7125,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     totalFileCount.value = fileList.value.length;
     totalFileSize.value = fileList.value.reduce((total, file) => total + Number(file.size || 0), 0);
 
-    const groups = config.settings.grid.showFilmStrip ? [] : [
+    const groups = isFilmstripView.value ? [] : [
       textMatches.length > 0
         ? {
             id: 'search-text',
@@ -7732,8 +7740,6 @@ function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
 
 function exitTempViewMode() {
   if (!backupState.value) return;
-
-  if (tempViewMode.value === 'map') config.settings.grid.viewMode = 'map';
 
   const state = backupState.value;
   

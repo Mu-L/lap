@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "Raster",
       "section_grid": "Raster",
-      "section_open": "Öffnen",
       "dbl_click_thumbnail": "Miniaturansicht doppelklicken",
       "dbl_click_quick_preview": "Schnellvorschau",
       "dbl_click_new_window": "In neuem Fenster öffnen",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "Filmstreifen",
-        "enable_filmstrip": "Filmstreifenansicht aktivieren",
         "preview_position": "Position des Filmstreifens",
         "preview_position_options": [
           "Oben",

@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "그리드",
       "section_grid": "그리드",
-      "section_open": "열기",
       "dbl_click_thumbnail": "썸네일 두 번 클릭",
       "dbl_click_quick_preview": "빠른 미리보기",
       "dbl_click_new_window": "새 창에서 열기",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "필름스트립",
-        "enable_filmstrip": "필름스트립 보기 활성화",
         "preview_position": "필름스트립 위치",
         "preview_position_options": [
           "위",

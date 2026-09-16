@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "Сетка",
       "section_grid": "Сетка",
-      "section_open": "Открытие",
       "dbl_click_thumbnail": "Дважды щёлкните миниатюру",
       "dbl_click_quick_preview": "Быстрый просмотр",
       "dbl_click_new_window": "Открыть в новом окне",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "Диафильм",
-        "enable_filmstrip": "Режим диафильма",
         "preview_position": "Расположение диафильма",
         "preview_position_options": [
           "Сверху",

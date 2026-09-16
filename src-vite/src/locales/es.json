@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "Cuadrícula",
       "section_grid": "Cuadrícula",
-      "section_open": "Abrir",
       "dbl_click_thumbnail": "Doble clic en la miniatura",
       "dbl_click_quick_preview": "Vista rápida",
       "dbl_click_new_window": "Abrir en una ventana nueva",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "Tira de película",
-        "enable_filmstrip": "Activar vista de tira de película",
         "preview_position": "Posición de la tira de película",
         "preview_position_options": [
           "Arriba",

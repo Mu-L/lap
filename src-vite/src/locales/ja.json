@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "グリッド",
       "section_grid": "グリッド",
-      "section_open": "開く",
       "dbl_click_thumbnail": "サムネイルをダブルクリック",
       "dbl_click_quick_preview": "クイックプレビュー",
       "dbl_click_new_window": "新しいウィンドウで開く",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "フィルムストリップ",
-        "enable_filmstrip": "フィルムストリップ表示を有効にする",
         "preview_position": "フィルムストリップの位置",
         "preview_position_options": [
           "上",

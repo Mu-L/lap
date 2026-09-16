@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "Grade",
       "section_grid": "Grade",
-      "section_open": "Abrir",
       "dbl_click_thumbnail": "Clique duas vezes na miniatura",
       "dbl_click_quick_preview": "Visualização rápida",
       "dbl_click_new_window": "Abrir em nova janela",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "Tira de filme",
-        "enable_filmstrip": "Ativar visualização em tira de filme",
         "preview_position": "Posição da tira de filme",
         "preview_position_options": [
           "Em cima",

@@ -13,16 +13,16 @@
       ref="scroller"
       class="w-full h-full no-scrollbar"
       :class="{
-        'pt-12': !config.settings.grid.showFilmStrip,
-        'pb-8': !config.settings.grid.showFilmStrip && config.settings.showStatusBar,
-        'pb-1': !config.settings.grid.showFilmStrip && !config.settings.showStatusBar,
+        'pt-12': !isFilmstripView,
+        'pb-8': !isFilmstripView && config.settings.showStatusBar,
+        'pb-1': !isFilmstripView && !config.settings.showStatusBar,
       }"
       :items="renderItems"
-      :direction="config.settings.grid.showFilmStrip && config.settings.grid.previewPosition < 2 ? 'horizontal' : 'vertical'"
-      :grid-items="config.settings.grid.showFilmStrip ? 1 : columnCount"
-      :item-size="config.settings.grid.showFilmStrip ? (config.settings.grid.previewPosition < 2 ? filmStripItemSize : itemHeight) : itemHeight"
-      :item-secondary-size="!config.settings.grid.showFilmStrip ? itemWidth : (config.settings.grid.previewPosition >= 2 ? itemWidth : undefined)"
-      :key="`${config.settings.grid.showFilmStrip}`"
+      :direction="isFilmstripView && config.settings.grid.previewPosition < 2 ? 'horizontal' : 'vertical'"
+      :grid-items="isFilmstripView ? 1 : columnCount"
+      :item-size="isFilmstripView ? (config.settings.grid.previewPosition < 2 ? filmStripItemSize : itemHeight) : itemHeight"
+      :item-secondary-size="!isFilmstripView ? itemWidth : (config.settings.grid.previewPosition >= 2 ? itemWidth : undefined)"
+      :key="`${isFilmstripView}`"
       :geometry="virtualScrollGeometry"
       :content-height="virtualScrollContentHeight"
       :transition="isLayoutTransitioning"
@@ -294,9 +294,10 @@ function isGeometryGridStyle(style: number) {
   return style === 2 || style === 3;
 }
 
+const isFilmstripView = computed(() => config.settings.grid.viewMode === 'filmstrip');
 const renderItems = computed(() => props.fileList);
 const hasGroupRows = computed(() =>
-  !config.settings.grid.showFilmStrip &&
+  !isFilmstripView.value &&
   (Number(props.groupBy || 0) > 0 || isGroupRow(renderItems.value[0]))
 );
 const fileIndexToRowIndex = computed(() => {
@@ -403,14 +404,14 @@ const layoutGeometryResult = computed(() => {
     return { boxes: [], contentSize: 0 };
   }
 
-  const { style, showFilmStrip } = config.settings.grid;
+  const { style } = config.settings.grid;
   const size = props.gridSize;
 
   if (hasGroupRows.value) {
     return groupedLayoutGeometryResult.value;
   }
 
-  if (showFilmStrip) {
+  if (isFilmstripView.value) {
     if (isGeometryGridStyle(style)) {
       const isVertical = config.settings.grid.previewPosition >= 2;
       if (isVertical) {
@@ -453,7 +454,7 @@ let layoutAnchorVersion = 0;
 let isInitialLayout = true;
 
 const gap = 8; // Gap between items
-const isVerticalFilmstrip = computed(() => config.settings.grid.showFilmStrip && config.settings.grid.previewPosition >= 2);
+const isVerticalFilmstrip = computed(() => isFilmstripView.value && config.settings.grid.previewPosition >= 2);
 
 // item width and height(including gap)
 const itemWidth = computed(() => {
@@ -510,7 +511,7 @@ function updateLayout() {
   emit('layout-update', { height: layoutContentHeight.value });
 }
 
-watch(() => [props.gridSize, config.settings.grid.style, config.settings.grid.showFilmStrip], async () => {
+watch(() => [props.gridSize, config.settings.grid.style, isFilmstripView.value], async () => {
   if (isInitialLayout) {
     isInitialLayout = false;
     updateColumnCount();
@@ -645,7 +646,7 @@ function onScroll(e: Event) {
 }
 
 function onWheel(e: WheelEvent) {
-  if (config.settings.grid.showFilmStrip && scroller.value) {
+  if (isFilmstripView.value && scroller.value) {
     const isHorizontal = config.settings.grid.previewPosition < 2;
     if (isHorizontal) {
       // If it's a vertical scroll (deltaY) and no horizontal scroll (deltaX),
@@ -686,7 +687,7 @@ function scrollToItem(index: number, center = false) {
     return;
   }
   
-  if (!config.settings.grid.showFilmStrip) {
+  if (!isFilmstripView.value) {
     let itemTop = 0;
     let itemBottom = 0;
 
@@ -766,7 +767,7 @@ function scrollToItem(index: number, center = false) {
 }
 
 function scrollToPosition(scrollTop: number) {
-  if (scroller.value && !config.settings.grid.showFilmStrip) {
+  if (scroller.value && !isFilmstripView.value) {
     scroller.value.$el.scrollTop = scrollTop;
   }
 }
@@ -777,7 +778,7 @@ function scrollToRowIndex(rowIndex: number) {
     scrollToPosition(box.y);
     return;
   }
-  if (!scroller.value || config.settings.grid.showFilmStrip) return;
+  if (!scroller.value || isFilmstripView.value) return;
   const nextScrollTop = Math.max(0, rowIndex) * itemHeight.value;
   scroller.value.$el.scrollTop = nextScrollTop;
 }
@@ -800,7 +801,7 @@ function getNextItemIndex(currentIndex: number, direction: 'up' | 'down', page =
   const style = config.settings.grid.style;
   const supportsGeometryNavigation = hasGroupRows.value
     || style === 2
-    || (!config.settings.grid.showFilmStrip && isGeometryGridStyle(style));
+    || (!isFilmstripView.value && isGeometryGridStyle(style));
   if (!supportsGeometryNavigation || layoutGeometry.value.length === 0) {
     if (page && !hasGroupRows.value) {
       const step = Math.max(1, Math.floor(pageHeight / itemHeight.value)) * columnCount.value;

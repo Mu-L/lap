@@ -158,9 +158,6 @@ if (isMainWindow) {
   listen('settings-dblClickAction-changed', (event) => {
     config.setDblClickAction(event.payload)
   })
-  listen('settings-showFilmStrip-changed', (event) => {
-    config.setShowFilmStrip(event.payload)
-  })
   listen('settings-filmStripViewPreviewPosition-changed', (event) => {
     config.setFilmStripViewPreviewPosition(event.payload)
   })

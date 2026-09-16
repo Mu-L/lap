@@ -1259,7 +1259,6 @@
     "grid": {
       "title": "Grid",
       "section_grid": "Grid",
-      "section_open": "Open",
       "dbl_click_thumbnail": "Double-click thumbnail",
       "dbl_click_quick_preview": "Quick preview",
       "dbl_click_new_window": "Open in new window",
@@ -1307,7 +1306,6 @@
       ],
       "filmstrip_view": {
         "title": "Filmstrip",
-        "enable_filmstrip": "Enable filmstrip view",
         "preview_position": "Filmstrip placement",
         "preview_position_options": [
           "Top",
