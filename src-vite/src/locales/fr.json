@@ -1313,7 +1313,15 @@
           "Gauche",
           "Droite"
         ]
-      }
+      },
+      "section_map": "Carte",
+      "map_marker_size": "Taille du marqueur de carte",
+      "map_marker_size_options": [
+        "Petit",
+        "Moyen",
+        "Grand",
+        "Très grand"
+      ]
     },
     "image_view": {
       "title": "Visionneuse",

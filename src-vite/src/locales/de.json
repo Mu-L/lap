@@ -1313,7 +1313,15 @@
           "Links",
           "Rechts"
         ]
-      }
+      },
+      "section_map": "Karte",
+      "map_marker_size": "Größe der Kartenmarkierung",
+      "map_marker_size_options": [
+        "Klein",
+        "Mittel",
+        "Groß",
+        "Extra groß"
+      ]
     },
     "image_view": {
       "title": "Viewer",

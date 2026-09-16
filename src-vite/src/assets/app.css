@@ -170,8 +170,8 @@ html, body {
   opacity: 0;
   transition: opacity var(--map-photo-fade-duration, 200ms) ease;
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: var(--map-photo-marker-size, 64px);
+  height: var(--map-photo-marker-size, 64px);
   overflow: visible;
 }
 
@@ -198,8 +198,8 @@ html, body {
 
 .map-photo-marker img {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: var(--map-photo-marker-size, 64px);
+  height: var(--map-photo-marker-size, 64px);
   aspect-ratio: 1;
   border: 2px solid white;
   border-radius: 6px;

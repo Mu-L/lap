@@ -1313,7 +1313,15 @@
           "左侧",
           "右侧"
         ]
-      }
+      },
+      "section_map": "地图",
+      "map_marker_size": "地图标记尺寸",
+      "map_marker_size_options": [
+        "小",
+        "中",
+        "大",
+        "特大"
+      ]
     },
     "image_view": {
       "title": "查看器",

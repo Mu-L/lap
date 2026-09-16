@@ -137,6 +137,9 @@ if (isMainWindow) {
   listen('settings-tiandituToken-changed', (event) => {
     config.setTiandituToken(event.payload)
   })
+  listen('settings-mapMarkerSize-changed', (event) => {
+    config.setMapMarkerSize(event.payload)
+  })
   listen('settings-gridStyle-changed', (event) => {
     config.setGridStyle(event.payload)
   })

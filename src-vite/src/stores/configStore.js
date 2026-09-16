@@ -2,7 +2,7 @@
  * Config Store - Global application configuration
  */
 import { defineStore } from 'pinia';
-import { SIDEBAR } from '@/common/constants';
+import { SIDEBAR, MAP_MARKER_SIZES } from '@/common/constants';
 
 export const useConfigStore = defineStore('configStore', {
   state: () => ({
@@ -125,6 +125,7 @@ export const useConfigStore = defineStore('configStore', {
       rawThumbnailSource: 'processed', // processed | embedded
       mapProvider: 'global',      // global | tianditu
       tiandituToken: '',
+      mapMarkerSize: 64,          // map photo marker size in px
       grid: {
         sizePosition: 0,         // grid size slider position (0-1)
         style: 0,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
@@ -294,6 +295,10 @@ export const useConfigStore = defineStore('configStore', {
     },
     setTiandituToken(tiandituToken) {
       this.settings.tiandituToken = String(tiandituToken || '').trim();
+    },
+    setMapMarkerSize(mapMarkerSize) {
+      const size = Number(mapMarkerSize);
+      this.settings.mapMarkerSize = MAP_MARKER_SIZES.includes(size) ? size : 64;
     },
     setGridStyle(gridStyle) {
       this.settings.grid.style = gridStyle;

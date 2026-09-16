@@ -145,6 +145,7 @@ onBeforeUnmount(() => {
 })
 
 watch(() => [config.infoPanel.mapTheme, config.settings.mapProvider, config.settings.tiandituToken], updateTheme)
+watch(() => config.settings.mapMarkerSize, () => renderMarkers())
 watch(() => [props.queryParams, props.querySource, props.collectionId, props.fileIds], () => {
   if (!props.active) {
     needsRefresh = true
@@ -325,13 +326,14 @@ function renderMarkers() {
 
 function requestPhotoClusters() {
   if (!map || !clusterWorker || !props.active || !isQueryMap.value) return
+  const spacing = Math.round(Number(config.settings.mapMarkerSize || 64) * 0.75)
   const useDetails = zoom.value >= DETAIL_ZOOM && visibleFiles.length > 0
     && detailBounds?.contains(bufferedMapBounds(176))
   const source = useDetails ? 'details' : 'overview'
   const input = useDetails ? visibleFiles : points.value
   const previous = clusterSources.get(source)
   let cached = previous
-  if (!cached || cached.input !== input || cached.maxZoom !== activeMaxZoom.value) {
+  if (!cached || cached.input !== input || cached.maxZoom !== activeMaxZoom.value || cached.spacing !== spacing) {
     const candidates = useDetails
       ? visibleFiles.filter(file => validLatLon(file.gps_latitude, file.gps_longitude)).map(file => ({
         lat: Number(file.gps_latitude), lon: Number(file.gps_longitude), file_id: Number(file.id), count: 1,
@@ -340,9 +342,9 @@ function requestPhotoClusters() {
       : points.value.map(point => ({ lat: point.lat, lon: point.lon, file_id: point.file_id, count: point.count, pointIds: [point.file_id] }))
     const signature = useDetails ? JSON.stringify(candidates) : null
     const unchanged = cached && cached.maxZoom === activeMaxZoom.value
-      && useDetails && cached.signature === signature
+      && cached.spacing === spacing && useDetails && cached.signature === signature
     cached = {
-      input, signature, maxZoom: activeMaxZoom.value,
+      input, signature, maxZoom: activeMaxZoom.value, spacing,
       version: unchanged ? cached.version : (cached?.version || 0) + 1,
       candidates,
     }
@@ -353,6 +355,7 @@ function requestPhotoClusters() {
     requestId: clusterRequestId, source, version: cached.version,
     points: previous?.version === cached.version ? undefined : cached.candidates,
     maxZoom: cached.maxZoom, zoom: map.getZoom(), padding: useDetails ? 0.0001 : 0.01,
+    spacing,
     bounds: { min: { x: pixelBounds.min.x, y: pixelBounds.min.y }, max: { x: pixelBounds.max.x, y: pixelBounds.max.y } },
   })
 }
@@ -360,7 +363,7 @@ function requestPhotoClusters() {
 function applyPhotoClusters(clusters) {
   const nextMarkers = new Map()
   for (const cluster of clusters) {
-    const key = JSON.stringify([cluster, config.settings.thumbnailSize])
+    const key = JSON.stringify([cluster, config.settings.thumbnailSize, config.settings.mapMarkerSize])
     const marker = photoMarkers.get(key) || addPhotoMarker(cluster.lat, cluster.lon, cluster.file_id, cluster.count, cluster)
     nextMarkers.set(key, marker)
   }
@@ -414,15 +417,17 @@ async function openPhotoCluster(cluster) {
 
 function addPhotoMarker(lat, lon, fileId, count, cluster = null) {
   if (lat == null || lon == null) return
+  const size = Number(config.settings.mapMarkerSize || 64);
   const icon = L.divIcon({
     className: 'map-photo-marker-wrapper',
-    iconSize: [64, 72],
-    iconAnchor: [32, 72],
+    iconSize: [size, size + 8],
+    iconAnchor: [Math.round(size / 2), size + 8],
     html: `<div class="map-photo-marker"><img src="${getThumbUrl(fileId, false, config.settings.thumbnailSize || 512)}" />${count > 1 ? `<span>${count > 999 ? '999+' : count}</span>` : ''}</div>`,
   })
   const marker = L.marker([lat, lon], { icon, keyboard: false }).addTo(markerLayer)
   const element = marker.getElement()
   element?.style.setProperty('--map-photo-fade-duration', `${MARKER_FADE_MS}ms`)
+  element?.style.setProperty('--map-photo-marker-size', `${size}px`)
   // Wait for the photo itself: otherwise its opacity animation can finish
   // while the thumbnail request is still pending.
   const show = () => {

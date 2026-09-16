@@ -190,6 +190,21 @@
             </div>
           </div>
 
+          <!-- map -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_map') }}</span>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.grid.map_marker_size') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.mapMarkerSize">
+                <option v-for="(option, index) in mapMarkerSizeOptions" :key="index" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+          </div>
+
         </div>
 
         <!-- Viewer Tab -->
@@ -703,7 +718,7 @@ import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { normalizeThumbnailSize } from '@/common/thumbnailProfiles';
-import { THUMBNAIL_BADGE } from '@/common/constants';
+import { THUMBNAIL_BADGE, MAP_MARKER_SIZES } from '@/common/constants';
 import {
   getDbStorageDir,
   changeDbStorageDir,
@@ -996,6 +1011,11 @@ const gridStyleOptions = computed(() => {
   }
 
   return result;
+});
+
+const mapMarkerSizeOptions = computed(() => {
+  const labels = localeMsg.value.settings.grid.map_marker_size_options;
+  return MAP_MARKER_SIZES.map((size, index) => ({ label: labels[index], value: size }));
 });
 
 // Define the grid label options
@@ -1554,6 +1574,9 @@ watch(() => config.settings.grid.thumbnailBadge, (newValue) => {
 });
 watch(() => config.settings.grid.previewPosition, (newValue) => {
   emit('settings-filmStripViewPreviewPosition-changed', newValue);
+});
+watch(() => config.settings.mapMarkerSize, (newValue) => {
+  emit('settings-mapMarkerSize-changed', newValue);
 });
 // image viewer settings
 watch(() => config.settings.mouseWheelMode, (newValue) => {

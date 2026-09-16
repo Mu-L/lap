@@ -1313,7 +1313,15 @@
           "왼쪽",
           "오른쪽"
         ]
-      }
+      },
+      "section_map": "지도",
+      "map_marker_size": "지도 마커 크기",
+      "map_marker_size_options": [
+        "작게",
+        "중간",
+        "크게",
+        "아주 크게"
+      ]
     },
     "image_view": {
       "title": "뷰어",

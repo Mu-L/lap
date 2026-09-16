@@ -1,8 +1,9 @@
 // Distance-grid nearest-neighbor search, following Leaflet.markercluster:
 // https://github.com/Leaflet/Leaflet.markercluster/blob/master/src/DistanceGrid.js
 // Fixed photo anchors avoid centroid shifts introducing new icon collisions.
-export function clusterPhotoPoints(points, project, padding = 0) {
-  const spacing = 48 // > hypot(64 / 2, 64 / 2): at most half overlap on one axis.
+export function clusterPhotoPoints(points, project, padding = 0, spacing = 48) {
+  // `spacing` is the minimum pixel distance between cluster anchors; it must
+  // exceed half the marker diagonal to avoid overlapping icons.
   const cells = new Map()
   const clusters = []
   const sorted = [...points].sort((a, b) => b.count - a.count || Number(a.file_id) - Number(b.file_id) || a.lat - b.lat || a.lon - b.lon)
@@ -50,11 +51,11 @@ export function clusterPhotoPoints(points, project, padding = 0) {
 // Build parents from the preceding zoom's clusters, as in Supercluster:
 // https://github.com/mapbox/supercluster/blob/main/index.js
 // Keep all input points in the index; viewport culling happens only at rendering.
-export function buildPhotoClusterIndex(points, project, maxZoom, padding = 0) {
+export function buildPhotoClusterIndex(points, project, maxZoom, padding = 0, spacing = 48) {
   const levels = new Map()
   let children = points
   for (let zoom = maxZoom; zoom >= 0; zoom--) {
-    children = clusterPhotoPoints(children, point => project(point, zoom), padding)
+    children = clusterPhotoPoints(children, point => project(point, zoom), padding, spacing)
     levels.set(zoom, children)
   }
   return levels
@@ -81,10 +82,10 @@ export function photoClusterInView(cluster, zoom, bounds) {
 
 export function createPhotoClusterCache() {
   const sources = new Map()
-  return ({ source, version, points, maxZoom, zoom, padding, bounds }) => {
+  return ({ source, version, points, maxZoom, zoom, padding, spacing, bounds }) => {
     let cached = sources.get(source)
-    if (!cached || cached.version !== version || cached.maxZoom !== maxZoom) {
-      cached = { version, maxZoom, levels: buildPhotoClusterIndex(points, projectPhotoPoint, maxZoom, padding) }
+    if (!cached || cached.version !== version || cached.maxZoom !== maxZoom || cached.spacing !== spacing) {
+      cached = { version, maxZoom, spacing, levels: buildPhotoClusterIndex(points, projectPhotoPoint, maxZoom, padding, spacing) }
       sources.set(source, cached)
     }
     return (cached.levels.get(Math.floor(zoom)) || []).filter(cluster => photoClusterInView(cluster, zoom, bounds))

@@ -78,3 +78,6 @@ export const SIMILAR_SCAN = {
   LARGE_RESULT_THRESHOLD: 10_000,
   THUMBNAIL_LIMIT: 19,
 } as const;
+
+// map photo marker size presets (px)
+export const MAP_MARKER_SIZES: readonly number[] = [48, 64, 88, 120];

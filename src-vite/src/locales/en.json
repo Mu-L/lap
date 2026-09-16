@@ -1313,7 +1313,15 @@
           "Left",
           "Right"
         ]
-      }
+      },
+      "section_map": "Map",
+      "map_marker_size": "Map marker size",
+      "map_marker_size_options": [
+        "Small",
+        "Medium",
+        "Large",
+        "Extra large"
+      ]
     },
     "image_view": {
       "title": "Viewer",

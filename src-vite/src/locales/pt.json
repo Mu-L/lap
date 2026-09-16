@@ -1313,7 +1313,15 @@
           "À esquerda",
           "À direita"
         ]
-      }
+      },
+      "section_map": "Mapa",
+      "map_marker_size": "Tamanho do marcador do mapa",
+      "map_marker_size_options": [
+        "Pequeno",
+        "Médio",
+        "Grande",
+        "Extra grande"
+      ]
     },
     "image_view": {
       "title": "Visualizador",

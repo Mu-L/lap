@@ -1313,7 +1313,15 @@
           "左",
           "右"
         ]
-      }
+      },
+      "section_map": "地図",
+      "map_marker_size": "地図マーカーのサイズ",
+      "map_marker_size_options": [
+        "小",
+        "中",
+        "大",
+        "特大"
+      ]
     },
     "image_view": {
       "title": "ビューア",
