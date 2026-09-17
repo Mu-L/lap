@@ -966,6 +966,7 @@
       "saturation": "Saturation",
       "reset": "Reset",
       "crop": "Crop",
+      "angle": "Angle",
       "cancel_crop": "Cancel",
       "confirm_crop": "Confirm",
       "crop_shape": "Crop shape",

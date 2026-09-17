@@ -966,6 +966,7 @@
       "saturation": "饱和度",
       "reset": "重置",
       "crop": "裁剪",
+      "angle": "角度",
       "cancel_crop": "取消",
       "confirm_crop": "确定",
       "crop_shape": "裁剪形状",

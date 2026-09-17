@@ -966,6 +966,7 @@
       "saturation": "Sättigung",
       "reset": "Zurücksetzen",
       "crop": "Zuschneiden",
+      "angle": "Winkel",
       "cancel_crop": "Abbrechen",
       "confirm_crop": "Bestätigen",
       "crop_shape": "Form",

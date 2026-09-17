@@ -966,6 +966,7 @@
       "saturation": "Насыщенность",
       "reset": "Сброс",
       "crop": "Обрезка",
+      "angle": "Угол",
       "cancel_crop": "Отмена",
       "confirm_crop": "Применить",
       "crop_shape": "Форма",

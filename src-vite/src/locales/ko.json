@@ -966,6 +966,7 @@
       "saturation": "채도",
       "reset": "초기화",
       "crop": "자르기",
+      "angle": "각도",
       "cancel_crop": "취소",
       "confirm_crop": "확인",
       "crop_shape": "모양",

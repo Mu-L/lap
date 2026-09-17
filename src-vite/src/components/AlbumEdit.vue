@@ -1,13 +1,13 @@
 <template>
   <ModalDialog :title="isNewAlbum ? $t('album.edit.title_add') : $t('album.edit.title')" @cancel="clickCancel">
-    <section class="space-y-2">
+    <section class="space-y-2 select-none">
 
       <!-- General Information -->
       <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
         <div class="flex items-center gap-2 text-base-content/30">
           <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('album.edit.section_general') }}</span>
         </div>
-        <div class="w-full grid grid-cols-[84px_1fr] gap-x-4 gap-y-1.5 items-center px-1 text-xs select-none">
+        <div class="w-full grid grid-cols-[84px_1fr] gap-x-4 gap-y-1.5 items-center px-1 text-xs">
           <!-- Folder -->
           <div class="h-6 flex items-center text-[11px] text-base-content/45">{{ $t('album.edit.folder') }}</div>
           <div class="min-h-6 flex flex-col justify-center gap-0.5">

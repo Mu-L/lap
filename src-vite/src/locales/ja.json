@@ -966,6 +966,7 @@
       "saturation": "彩度",
       "reset": "リセット",
       "crop": "切り抜き",
+      "angle": "角度",
       "cancel_crop": "キャンセル",
       "confirm_crop": "確定",
       "crop_shape": "形状",

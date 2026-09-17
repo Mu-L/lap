@@ -959,6 +959,8 @@ pub struct EditParams {
     #[serde(rename = "flipVertical")]
     flip_vertical: bool,
     rotate: i32,
+    #[serde(rename = "cropAngle", default)]
+    crop_angle: f32,
     crop: CropData,
     resize: ResizeData,
     quality: Option<u8>,
@@ -1442,6 +1444,60 @@ pub async fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
     false
 }
 
+/// Rotate an image by an arbitrary angle (degrees), producing an axis-aligned
+/// bounding-box output with transparent corners, using bilinear interpolation.
+/// Takes `img` by value and uses `into_rgba8` so an already-RGBA source reuses
+/// its buffer instead of allocating a second full-image copy.
+fn rotate_arbitrary(img: DynamicImage, angle_deg: f32) -> DynamicImage {
+    let angle = angle_deg.to_radians();
+    let src = img.into_rgba8();
+    let (sw, sh) = (src.width() as f32, src.height() as f32);
+    let cos = angle.cos().abs();
+    let sin = angle.sin().abs();
+    let bb_w = (sw * cos + sh * sin).ceil() as u32;
+    let bb_h = (sh * cos + sw * sin).ceil() as u32;
+
+    let (dw, dh) = (bb_w as f32, bb_h as f32);
+    let cos_a = angle.cos();
+    let sin_a = angle.sin();
+
+    let mut dst = image::RgbaImage::new(bb_w, bb_h);
+    for (x, y, px) in dst.enumerate_pixels_mut() {
+        let dx = x as f32 - dw / 2.0;
+        let dy = y as f32 - dh / 2.0;
+        // Inverse rotation maps this output pixel back into source space.
+        let sx = dx * cos_a + dy * sin_a + sw / 2.0;
+        let sy = -dx * sin_a + dy * cos_a + sh / 2.0;
+
+        if sx < 0.0 || sy < 0.0 || sx > sw - 1.0 || sy > sh - 1.0 {
+            *px = image::Rgba([0, 0, 0, 0]);
+            continue;
+        }
+
+        let x0 = sx.floor() as u32;
+        let y0 = sy.floor() as u32;
+        let x1 = (x0 + 1).min(src.width() - 1);
+        let y1 = (y0 + 1).min(src.height() - 1);
+        let fx = sx - x0 as f32;
+        let fy = sy - y0 as f32;
+
+        let p00 = src.get_pixel(x0, y0).0;
+        let p10 = src.get_pixel(x1, y0).0;
+        let p01 = src.get_pixel(x0, y1).0;
+        let p11 = src.get_pixel(x1, y1).0;
+
+        let mut out = [0u8; 4];
+        for i in 0..4 {
+            let top = p00[i] as f32 * (1.0 - fx) + p10[i] as f32 * fx;
+            let bottom = p01[i] as f32 * (1.0 - fx) + p11[i] as f32 * fx;
+            out[i] = (top * (1.0 - fy) + bottom * fy).round() as u8;
+        }
+        *px = image::Rgba(out);
+    }
+
+    DynamicImage::ImageRgba8(dst)
+}
+
 /// get an edited image
 async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
     let file_type = t_utils::get_file_type(&params.source_file_path).unwrap_or(0);
@@ -1469,7 +1525,7 @@ async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
         img = img.flipv();
     }
 
-    // 2. Rotate
+    // 2. Rotate (90° multiples)
     match params.rotate {
         90 => img = img.rotate90(),
         180 => img = img.rotate180(),
@@ -1478,6 +1534,17 @@ async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
         -180 => img = img.rotate180(),
         -270 => img = img.rotate90(),
         _ => {}
+    }
+
+    // 2b. Arbitrary-angle rotation (straighten), producing an axis-aligned
+    // bounding box that the subsequent crop indexes into. Offloaded to a
+    // blocking thread: it is a CPU-heavy full-image pass that should not occupy
+    // the async executor (matches the project's spawn_blocking convention).
+    if params.crop_angle != 0.0 {
+        let angle = params.crop_angle;
+        img = tauri::async_runtime::spawn_blocking(move || rotate_arbitrary(img, angle))
+            .await
+            .map_err(|e| format!("Failed to join rotate task: {}", e))?;
     }
 
     // 3. Crop
