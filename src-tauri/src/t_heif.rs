@@ -228,14 +228,20 @@ pub fn get_heif_thumbnail(
     _orientation: i32,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
-    let (rgb, width, height, _row_bytes) = decode_primary_rgb(file_path)?;
-    // Build a DynamicImage to reuse existing orientation + alpha handling logic.
-    // libheif decode gives us RGB, no alpha here.
-    let img = image::RgbImage::from_raw(width, height, rgb)
-        .ok_or_else(|| "Failed to build RGB image from libheif buffer".to_string())?;
-    let dyn_img = DynamicImage::ImageRgb8(img);
-    // libheif already applies HEIF geometric transformations (rotation/mirroring/crop).
-    resize_dynamic_image_to_jpeg(dyn_img, 1, thumbnail_size).map(Some)
+    match decode_primary_rgb(file_path) {
+        Ok((rgb, width, height, _row_bytes)) => {
+            // Build a DynamicImage to reuse existing orientation + alpha handling logic.
+            // libheif decode gives us RGB, no alpha here.
+            let img = image::RgbImage::from_raw(width, height, rgb)
+                .ok_or_else(|| "Failed to build RGB image from libheif buffer".to_string())?;
+            let dyn_img = DynamicImage::ImageRgb8(img);
+            // libheif already applies HEIF geometric transformations (rotation/mirroring/crop).
+            resize_dynamic_image_to_jpeg(dyn_img, 1, thumbnail_size).map(Some)
+        }
+        // libde265 fails to decode some iPhone HEVC variants; on macOS fall
+        // back to the system ImageIO decoder (`sips`), which handles them.
+        Err(_) => heif_sips_fallback(file_path, thumbnail_size),
+    }
 }
 
 pub fn get_heif_preview(
@@ -243,10 +249,24 @@ pub fn get_heif_preview(
     _orientation: i32,
     max_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
-    let (rgb, width, height, _row_bytes) = decode_primary_rgb(file_path)?;
-    let img = image::RgbImage::from_raw(width, height, rgb)
-        .ok_or_else(|| "Failed to build RGB image from libheif buffer".to_string())?;
-    // Preview path: keep it JPEG encoded at up to max_size (same as thumbnail sizing semantics).
-    // libheif already applies HEIF geometric transformations (rotation/mirroring/crop).
-    resize_dynamic_image_to_jpeg(DynamicImage::ImageRgb8(img), 1, max_size).map(Some)
+    match decode_primary_rgb(file_path) {
+        Ok((rgb, width, height, _row_bytes)) => {
+            let img = image::RgbImage::from_raw(width, height, rgb)
+                .ok_or_else(|| "Failed to build RGB image from libheif buffer".to_string())?;
+            // Preview path: keep it JPEG encoded at up to max_size (same as thumbnail sizing semantics).
+            // libheif already applies HEIF geometric transformations (rotation/mirroring/crop).
+            resize_dynamic_image_to_jpeg(DynamicImage::ImageRgb8(img), 1, max_size).map(Some)
+        }
+        Err(_) => heif_sips_fallback(file_path, max_size),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn heif_sips_fallback(file_path: &str, max_size: u32) -> Result<Option<Vec<u8>>, String> {
+    crate::t_image::get_thumbnail_with_sips(file_path, max_size)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn heif_sips_fallback(_file_path: &str, _max_size: u32) -> Result<Option<Vec<u8>>, String> {
+    Ok(None)
 }
