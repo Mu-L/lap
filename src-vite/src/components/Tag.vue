@@ -3,8 +3,8 @@
     <div class="sidebar-panel-header">
       <span class="sidebar-panel-header-title flex-1"
         >{{ $t("tag.title")
-        }}<template v-if="tags.length">
-          ({{ tags.length.toLocaleString() }})</template
+        }}<template v-if="displayedTagCount">
+          ({{ displayedTagCount.toLocaleString() }})</template
         ></span
       >
       <TButton
@@ -55,7 +55,6 @@
         handle=".tag-group-drag-handle"
         :disabled="
           Boolean(search.trim()) ||
-          editor !== null ||
           renaming !== null ||
           reorderingGroupId === null ||
           savingOrder
@@ -113,6 +112,7 @@
                   type="text"
                   maxlength="255"
                   :aria-label="$t('menu.tag.rename')"
+                  :placeholder="$t('menu.tag.new_group')"
                   class="input px-1 w-full min-w-0 text-base"
                   :readonly="savingRename"
                   @click.stop
@@ -120,7 +120,7 @@
                   @keydown.stop
                   @keydown.enter.prevent="!$event.isComposing && saveRename()"
                   @keydown.esc.prevent="cancelRename"
-                  @blur="saveRename"
+                  @blur="saveRename(true)"
                 />
                 <span v-else class="sidebar-item-label">{{ group.name }}</span>
             <span
@@ -187,6 +187,7 @@
                   type="text"
                   maxlength="255"
                   :aria-label="$t('menu.tag.rename')"
+                  :placeholder="$t('msgbox.new_tag.title')"
                   class="input px-1 w-full min-w-0 text-base"
                   :readonly="savingRename"
                   @click.stop
@@ -194,7 +195,7 @@
                   @keydown.stop
                   @keydown.enter.prevent="!$event.isComposing && saveRename()"
                   @keydown.esc.prevent="cancelRename"
-                  @blur="saveRename"
+                  @blur="saveRename(true)"
                 />
                 <span v-else class="sidebar-item-label">{{ tag.name }}</span>
                 <div
@@ -245,53 +246,6 @@
       </div>
     </div>
   </div>
-  <ModalDialog
-    v-if="editor"
-    :title="
-      editor.kind === 'group'
-        ? $t('menu.tag.new_group')
-        : $t('msgbox.new_tag.title')
-    "
-    :width="400"
-    position-key="tag-picker"
-    @cancel="editor = null"
-  >
-    <form
-      class="space-y-4"
-      @submit.prevent="saveEditor"
-      @keydown.stop
-      @keydown.esc.prevent="editor = null"
-    >
-      <input
-        ref="nameInput"
-        v-model="editor.name"
-        maxlength="255"
-        :aria-label="$t('menu.tag.name')"
-        class="input input-bordered w-full"
-        autofocus
-      />
-      <p v-if="editorError" class="text-sm text-error">{{ editorError }}</p>
-      <button
-        v-if="duplicateTag"
-        type="button"
-        class="text-primary text-sm"
-        @click="locateDuplicate"
-      >
-        {{ $t("menu.tag.locate") }}
-      </button>
-      <div class="flex justify-end gap-3">
-        <button type="button" class="t-button-default" @click="editor = null">
-          {{ $t("msgbox.cancel") }}</button
-        ><button
-          type="submit"
-          class="t-button-primary"
-          :disabled="saving || !editor.name.trim()"
-        >
-          {{ $t("msgbox.ok") }}
-        </button>
-      </div>
-    </form>
-  </ModalDialog>
   <MessageBox
     v-if="deleteTarget"
     :title="
@@ -359,7 +313,6 @@ import {
 } from "@/common/icons";
 import ContextMenu from "./ContextMenu.vue";
 import TButton from "./TButton.vue";
-import ModalDialog from "./ModalDialog.vue";
 import MessageBox from "./MessageBox.vue";
 
 defineProps<{ titlebar: string }>();
@@ -382,40 +335,71 @@ const getTagCount = (tag: LibraryTag) =>
   Number(libConfig.tag.counts?.[String(tag.id)] || 0);
 const tagMenus = ref<Record<number, any>>({});
 const groupMenus = ref<Record<number, any>>({});
-const nameInput = ref<HTMLInputElement>();
-const editor = ref<{
-  kind: "group" | "tag";
-  name: string;
-  groupId?: number;
-} | null>(null);
+// Tracks a placeholder tag/group created by the "+" button that has not been
+// renamed yet. If the inline editor is dismissed without a commit, the
+// placeholder is deleted so no orphan row is left behind.
+const pendingCreate = ref<{ kind: "group" | "tag"; id: number } | null>(null);
 const renameInput = ref<HTMLInputElement>();
 const renaming = ref<{ kind: "group" | "tag"; id: number; name: string; originalName: string } | null>(null);
 const savingRename = ref(false);
 const isRenaming = (kind: "group" | "tag", id: number) =>
   renaming.value?.kind === kind && renaming.value.id === id;
-async function startRename(kind: "group" | "tag", item: TagGroup | LibraryTag) {
+async function startRename(kind: "group" | "tag", item: TagGroup | LibraryTag, initialName?: string) {
   if (savingRename.value) return;
   reorderingGroupId.value = null;
-  renaming.value = { kind, id: item.id, name: item.name, originalName: item.name };
+  // Callers creating a fresh placeholder pass initialName="" so the inline
+  // input starts empty instead of showing the auto-generated default name;
+  // originalName matches, so pressing Enter with no input cancels cleanly.
+  const name = initialName ?? item.name;
+  renaming.value = { kind, id: item.id, name, originalName: name };
   uiStore.removeInputHandler("TagRename");
   uiStore.pushInputHandler("TagRename");
   await nextTick();
   renameInput.value?.focus();
 }
-function cancelRename() {
+async function cancelRename() {
   if (savingRename.value) return;
+  // Capture pending placeholder before finishRename clears it, so we can
+  // delete the orphan row created by the "+" button.
+  const pending = pendingCreate.value;
+  const target = renaming.value;
+  const wasPendingCreate =
+    pending !== null &&
+    target !== null &&
+    pending.kind === target.kind &&
+    pending.id === target.id;
   finishRename();
+  if (wasPendingCreate && pending) {
+    try {
+      if (pending.kind === "group") await deleteTagGroup(pending.id);
+      else await deleteTag(pending.id);
+      await load();
+    } catch {
+      // best-effort cleanup; ignore errors
+    }
+  }
 }
 function finishRename() {
   renaming.value = null;
   renameInput.value = undefined;
+  pendingCreate.value = null;
   uiStore.removeInputHandler("TagRename");
 }
-async function saveRename() {
+async function saveRename(fromBlur = false) {
   const target = renaming.value;
   if (!target || savingRename.value) return;
   const name = target.name.trim();
-  if (!name || name === target.originalName) {
+  if (!name) {
+    // Empty input:
+    // - Enter: keep the input open so the user can keep typing or press Esc
+    //   explicitly. Prevents accidentally discarding a fresh "+" placeholder
+    //   with a stray Enter.
+    // - Blur: treat as cancel (deletes the pending placeholder, or closes a
+    //   regular rename with no changes to save).
+    if (fromBlur) cancelRename();
+    return;
+  }
+  if (name === target.originalName) {
     cancelRename();
     return;
   }
@@ -445,8 +429,6 @@ async function saveRename() {
     savingRename.value = false;
   }
 }
-const editorError = ref("");
-const duplicateTag = ref<LibraryTag | null>(null);
 const deleteTarget = ref<{
   kind: "group" | "tag";
   id: number;
@@ -458,6 +440,16 @@ const selectedTag = computed(() =>
 const visibleGroups = computed(() =>
   groupTags(groups.value, tags.value, search.value),
 );
+// Header count reflects only committed tags. A "+" click immediately creates
+// a placeholder row in the DB so the inline input has something to bind to,
+// but from the user's perspective the tag isn't real until they type a name
+// and press Enter — so hide the placeholder from the count until then.
+// Group placeholders don't affect this count (title counts tags only).
+const displayedTagCount = computed(() => {
+  const pending = pendingCreate.value;
+  const n = tags.value.length;
+  return pending && pending.kind === "tag" ? Math.max(0, n - 1) : n;
+});
 const expanded = (id: number) =>
   !!search.value.trim() ||
   !(libConfig.tag.collapsedGroupIds || []).includes(id);
@@ -506,30 +498,57 @@ async function locate(tag: LibraryTag) {
     .getElementById(`tag-${tag.id}`)
     ?.scrollIntoView({ block: "nearest" });
 }
-function locateDuplicate() {
-  if (duplicateTag.value) {
-    void locate(duplicateTag.value);
-    editor.value = null;
+async function editGroup() {
+  if (saving.value || renaming.value) return;
+  saving.value = true;
+  try {
+    const name = t("menu.tag.new_group");
+    const id = await saveTagGroup(null, name);
+    if (id == null) {
+      toast.error(t("tag.name_save_failed"));
+      return;
+    }
+    expand(id);
+    search.value = "";
+    await load();
+    const created = groups.value.find((g) => g.id === id);
+    if (!created) return;
+    selectGroup(created);
+    pendingCreate.value = { kind: "group", id };
+    await startRename("group", created, "");
+  } catch {
+    toast.error(t("tag.name_save_failed"));
+  } finally {
+    saving.value = false;
   }
 }
-watch(editor, async (value, previous) => {
-  if (value && !previous) uiStore.pushInputHandler("TagEditor");
-  if (!value && previous) uiStore.removeInputHandler("TagEditor");
-  editorError.value = "";
-  duplicateTag.value = null;
-  await nextTick();
-  nameInput.value?.focus();
-  nameInput.value?.select();
-});
-function editGroup() {
-  editor.value = { kind: "group", name: "" };
-}
-function clickAddTag(groupId?: number) {
-  editor.value = {
-    kind: "tag",
-    name: "",
-    groupId: groupId || groups.value.find((g) => g.is_default)?.id,
-  };
+async function clickAddTag(groupId?: number) {
+  if (saving.value || renaming.value) return;
+  const gid = groupId ?? groups.value.find((g) => g.is_default)?.id;
+  if (gid == null) return;
+  saving.value = true;
+  try {
+    const name = t("msgbox.new_tag.title");
+    const result = await createTag(name, gid);
+    if (!result) {
+      toast.error(t("tag.name_save_failed"));
+      return;
+    }
+    await load();
+    const created = tags.value.find((tag) => tag.id === result.id);
+    if (!created) return;
+    // Clear search so the new placeholder is visible; otherwise the
+    // renaming-visibility watch would immediately finishRename() and skip
+    // the pending-delete cleanup, leaking the placeholder row.
+    search.value = "";
+    expand(created.group_id);
+    pendingCreate.value = { kind: "tag", id: Number(result.id) };
+    await startRename("tag", created, "");
+  } catch {
+    toast.error(t("tag.name_save_failed"));
+  } finally {
+    saving.value = false;
+  }
 }
 function groupMenu(group: TagGroup) {
   return [
@@ -647,60 +666,6 @@ async function moveTag(tag: LibraryTag, groupId: number) {
     toast.error(t("tag.name_save_failed"));
   }
 }
-async function saveEditor() {
-  if (!editor.value || saving.value) return;
-  const value = { ...editor.value, name: editor.value.name.trim() };
-  editorError.value = "";
-  duplicateTag.value = null;
-  const duplicate =
-    value.kind === "tag" &&
-    tags.value.find(
-      (tag) =>
-        tag.name.toLocaleLowerCase() === value.name.toLocaleLowerCase(),
-    );
-  if (duplicate) {
-    duplicateTag.value = duplicate;
-    editorError.value = t("menu.tag.exists_in", {
-      group: duplicate.group_name,
-    });
-    return;
-  }
-  if (
-    value.kind === "group" &&
-    groups.value.some(
-      (g) =>
-        g.name.toLocaleLowerCase() === value.name.toLocaleLowerCase(),
-    )
-  ) {
-    editorError.value = t("menu.tag.name_exists");
-    return;
-  }
-  saving.value = true;
-  try {
-    if (value.kind === "group") {
-      const id = await saveTagGroup(null, value.name);
-      expand(id);
-      search.value = "";
-      await load();
-      await nextTick();
-      document
-        .getElementById(`tag-group-${id}`)
-        ?.scrollIntoView({ block: "nearest" });
-    } else {
-      const result = await createTag(value.name, value.groupId);
-      if (!result) throw new Error("save failed");
-      await load();
-      const tag = tags.value.find((tag) => tag.id === result.id);
-      if (tag) await locate(tag);
-    }
-    editor.value = null;
-    await changed();
-  } catch {
-    editorError.value = t("tag.name_save_failed");
-  } finally {
-    saving.value = false;
-  }
-}
 async function confirmDelete() {
   const target = deleteTarget.value;
   if (!target || saving.value) return;
@@ -787,11 +752,26 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   document.removeEventListener("pointerdown", handleReorderOutside, true);
   uiStore.removeInputHandler("TagGroupDrag");
-  uiStore.removeInputHandler("TagEditor");
   uiStore.removeInputHandler("TagRename");
   disposed = true;
   request++;
   unlisten?.();
+  // Best-effort cleanup: if a "+" placeholder was in flight when the panel
+  // unmounts (e.g. user switched sidebar), delete the orphan row so it does
+  // not linger in the library. Fire-and-forget — the component is going away
+  // and there is nothing to update on completion.
+  const pending = pendingCreate.value;
+  if (pending) {
+    pendingCreate.value = null;
+    void (async () => {
+      try {
+        if (pending.kind === "group") await deleteTagGroup(pending.id);
+        else await deleteTag(pending.id);
+      } catch {
+        // ignore — the panel is already gone, no UI to notify
+      }
+    })();
+  }
 });
 watch(
   () => [config.main.sidebarIndex, libConfig.activePane],
@@ -810,8 +790,13 @@ watch(
     libConfig._libraryId,
   ],
   () => {
-    editor.value = null;
+    // Library / sort / filter switched underneath us. Drop any in-flight
+    // inline editor state; the placeholder row (if any) stays in the old
+    // library — we deliberately do NOT delete here because the API call
+    // would run against the new library context and could hit an unrelated
+    // row that happens to share the id.
     renaming.value = null;
+    pendingCreate.value = null;
     uiStore.removeInputHandler("TagRename");
     reorderingGroupId.value = null;
     deleteTarget.value = null;
