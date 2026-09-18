@@ -139,7 +139,7 @@
         "size": "크기",
         "width": "너비",
         "height": "높이",
-        "duration": "길이",
+        "duration": "재생시간",
         "orientation": "방향",
         "has_gps": "GPS",
         "tag": "태그",
@@ -779,7 +779,7 @@
       "hide": "숨기기",
       "hidden": "숨김",
       "remove": "제거",
-      "reorder": "순서",
+      "reorder": "순서 변경",
       "rename": "이름변경",
       "switch_to": "전환",
       "add_new": "새 라이브러리",
@@ -1238,7 +1238,7 @@
         "날짜 (오래된 순)",
         "날짜 (최신 순)"
       ],
-      "calendar_sort": "캘린더",
+      "calendar_sort": "달력",
       "calendar_sort_hint": "촬영일 또는 수정일 기준",
       "calendar_sort_options": [
         "촬영일 (오름차순)",
@@ -1258,7 +1258,7 @@
       ]
     },
     "grid": {
-      "title": "그리드",
+      "title": "레이아웃",
       "section_grid": "그리드",
       "dbl_click_thumbnail": "썸네일 두 번 클릭",
       "dbl_click_quick_preview": "빠른 미리보기",

@@ -404,7 +404,7 @@
         "Tag",
         "Monat",
         "Bewertung",
-        "Standort",
+        "Ort",
         "Kamera",
         "Objektiv",
         "Jahr",
@@ -1258,7 +1258,7 @@
       ]
     },
     "grid": {
-      "title": "Raster",
+      "title": "Layout",
       "section_grid": "Raster",
       "dbl_click_thumbnail": "Miniaturansicht doppelklicken",
       "dbl_click_quick_preview": "Schnellvorschau",

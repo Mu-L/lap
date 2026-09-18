@@ -10,7 +10,7 @@
     "location": "場所",
     "people": "人物",
     "camera": "カメラ",
-    "map": "マップ",
+    "map": "地図",
     "settings": "設定"
   },
   "collection": {
@@ -1070,7 +1070,7 @@
     "gps_latitude": "緯度",
     "gps_longitude": "経度",
     "gps_altitude": "高度",
-    "geo_location": "位置",
+    "geo_location": "場所",
     "tags": "タグ",
     "comment": "コメント",
     "capture_settings": "撮影設定"
@@ -1258,7 +1258,7 @@
       ]
     },
     "grid": {
-      "title": "グリッド",
+      "title": "レイアウト",
       "section_grid": "グリッド",
       "dbl_click_thumbnail": "サムネイルをダブルクリック",
       "dbl_click_quick_preview": "クイックプレビュー",
