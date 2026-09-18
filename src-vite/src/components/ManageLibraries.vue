@@ -3,6 +3,7 @@
     :title="$t('msgbox.manage_libraries.title')" 
     :width="600"
     :height="400"
+    position-key="manage-libraries"
     @cancel="clickCancel"
   >
     <div class="flex flex-col flex-1 min-h-0 border border-base-content/5 bg-base-300/30 shadow-sm rounded-box overflow-hidden relative">

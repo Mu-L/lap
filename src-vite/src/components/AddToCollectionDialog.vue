@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('collection.edit_collections')" :width="500" @cancel="close">
+  <ModalDialog :title="$t('collection.edit_collections')" :width="500" :position-key="positionKey" @cancel="close">
     <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div class="grow h-8 flex items-center rounded-box overflow-hidden bg-base-100 border border-neutral-content/30 focus-within:border-primary">
@@ -131,7 +131,7 @@ import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
 import { useUIStore } from '@/stores/uiStore';
 
-const props = defineProps<{ fileIds: number[] }>();
+const props = defineProps<{ fileIds: number[]; positionKey?: string }>();
 const emit = defineEmits(['applied', 'cancel', 'deleted']);
 const collections = ref<any[]>([]);
 const query = ref('');

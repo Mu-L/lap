@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="isNewAlbum ? $t('album.edit.title_add') : $t('album.edit.title')" @cancel="clickCancel">
+  <ModalDialog :title="isNewAlbum ? $t('album.edit.title_add') : $t('album.edit.title')" position-key="album-edit" @cancel="clickCancel">
     <section class="space-y-2 select-none">
 
       <!-- General Information -->

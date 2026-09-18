@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('tag.edit_tag')" :width="500" @cancel="clickCancel">
+  <ModalDialog :title="$t('tag.edit_tag')" :width="500" :position-key="positionKey" @cancel="clickCancel">
     <section class="space-y-3">
       <div class="flex items-center gap-2">
         <div
@@ -272,6 +272,11 @@ const props = defineProps({
   fileIds: {
     type: Array as () => number[],
     default: () => [],
+  },
+  // Optional key for persisting dialog position across sessions.
+  positionKey: {
+    type: String,
+    default: '',
   },
 });
 

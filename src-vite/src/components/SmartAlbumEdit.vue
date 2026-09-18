@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="isNew ? $t('album.smart_edit.title_add') : $t('album.smart_edit.title_edit')" :width="620" @cancel="clickCancel">
+  <ModalDialog :title="isNew ? $t('album.smart_edit.title_add') : $t('album.smart_edit.title_edit')" :width="620" position-key="smart-album-edit" @cancel="clickCancel">
     <section
       class="min-h-0 overflow-y-auto pr-1"
       @dragenter.stop

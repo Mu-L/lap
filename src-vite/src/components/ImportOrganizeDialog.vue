@@ -1,5 +1,5 @@
 <template>
-  <ModalDialog :title="$t('import_organize.import')" :width="520" @cancel="close">
+  <ModalDialog :title="$t('import_organize.import')" :width="520" position-key="import-organize" @cancel="close">
     <div class="space-y-2 select-none">
       <section class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
         <div class="font-bold uppercase text-[10px] tracking-widest text-base-content/30">{{ $t('import_organize.section_folders') }}</div>

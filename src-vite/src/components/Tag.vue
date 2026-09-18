@@ -253,6 +253,7 @@
         : $t('msgbox.new_tag.title')
     "
     :width="400"
+    position-key="tag-picker"
     @cancel="editor = null"
   >
     <form

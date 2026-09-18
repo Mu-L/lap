@@ -608,6 +608,7 @@
   <TaggingDialog 
     v-if="showTaggingDialog"
     :fileIds="fileIdsToTag"
+    position-key="edit-tag"
     @ok="updateFileHasTags"
     @states-changed="syncTagStates"
     @cancel="showTaggingDialog = false"
@@ -617,6 +618,7 @@
   <AddToCollectionDialog
     v-if="showAddToCollectionDialog"
     :fileIds="fileIdsToAddToCollection"
+    position-key="edit-collection"
     @applied="handleCollectionsAdded"
     @deleted="handleCollectionDeleted"
     @cancel="showAddToCollectionDialog = false"
@@ -632,6 +634,7 @@
     :multiLine="true"
     :OkText="$t('msgbox.ok')"
     :cancelText="$t('msgbox.cancel')"
+    position-key="edit-comment"
     @ok="onEditComment"
     @cancel="showCommentMsgbox = false"
   />
