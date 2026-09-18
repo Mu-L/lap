@@ -836,6 +836,7 @@ pub struct LibraryInfo {
     pub db_file_path: String,
     pub file_count: i64,
     pub total_size: i64,
+    pub thumb_cache_size: i64,
 }
 
 pub fn get_library_info(id: &str) -> Result<LibraryInfo, String> {
@@ -860,12 +861,43 @@ pub fn get_library_info(id: &str) -> Result<LibraryInfo, String> {
         )
         .unwrap_or((0, 0));
 
+    // Sum thumbnail cache size (jpg/png files under cache_dir/{id}/).
+    // Best-effort: any IO error just contributes 0 rather than failing the call.
+    let thumb_cache_size = get_thumb_cache_size(id);
+
     Ok(LibraryInfo {
         db_file_size,
         db_file_path: db_path,
         file_count,
         total_size,
+        thumb_cache_size,
     })
+}
+
+fn get_thumb_cache_size(library_id: &str) -> i64 {
+    let Ok(cache_root) = get_app_cache_dir().map(|p| p.join(library_id)) else {
+        return 0;
+    };
+    if !cache_root.is_dir() {
+        return 0;
+    }
+    let mut total: i64 = 0;
+    for entry in walkdir::WalkDir::new(&cache_root).into_iter().filter_map(|e| e.ok()) {
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let is_thumb = matches!(
+            entry.path().extension().and_then(|ext| ext.to_str()),
+            Some("jpg" | "png")
+        );
+        if !is_thumb {
+            continue;
+        }
+        if let Ok(md) = entry.metadata() {
+            total = total.saturating_add(md.len() as i64);
+        }
+    }
+    total
 }
 
 /// Save library state

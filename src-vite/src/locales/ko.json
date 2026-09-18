@@ -791,7 +791,10 @@
       "unable_to_load": "불러올 수 없습니다",
       "library_file_path": "파일 경로",
       "library_file_size": "파일 크기",
-      "created_at": "생성일"
+      "created_at": "생성일",
+      "clean_cache": "사용하지 않는 축소판 캐시 정리",
+      "cache_cleaned": "축소판 {count}개 정리, {size} 확보.",
+      "cache_size": "축소판 캐시 {size}"
     },
     "remove_library": {
       "title": "라이브러리 제거",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "토큰 붙여넣기",
       "tianditu_token_status_saved": "저장됨",
       "tianditu_token_status_empty": "설정되지 않음",
-      "clean_unused_thumbnails": "사용하지 않는 썸네일 캐시 정리",
-      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다",
-      "clean": "정리",
-      "thumbnail_cache_cleaned": "{count}개의 썸네일을 정리하여 {size}을(를) 확보했습니다.",
       "thumbnail_quality_options": [
         "낮음 (256 px)",
         "표준 (512 px)",

@@ -791,7 +791,10 @@
       "unable_to_load": "Impossible de charger",
       "library_file_path": "Chemin fichier",
       "library_file_size": "Taille fichier",
-      "created_at": "Créé le"
+      "created_at": "Créé le",
+      "clean_cache": "Vider le cache des vignettes inutilisées",
+      "cache_cleaned": "{count} vignettes supprimées, {size} libérés.",
+      "cache_size": "cache des vignettes {size}"
     },
     "remove_library": {
       "title": "Supprimer bibliothèque",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "Collez votre jeton",
       "tianditu_token_status_saved": "Enregistré",
       "tianditu_token_status_empty": "Non configuré",
-      "clean_unused_thumbnails": "Nettoyer le cache de miniatures inutilisé",
-      "clean_unused_thumbnails_hint": "Supprime les miniatures mises en cache qui ne sont plus associées à des fichiers de cette bibliothèque",
-      "clean": "Nettoyer",
-      "thumbnail_cache_cleaned": "Nettoyage de {count} miniatures terminé, {size} libérés.",
       "thumbnail_quality_options": [
         "Faible (256 px)",
         "Standard (512 px)",

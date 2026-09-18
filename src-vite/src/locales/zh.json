@@ -791,7 +791,10 @@
       "unable_to_load": "无法加载",
       "library_file_path": "库文件路径",
       "library_file_size": "库文件大小",
-      "created_at": "创建时间"
+      "created_at": "创建时间",
+      "clean_cache": "清理未使用的缩略图缓存",
+      "cache_cleaned": "已清理 {count} 张缩略图，释放 {size}。",
+      "cache_size": "缩略图缓存 {size}"
     },
     "remove_library": {
       "title": "移除库",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "粘贴你的 Token",
       "tianditu_token_status_saved": "已保存",
       "tianditu_token_status_empty": "未配置",
-      "clean_unused_thumbnails": "清理未使用的缩略图缓存",
-      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图",
-      "clean": "清理",
-      "thumbnail_cache_cleaned": "已清理 {count} 个缩略图，释放 {size}。",
       "thumbnail_quality_options": [
         "低 (256 px)",
         "标准 (512 px)",

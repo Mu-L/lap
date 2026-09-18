@@ -791,7 +791,10 @@
       "unable_to_load": "Unable to load",
       "library_file_path": "Library file path",
       "library_file_size": "Library file size",
-      "created_at": "Created at"
+      "created_at": "Created at",
+      "clean_cache": "Clean unused thumbnail cache",
+      "cache_cleaned": "Cleaned {count} thumbnails, freed {size}.",
+      "cache_size": "thumbnail cache {size}"
     },
     "remove_library": {
       "title": "Remove library",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "Paste your token",
       "tianditu_token_status_saved": "Saved",
       "tianditu_token_status_empty": "Not configured",
-      "clean_unused_thumbnails": "Clean unused thumbnail cache",
-      "clean_unused_thumbnails_hint": "Removes cached thumbnails that are no longer associated with files in this library",
-      "clean": "Clean",
-      "thumbnail_cache_cleaned": "Cleaned {count} thumbnails, freed {size}.",
       "thumbnail_quality_options": [
         "Low (256 px)",
         "Standard (512 px)",

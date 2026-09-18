@@ -791,7 +791,10 @@
       "unable_to_load": "No se puede cargar",
       "library_file_path": "Ruta archivo",
       "library_file_size": "Tamaño archivo",
-      "created_at": "Creado el"
+      "created_at": "Creado el",
+      "clean_cache": "Limpiar caché de miniaturas sin usar",
+      "cache_cleaned": "{count} miniaturas limpiadas, {size} liberados.",
+      "cache_size": "caché de miniaturas {size}"
     },
     "remove_library": {
       "title": "Eliminar biblioteca",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "Pega tu token",
       "tianditu_token_status_saved": "Guardado",
       "tianditu_token_status_empty": "Sin configurar",
-      "clean_unused_thumbnails": "Limpiar caché de miniaturas sin usar",
-      "clean_unused_thumbnails_hint": "Elimina las miniaturas almacenadas en caché que ya no están asociadas a archivos de esta biblioteca",
-      "clean": "Limpiar",
-      "thumbnail_cache_cleaned": "Se limpiaron {count} miniaturas y se liberaron {size}.",
       "thumbnail_quality_options": [
         "Baja (256 px)",
         "Estándar (512 px)",

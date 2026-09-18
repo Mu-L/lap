@@ -504,19 +504,6 @@
                 <option v-for="option in rawThumbnailSourceOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
             </div>
-            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
-              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.advanced.clean_unused_thumbnails') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.clean_unused_thumbnails_hint') }}</div>
-              </div>
-              <button
-                class="btn btn-sm btn-ghost rounded-box bg-base-100 border border-base-content/30 text-base-content/70 hover:text-base-content shrink-0"
-                :disabled="isCleaningThumbnailCache"
-                @click="cleanUnusedThumbnailCache"
-              >
-                {{ isCleaningThumbnailCache ? $t('tooltip.loading') : $t('settings.advanced.clean') }}
-              </button>
-            </div>
           </div>
 
           <!-- map -->
@@ -729,7 +716,6 @@ import {
   setImageSearchModel,
   downloadMultilingualImageSearchModel,
   cancelMultilingualImageSearchModelDownload,
-  cleanUnusedThumbnailCache as cleanUnusedThumbnailCacheApi,
   listenImageSearchModelDownloadProgress,
 } from '@/common/api';
 import { formatFileSize, isLinux, isMac, setTheme, SCALE_VALUES } from '@/common/utils';
@@ -777,7 +763,6 @@ const multilingualModelDownloadProgress = ref(0);
 const multilingualModelDownloadedBytes = ref(0);
 const multilingualModelTotalBytes = ref(0);
 const isMultilingualModelAvailable = ref(false);
-const isCleaningThumbnailCache = ref(false);
 const tiandituTokenInput = ref(String(config.settings.tiandituToken || ''));
 const tiandituTokenStatus = ref<'idle' | 'saved' | 'empty'>('idle');
 let unlistenImageSearchModelDownloadProgress: (() => void) | null = null;
@@ -965,23 +950,6 @@ function onRawThumbnailSourceChange(event: Event) {
   config.settings.rawThumbnailSource = (event.target as HTMLSelectElement).value === 'embedded'
     ? 'embedded'
     : 'processed';
-}
-
-async function cleanUnusedThumbnailCache() {
-  if (isCleaningThumbnailCache.value) return;
-
-  try {
-    isCleaningThumbnailCache.value = true;
-    const result = await cleanUnusedThumbnailCacheApi();
-    toast.success(t('settings.advanced.thumbnail_cache_cleaned', {
-      count: result?.filesRemoved || 0,
-      size: formatFileSize(result?.bytesFreed || 0),
-    }));
-  } catch (error: any) {
-    toast.error(error?.message || String(error));
-  } finally {
-    isCleaningThumbnailCache.value = false;
-  }
 }
 
 // Define the grid scaling options

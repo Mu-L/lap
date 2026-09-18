@@ -1216,9 +1216,9 @@ export async function getFileThumb(fileId, filePath, fileType, orientation, thum
   return null;
 }
 
-export async function cleanUnusedThumbnailCache() {
+export async function cleanUnusedThumbnailCache(libraryId = null) {
   try {
-    return await invoke('clean_unused_thumbnail_cache');
+    return await invoke('clean_unused_thumbnail_cache', { libraryId });
   } catch (error) {
     console.error('Failed to clean unused thumbnail cache:', error);
     throw error;

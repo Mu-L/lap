@@ -6775,11 +6775,34 @@ impl AThumb {
         }
     }
 
-    /// Remove cache files that are no longer referenced by the current library.
-    /// Only image files below this library's cache directory are considered.
-    pub fn clean_unused_cache() -> Result<ThumbnailCacheCleanupResult, String> {
-        let referenced_keys: HashSet<String> = {
+    /// Remove cache files no longer referenced by the target library's `athumbs`
+    /// table. When `library_id` is None (or empty), falls back to the current
+    /// library. Only jpg/png files under that library's cache directory and
+    /// older than `CLEANUP_MIN_FILE_AGE` are considered.
+    pub fn clean_unused_cache(library_id: Option<&str>) -> Result<ThumbnailCacheCleanupResult, String> {
+        // Resolve target library: explicit id (any library) or current (legacy behavior).
+        let target_library_id = match library_id {
+            Some(id) if !id.is_empty() => id.to_string(),
+            _ => Self::get_current_library_id(),
+        };
+
+        // Read referenced thumb_keys from the target library's DB. When it's the
+        // current library, reuse the pooled connection; otherwise open a transient
+        // connection to that library's DB file (same pattern as get_library_info).
+        let referenced_keys: HashSet<String> = if target_library_id == Self::get_current_library_id() {
             let conn = open_conn()?;
+            let mut stmt = conn
+                .prepare("SELECT thumb_key FROM athumbs WHERE thumb_key IS NOT NULL")
+                .map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map([], |row| row.get(0))
+                .map_err(|e| e.to_string())?;
+            rows.map(|row| row.map_err(|e| e.to_string()))
+                .collect::<Result<HashSet<String>, String>>()?
+        } else {
+            let db_path = crate::t_storage::get_library_db_path(&target_library_id)?;
+            let conn = rusqlite::Connection::open(&db_path)
+                .map_err(|e| format!("Failed to open library DB: {}", e))?;
             let mut stmt = conn
                 .prepare("SELECT thumb_key FROM athumbs WHERE thumb_key IS NOT NULL")
                 .map_err(|e| e.to_string())?;
@@ -6790,7 +6813,7 @@ impl AThumb {
                 .collect::<Result<HashSet<String>, String>>()?
         };
 
-        let cache_root = t_config::get_app_cache_dir()?.join(Self::get_current_library_id());
+        let cache_root = t_config::get_app_cache_dir()?.join(&target_library_id);
         if !cache_root.is_dir() {
             return Ok(ThumbnailCacheCleanupResult {
                 files_removed: 0,

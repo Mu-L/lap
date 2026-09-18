@@ -2361,10 +2361,18 @@ pub fn edit_file_comment(file_id: i64, comment: &str) -> Result<usize, String> {
         .map_err(|e| format!("Error while editing file comment: {}", e))
 }
 
-/// Remove unreferenced thumbnail cache files for the current library.
+/// Remove unreferenced thumbnail cache files. When `library_id` is provided,
+/// cleans that library's cache; otherwise falls back to the current library.
+/// Runs on a blocking thread because it walks the cache directory and issues
+/// many small `remove_file` calls — heavy IO must not block the main thread
+/// (see project convention: async + spawn_blocking for heavy IO commands).
 #[tauri::command]
-pub fn clean_unused_thumbnail_cache() -> Result<t_sqlite::ThumbnailCacheCleanupResult, String> {
-    AThumb::clean_unused_cache()
+pub async fn clean_unused_thumbnail_cache(library_id: Option<String>) -> Result<t_sqlite::ThumbnailCacheCleanupResult, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        AThumb::clean_unused_cache(library_id.as_deref())
+    })
+    .await
+    .map_err(|e| format!("Failed to join clean thumbnail cache task: {}", e))?
 }
 
 /// get a file's thumb image, if not exist, create a new one

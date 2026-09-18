@@ -791,7 +791,10 @@
       "unable_to_load": "Laden nicht möglich",
       "library_file_path": "Dateipfad",
       "library_file_size": "Dateigröße",
-      "created_at": "Erstellt am"
+      "created_at": "Erstellt am",
+      "clean_cache": "Unbenutzten Thumbnail-Cache bereinigen",
+      "cache_cleaned": "{count} Miniaturen bereinigt, {size} freigegeben.",
+      "cache_size": "Thumbnail-Cache {size}"
     },
     "remove_library": {
       "title": "Bibliothek entfernen",
@@ -1497,10 +1500,6 @@
       "tianditu_token_placeholder": "Token einfügen",
       "tianditu_token_status_saved": "Gespeichert",
       "tianditu_token_status_empty": "Nicht konfiguriert",
-      "clean_unused_thumbnails": "Nicht verwendeten Miniaturansichts-Cache bereinigen",
-      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind",
-      "clean": "Bereinigen",
-      "thumbnail_cache_cleaned": "{count} Miniaturansichten bereinigt, {size} freigegeben.",
       "thumbnail_quality_options": [
         "Niedrig (256 px)",
         "Standard (512 px)",
