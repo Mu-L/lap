@@ -205,7 +205,7 @@
           :icon="config.mediaViewer.isPinned ? IconPin : IconUnPin"
           :disabled="fileIndex < 0 || !canInteract"
           :tooltip="!config.mediaViewer.isPinned ? $t('image_viewer.toolbar.pin') : $t('image_viewer.toolbar.unpin')"
-          @click="config.mediaViewer.isPinned = !config.mediaViewer.isPinned"
+          @click="toggleToolbarPin"
         />
         <TButton
           v-if="mode === 0 && config.mediaViewer.isPinned"
@@ -943,6 +943,15 @@ onBeforeUnmount(() => {
   }
 });
 
+function toggleToolbarPin() {
+  if (config.mediaViewer.isPinned) {
+    toolbarPosition.value = config.mediaViewer.pinnedPosition === 'bottom' ? 'bottom' : 'top';
+  } else {
+    config.mediaViewer.pinnedPosition = toolbarPosition.value;
+  }
+  config.mediaViewer.isPinned = !config.mediaViewer.isPinned;
+}
+
 function handleMouseMove(e: MouseEvent) {
   if (!containerRef.value) return;
 
@@ -950,7 +959,9 @@ function handleMouseMove(e: MouseEvent) {
   if (containerRect.width <= 0 || containerRect.height <= 0) return;
   const containerY = e.clientY - containerRect.top;
   const containerHeight = containerRect.height;
-  toolbarPosition.value = containerY < containerHeight * 0.5 ? 'top' : 'bottom';
+  if (!config.mediaViewer.isPinned) {
+    toolbarPosition.value = containerY < containerHeight * 0.5 ? 'top' : 'bottom';
+  }
 
   if (!mediaAreaRef.value) {
     isHoverTop.value = containerY < 60;
@@ -1013,7 +1024,10 @@ const computedToolbarClass = computed(() => {
   const isPinned = props.mode === 2 ? true : config.mediaViewer.isPinned;
 
   if (isPinned) {
-    // Fixed Top Bar
+    // Keep the edge where the floating toolbar was pinned.
+    if (props.mode !== 2 && config.mediaViewer.pinnedPosition === 'bottom') {
+      return `${commonClasses} relative bottom-0 left-0 w-full order-last`;
+    }
     return `${commonClasses} relative top-0 left-0 w-full`;
   } else {
     // Floating Hover Bar
