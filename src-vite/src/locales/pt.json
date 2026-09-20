@@ -49,7 +49,9 @@
   "library": {
     "all_files": "Todos os arquivos",
     "on_this_day": "Neste dia",
-    "review": "Revisão"
+    "review": "Revisão",
+    "database_corrupted": "O banco de dados desta biblioteca está corrompido",
+    "database_corrupted_hint": "Tente mudar para outra biblioteca."
   },
   "album": {
     "album_list": "Álbuns",

@@ -49,7 +49,9 @@
   "library": {
     "all_files": "모든 파일",
     "on_this_day": "과거의 오늘",
-    "review": "검토"
+    "review": "검토",
+    "database_corrupted": "이 라이브러리의 데이터베이스가 손상되었습니다",
+    "database_corrupted_hint": "다른 라이브러리로 전환해 보세요."
   },
   "album": {
     "album_list": "앨범",

@@ -69,7 +69,7 @@
 
           <!-- library title -->
           <div
-            v-if="leftPanelMounted"
+            v-if="leftPanelMounted || databaseCorrupted"
             class="absolute top-0 left-[68px] right-0 z-10 h-10 flex items-center"
             data-tauri-drag-region
           >
@@ -112,7 +112,7 @@
               :class="libConfig.activePane === 'collection' ? 'sidebar-pane-inactive' : ''"
               @mousedown.capture="activateMainPanel"
             >
-              <component ref="panelRef" 
+              <component v-if="databaseCorrupted === false" ref="panelRef" 
                 :key="libraryVersion"
                 :is="activeSidebarButton.component"
                 :titlebar="activeSidebarButton.text"
@@ -120,12 +120,12 @@
               />
             </div>
             <div
-              v-if="showBottomCollectionTray && config.collectionTray.expanded"
+              v-if="databaseCorrupted === false && showBottomCollectionTray && config.collectionTray.expanded"
               class="h-1 -mx-1 shrink-0 cursor-row-resize transition-colors hover:bg-primary"
               @mousedown="startDraggingCollectionSplitter"
             ></div>
             <CollectionTray
-              v-if="showBottomCollectionTray"
+              v-if="databaseCorrupted === false && showBottomCollectionTray"
               :class="[
                 'overflow-hidden -mx-1',
                 isDraggingCollectionSplitter ? '' : 'transition-[height] duration-200 ease-out',
@@ -156,7 +156,11 @@
           showDesktopTitleBar ? 'rounded-tl-box' : '',
         ]"
       >
-        <Content ref="contentRef" :key="libraryVersion" :titlebar="activeSidebarButton.text" :libraryEmpty="libraryEmpty"/>
+        <div v-if="databaseCorrupted" class="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-center" role="alert">
+          <h2 class="text-lg font-medium">{{ $t('library.database_corrupted') }}</h2>
+          <p class="text-sm text-base-content/60">{{ $t('library.database_corrupted_hint') }}</p>
+        </div>
+        <Content v-else-if="databaseCorrupted === false" ref="contentRef" :key="libraryVersion" :titlebar="activeSidebarButton.text" :libraryEmpty="libraryEmpty"/>
       </div>
     </div>
 
@@ -228,8 +232,26 @@ import {
 const isSwitchingLibrary = ref(false);
 const libraryVersion = ref(0);
 const libraryEmpty = ref(false);
+// Mount library components only after the startup corruption check has completed.
+const databaseCorrupted = ref<boolean | null>(null);
 
 const checkLibraryEmpty = async () => {
+  // Guard the corruption probe so this function never rejects: it is called fire-and-forget from
+  // onMounted / the albums-refreshed listener, and awaited before the switching lock is released
+  // and before emit('library-switched'). An unhandled rejection there would stick the overlay or
+  // skip the switch notification. On IPC failure, keep the previous (non-corrupt) behaviour.
+  try {
+    databaseCorrupted.value = await invoke<boolean>('is_database_corrupted');
+  } catch {
+    databaseCorrupted.value = false;
+  }
+  if (databaseCorrupted.value) {
+    libraryEmpty.value = false;
+    // Note: do NOT force showPanel here — it writes the persisted config.leftPanel.show and would
+    // leave the panel expanded after switching back to a healthy library. The library menu is kept
+    // reachable while corrupt via `v-if="leftPanelMounted || databaseCorrupted"` in the template.
+    return;
+  }
   try {
     const albums = await invoke<any[]>('get_all_albums', { refreshAccessibility: false });
     libraryEmpty.value = (albums?.length ?? 0) === 0;
@@ -510,7 +532,7 @@ function handleHomeKeyDown(event: KeyboardEvent) {
   if (matchesShortcut('app.search', event, shortcutPlatform)) {
     event.preventDefault();
     event.stopPropagation();
-    if (!libraryEmpty.value) {
+    if (!libraryEmpty.value && !databaseCorrupted.value) {
       if (config.main.sidebarIndex === SIDEBAR.SEARCH && showPanel.value) {
         nextTick(() => (panelRef.value as any)?.focusSearchInput?.());
       } else {
@@ -533,6 +555,7 @@ function handleHomeKeyDown(event: KeyboardEvent) {
 const doSwitchLibrary = async (libraryId: string) => {
   try {
     isSwitchingLibrary.value = true;
+    databaseCorrupted.value = null;
 
     // Save current library state before switching (preserves the indexing queue)
     await libConfig.save();
@@ -557,11 +580,15 @@ const doSwitchLibrary = async (libraryId: string) => {
     await libConfig.reload();
     appConfig.value = await getAppConfig();
     libraryVersion.value++;
-    void checkLibraryEmpty();
+    // Settle the corruption/empty state before notifying, so `library-switched` listeners see a
+    // resolved databaseCorrupted (matches onManageLibrariesOk's ordering).
+    await checkLibraryEmpty();
     await emit('library-switched');
   } catch (error) {
     libConfig._initialized = true;
     console.error('Failed to switch library:', error);
+    // Still settle state after a failed switch so the UI reflects the current library.
+    await checkLibraryEmpty();
   } finally {
     isSwitchingLibrary.value = false;
   }
@@ -574,11 +601,12 @@ const onManageLibrariesOk = async () => {
 
   if (oldLibId && appConfig.value?.current_library_id !== oldLibId) {
     isSwitchingLibrary.value = true;
+    databaseCorrupted.value = null;
     try {
       // The backend has already switched; reload in-place.
       await libConfig.reload();
       libraryVersion.value++;
-      void checkLibraryEmpty();
+      await checkLibraryEmpty();
       await emit('library-switched');
     } finally {
       isSwitchingLibrary.value = false;
@@ -592,6 +620,9 @@ const onManageLibrariesUpdated = async () => {
 
 // click sidebar
 function clickSidebar(index: number) {
+  // While the library is corrupt the panel <component> is unmounted; ignore navigation so we don't
+  // silently mutate the persisted sidebarIndex and dead-end in a blank pane.
+  if (databaseCorrupted.value) return;
   activateMainPanel();
   if (libraryEmpty.value && index !== SIDEBAR.ALBUM) return;
   if (config.main.sidebarIndex === index) {

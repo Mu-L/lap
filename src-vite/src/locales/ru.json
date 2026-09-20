@@ -49,7 +49,9 @@
   "library": {
     "all_files": "Все файлы",
     "on_this_day": "В этот день",
-    "review": "Проверка"
+    "review": "Проверка",
+    "database_corrupted": "База данных этой библиотеки повреждена",
+    "database_corrupted_hint": "Попробуйте переключиться на другую библиотеку."
   },
   "album": {
     "album_list": "Альбомы",

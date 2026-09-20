@@ -49,7 +49,9 @@
   "library": {
     "all_files": "所有文件",
     "on_this_day": "历史上的今天",
-    "review": "审阅"
+    "review": "审阅",
+    "database_corrupted": "当前图库的数据库已损坏",
+    "database_corrupted_hint": "请尝试切换到其他库。"
   },
   "album": {
     "album_list": "相册",

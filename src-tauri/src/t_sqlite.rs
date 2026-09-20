@@ -288,7 +288,7 @@ impl Album {
 
         // return the newly inserted album
         let new_album = Self::fetch(path)?;
-        Ok(new_album.unwrap())
+        new_album.ok_or_else(|| "Inserted album could not be read back".to_string())
     }
 
     /// delete an album from the db
@@ -999,7 +999,7 @@ impl AFolder {
         Self::new(album_id, folder_path)?.insert_with_conn(conn)?;
         Self::update_inode_with_conn(conn, album_id, folder_path)?;
         let new_folder = Self::fetch_with_conn(conn, folder_path)?;
-        Ok(new_folder.unwrap())
+        new_folder.ok_or_else(|| "Inserted folder could not be read back".to_string())
     }
 
     fn update_inode_with_conn(
@@ -1339,7 +1339,7 @@ impl AFolder {
 
         let mut folders = Vec::new();
         for folder in rows {
-            folders.push(folder.unwrap());
+            folders.push(folder.map_err(|e| e.to_string())?);
         }
 
         Ok(folders)
@@ -9251,6 +9251,74 @@ impl AGpsMapPoint {
 
 /// get connection to the db
 static CONN_POOL: Mutex<Vec<(String, Connection)>> = Mutex::new(Vec::new());
+/// Path of the library db currently known to be corrupt. Corruption state is stored per-path
+/// (not a bare bool) so `is_database_corrupted()` is always relative to the *current* library:
+/// when the current library changes (switch / remove / hide), a stale mark for another path no
+/// longer matches, so a healthy library is never falsely reported as corrupt.
+static CORRUPTED_DB_PATH: Mutex<Option<String>> = Mutex::new(None);
+
+/// Message returned when the current library is flagged corrupt. Shared so callers (e.g.
+/// switch_library) can decide from the returned error itself instead of re-reading the global flag.
+pub const DB_CORRUPTED_MSG: &str = "Database is corrupted. Please switch to another library.";
+
+/// Lock the corruption mark, recovering the guard if the mutex was poisoned. The guarded value is
+/// a plain `Option<String>` that is always safe to read, so a poison must never fail *open* into
+/// reporting a known-corrupt library as healthy.
+fn corrupted_path_guard() -> std::sync::MutexGuard<'static, Option<String>> {
+    CORRUPTED_DB_PATH
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// Cheap, path-relative corruption check for the hot `open_conn` path: the caller has already
+/// resolved the current db path, so this does no config read (just a mutex + string compare).
+fn is_path_corrupted(path: &str) -> bool {
+    corrupted_path_guard().as_deref() == Some(path)
+}
+
+pub fn is_database_corrupted() -> bool {
+    match t_storage::get_current_db_path() {
+        Ok(path) => is_path_corrupted(&path),
+        Err(e) => {
+            // This bool is the sole signal behind the startup guards and the UI banner; a transient
+            // config-read failure must be diagnosable rather than silently reported as healthy.
+            eprintln!("is_database_corrupted: failed to resolve current db path: {}", e);
+            false
+        }
+    }
+}
+
+fn mark_db_corrupted(path: &str) {
+    *corrupted_path_guard() = Some(path.to_string());
+}
+
+fn clear_db_corrupted(path: &str) {
+    let mut guard = corrupted_path_guard();
+    if guard.as_deref() == Some(path) {
+        *guard = None;
+    }
+}
+
+/// Check existing data pages before migrations; never modify or rebuild the database.
+fn database_is_corrupt(path: &str) -> Result<bool, String> {
+    let check = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .and_then(|conn| {
+            conn.query_row("PRAGMA quick_check(1)", [], |row| row.get::<_, String>(0))
+        });
+    match check {
+        Ok(result) => Ok(result != "ok"),
+        Err(error) if matches!(error.sqlite_error_code(),
+            Some(rusqlite::ErrorCode::DatabaseCorrupt | rusqlite::ErrorCode::NotADatabase)
+        ) => Ok(true),
+        Err(error) => Err(error.to_string()),
+    }
+}
+
+/// Detect corruption errors surfaced by initialization after the integrity check.
+fn is_corruption_error(err: &str) -> bool {
+    let err = err.to_lowercase();
+    err.contains("database disk image is malformed") || err.contains("file is not a database")
+}
 
 /// A pooled connection that returns to the global pool on Drop.
 pub(crate) struct PooledConn(Option<(String, Connection)>);
@@ -9310,6 +9378,9 @@ pub(crate) fn clear_conn_pool() {
 pub(crate) fn open_conn() -> Result<PooledConn, String> {
     let current_path = t_storage::get_current_db_path()
         .map_err(|e| format!("Failed to get the database file path: {}", e))?;
+    if is_path_corrupted(&current_path) {
+        return Err(DB_CORRUPTED_MSG.to_string());
+    }
     if let Ok(mut pool) = CONN_POOL.lock() {
         // Only reuse connections pointing to the same DB file
         while let Some((path, conn)) = pool.pop() {
@@ -9324,17 +9395,36 @@ pub(crate) fn open_conn() -> Result<PooledConn, String> {
 
 /// create all tables if not exists
 pub fn create_db() -> Result<(), String> {
-    match create_db_internal() {
-        Ok(_) => Ok(()),
-        Err(err) => {
-            if !should_recover_db(&err) {
-                return Err(err);
+    let path = t_storage::get_current_db_path()?;
+    // Re-evaluating this library: clear any stale corrupt mark for it before checking.
+    clear_db_corrupted(&path);
+    if Path::new(&path).exists() {
+        // An inconclusive pre-check (Err) must NOT abort: a read-only quick_check can fail on a
+        // perfectly healthy WAL db that needs recovery after an unclean shutdown. Fall through to
+        // create_db_internal, which opens read-write (running WAL recovery + migrations) and whose
+        // is_corruption_error fallback below still catches genuine corruption.
+        match database_is_corrupt(&path) {
+            Ok(true) => {
+                eprintln!("create_db: corruption detected for '{}'", path);
+                mark_db_corrupted(&path);
+                return Err(DB_CORRUPTED_MSG.to_string());
             }
-
-            eprintln!("create_db failed: {}. Trying recovery...", err);
-            recover_current_db_file()?;
-            create_db_internal().map_err(|e| format!("Database recovery retry failed: {}", e))
+            Ok(false) => {}
+            Err(e) => {
+                eprintln!("create_db: integrity pre-check skipped ({}); falling back to migration open", e)
+            }
         }
+    }
+    // Catch page-level corruption that surfaces while the migrations open the db read-write, so
+    // the flag is raised and the UI shows the switch-library banner instead of raw errors.
+    match create_db_internal() {
+        Ok(()) => Ok(()),
+        Err(err) if is_corruption_error(&err) => {
+            eprintln!("create_db: database corruption detected for '{}': {}", path, err);
+            mark_db_corrupted(&path);
+            Err(DB_CORRUPTED_MSG.to_string())
+        }
+        Err(err) => Err(err),
     }
 }
 
@@ -9826,80 +9916,6 @@ fn create_db_internal() -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     Ok(())
-}
-
-fn recover_current_db_file() -> Result<(), String> {
-    let db_path = t_storage::get_current_db_path()
-        .map_err(|e| format!("Failed to get current db path during recovery: {}", e))?;
-    let db_path = PathBuf::from(db_path);
-
-    if !db_path.exists() {
-        // Nothing to quarantine, next create_db_internal will create a new DB.
-        return Ok(());
-    }
-
-    let stamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|e| format!("Failed to get timestamp for db recovery: {}", e))?
-        .as_secs();
-
-    let db_name = db_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("library.db")
-        .to_string();
-
-    let backup_db = db_path.with_file_name(format!("{}.corrupt-{}", db_name, stamp));
-    move_or_copy(&db_path, &backup_db)?;
-
-    let wal_path = path_with_suffix(&db_path, "-wal");
-    if wal_path.exists() {
-        let backup_wal = path_with_suffix(&backup_db, "-wal");
-        let _ = move_or_copy(&wal_path, &backup_wal);
-    }
-
-    let shm_path = path_with_suffix(&db_path, "-shm");
-    if shm_path.exists() {
-        let backup_shm = path_with_suffix(&backup_db, "-shm");
-        let _ = move_or_copy(&shm_path, &backup_shm);
-    }
-
-    eprintln!(
-        "Database file quarantined for recovery: '{}' -> '{}'",
-        db_path.display(),
-        backup_db.display()
-    );
-
-    Ok(())
-}
-
-fn should_recover_db(err: &str) -> bool {
-    let err = err.to_lowercase();
-    err.contains("database disk image is malformed") || err.contains("file is not a database")
-}
-
-fn path_with_suffix(path: &Path, suffix: &str) -> PathBuf {
-    let s = format!("{}{}", path.to_string_lossy(), suffix);
-    PathBuf::from(s)
-}
-
-fn move_or_copy(src: &Path, dst: &Path) -> Result<(), String> {
-    match fs::rename(src, dst) {
-        Ok(_) => Ok(()),
-        Err(rename_err) => {
-            fs::copy(src, dst).map_err(|copy_err| {
-                format!(
-                    "Failed to move '{}' to '{}' (rename: {}, copy: {})",
-                    src.display(),
-                    dst.display(),
-                    rename_err,
-                    copy_err
-                )
-            })?;
-            fs::remove_file(src)
-                .map_err(|e| format!("Failed to remove source file '{}': {}", src.display(), e))
-        }
-    }
 }
 
 #[cfg(test)]

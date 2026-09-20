@@ -321,7 +321,11 @@ pub fn change_db_storage_dir(
     status_state: State<t_face::FaceIndexingStatus>,
 ) -> Result<String, String> {
     ensure_db_storage_change_allowed(&status_state)?;
-    t_storage::change_db_storage_dir(new_dir)
+    let result = t_storage::change_db_storage_dir(new_dir);
+    if result.is_ok() {
+        revalidate_db_after_path_change();
+    }
+    result
 }
 
 #[tauri::command]
@@ -329,7 +333,22 @@ pub fn reset_db_storage_dir(
     status_state: State<t_face::FaceIndexingStatus>,
 ) -> Result<String, String> {
     ensure_db_storage_change_allowed(&status_state)?;
-    t_storage::reset_db_storage_dir()
+    let result = t_storage::reset_db_storage_dir();
+    if result.is_ok() {
+        revalidate_db_after_path_change();
+    }
+    result
+}
+
+/// The db file moved to a new path without going through switch_library, so drop stale pooled
+/// connections and re-evaluate the corruption mark for the new current path (create_db clears or
+/// re-sets it and re-runs migrations). Errors are logged, not propagated: the move already
+/// succeeded and the command's contract returns the new directory.
+fn revalidate_db_after_path_change() {
+    t_sqlite::clear_conn_pool();
+    if let Err(e) = t_sqlite::create_db() {
+        eprintln!("db storage dir changed: post-move create_db failed: {}", e);
+    }
 }
 
 #[tauri::command]
@@ -361,19 +380,34 @@ pub fn remove_library(id: &str) -> Result<(), String> {
     t_config::remove_library(id)
 }
 
+/// Startup integrity check result for the selected library.
+#[tauri::command]
+pub fn is_database_corrupted() -> bool {
+    t_sqlite::is_database_corrupted()
+}
+
 /// switch to a different library
 #[tauri::command]
 pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+    // The blocking task reports whether the target library turned out to be corrupt, deciding from
+    // create_db's returned error itself rather than re-reading the process-global flag afterwards
+    // (which a concurrent switch could resolve against a different library).
+    let corrupted = tauri::async_runtime::spawn_blocking(move || -> Result<bool, String> {
         t_config::switch_library(&id)?;
         t_utils::clear_album_accessibility();
         t_sqlite::clear_conn_pool();
-        t_sqlite::create_db()?;
-        Ok(())
+        match t_sqlite::create_db() {
+            Ok(()) => Ok(false),
+            Err(e) if e == t_sqlite::DB_CORRUPTED_MSG => Ok(true),
+            Err(e) => Err(e),
+        }
     })
     .await
     .map_err(|e| format!("Failed to join switch library task: {}", e))??;
 
+    if corrupted {
+        return Ok(());
+    }
     t_utils::restore_album_scopes(&app_handle)?;
     tauri::async_runtime::spawn_blocking(|| -> Result<(), String> {
         let mut albums = Album::get_all_albums()

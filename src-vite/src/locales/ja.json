@@ -49,7 +49,9 @@
   "library": {
     "all_files": "すべてのファイル",
     "on_this_day": "この日",
-    "review": "レビュー"
+    "review": "レビュー",
+    "database_corrupted": "このライブラリのデータベースが破損しています",
+    "database_corrupted_hint": "他のライブラリに切り替えてみてください。"
   },
   "album": {
     "album_list": "アルバム",

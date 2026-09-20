@@ -125,8 +125,10 @@ async fn main() {
             // Cleanup video cache
             t_video::init_video_cache(&_app.handle());
 
-            if let Err(e) = t_utils::restore_album_scopes(&_app.handle()) {
-                eprintln!("Failed to restore asset scopes: {}", e);
+            if !t_sqlite::is_database_corrupted() {
+                if let Err(e) = t_utils::restore_album_scopes(&_app.handle()) {
+                    eprintln!("Failed to restore asset scopes: {}", e);
+                }
             }
 
             // Initialize AI Engine
@@ -166,7 +168,9 @@ async fn main() {
                 }
             }
 
-            t_utils::start_folder_mtime_sync(_app.handle().clone());
+            if !t_sqlite::is_database_corrupted() {
+                t_utils::start_folder_mtime_sync(_app.handle().clone());
+            }
 
             // Open devtools in development mode
             // #[cfg(debug_assertions)] // only include this block in debug builds
@@ -233,6 +237,7 @@ async fn main() {
             t_cmds::hide_library,
             t_cmds::reorder_libraries,
             t_cmds::switch_library,
+            t_cmds::is_database_corrupted,
             t_cmds::get_library_info,
             t_cmds::save_library_state,
             t_cmds::get_library_state,
