@@ -261,7 +261,7 @@ watch(() => [config.calendar.view, config.settings.calendarSort], () => {
 });
 
 // Only refresh the active view. Inactive panel data is refreshed on re-entry.
-watch(() => [config.settings.calendarSort, config.settings.smallFileFilter], async () => {
+watch(() => [config.settings.calendarSort], async () => {
   if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CALENDAR) await getCalendarDates();
 });
 

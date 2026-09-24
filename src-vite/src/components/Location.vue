@@ -112,7 +112,7 @@ onMounted(async () => {
 });
 
 // Only refresh the active view. Inactive panel data is refreshed on re-entry.
-watch(() => [config.settings.categorySort, config.settings.smallFileFilter], async () => {
+watch(() => [config.settings.categorySort], async () => {
   if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.LOCATION) await getLocations();
 });
 

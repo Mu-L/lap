@@ -76,7 +76,6 @@ app.use(i18n)
 
 // Mount the app
 app.mount('#app')
-console.log('App mounted', app)
 
 // Listen for events
 if (isMainWindow) {
@@ -178,9 +177,6 @@ if (isMainWindow) {
   })
   listen('settings-groupRawJpegPairs-changed', (event) => {
     config.settings.groupRawJpegPairs = event.payload
-  })
-  listen('settings-smallFileFilter-changed', (event) => {
-    config.setSmallFileFilter(event.payload)
   })
   listen('settings-navigatorViewMode-changed', (event) => {
     config.setNavigatorViewMode(event.payload)

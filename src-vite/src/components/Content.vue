@@ -3049,7 +3049,6 @@ const currentQueryParams = ref({
   tagId: 0,
   tagGroupId: 0,
   personId: 0,
-  smallFileFilter: 0,
 });
 const currentQuerySource = ref<'query' | 'smart' | 'collection' | 'search'>('query');
 const isMapView = computed(() => config.settings.grid.viewMode === 'map');
@@ -3071,15 +3070,9 @@ watch(isMapView, (active) => {
   if (active) mapViewMounted.value = true;
 });
 
-function passesSmallFileFilter(file: any) {
-  const threshold = Number(config.settings.smallFileFilter || 0);
-  if (![160, 320, 640].includes(threshold)) return true;
-
-  const width = Number(file?.width || 0);
-  const height = Number(file?.height || 0);
-  if (width <= 0 || height <= 0) return true;
-
-  return width >= threshold || height >= threshold;
+function passesAlbumFilters(file: any) {
+  // Direct ID lookups also carry visibility computed from the owning album.
+  return file?.album_visible !== false;
 }
 
 type SaveAsContext = {
@@ -5533,7 +5526,13 @@ onMounted( async() => {
   });
 
   unlistenAlbumUpdated = await listen('album-updated', (event: any) => {
-    const { albumId, name } = event.payload || {};
+    const { albumId, name, filtersChanged } = event.payload || {};
+    if (filtersChanged) {
+      clearFolderFileCounts();
+      uiStore.clearCountUpdateRequest();
+      libConfig.clearLazySidebarCounts();
+      scheduleContentRefresh(() => refreshContentFromSelectionChange());
+    }
     const targetId = Number(albumId || 0);
     if (targetId <= 0 || !name) return;
     for (const file of fileList.value) {
@@ -5654,7 +5653,7 @@ watch(() => libConfig.index.albumQueue.length, (newLength) => {
 });
 
 watch(
-  () => [config.settings.showSubfolderFiles, config.settings.smallFileFilter, libConfig._libraryId],
+  () => [config.settings.showSubfolderFiles, libConfig._libraryId],
   () => {
     clearFolderFileCounts();
   },
@@ -5664,20 +5663,6 @@ watch(() => libConfig._libraryId, () => {
   uiStore.clearCountUpdateRequest();
 });
 
-watch(() => config.settings.smallFileFilter, () => {
-  uiStore.clearCountUpdateRequest();
-  // Cached lazy counts were computed under the previous filter value; drop them
-  // so badges disappear instead of showing stale numbers. They repopulate on
-  // the next explicit activation of each item.
-  libConfig.clearLazySidebarCounts();
-  if (
-    libConfig.activePane !== 'main'
-    || ![SIDEBAR.CALENDAR, SIDEBAR.PERSON, SIDEBAR.LOCATION, SIDEBAR.CAMERA].includes(config.main.sidebarIndex)
-  ) {
-    return;
-  }
-  scheduleContentRefresh(() => refreshContentFromSelectionChange());
-});
 
 /// watch for file list changes
 watch(
@@ -6611,7 +6596,6 @@ async function getFileList(
     tagId = 0,
     tagGroupId = 0,
     personId = 0,
-    smallFileFilter = Number(config.settings.smallFileFilter || 0),
     gpsMinLat = null,
     gpsMaxLat = null,
     gpsMinLon = null,
@@ -6654,7 +6638,6 @@ async function getFileList(
     tagId,
     tagGroupId,
     personId,
-    smallFileFilter,
     gpsMinLat,
     gpsMaxLat,
     gpsMinLon,
@@ -6740,7 +6723,7 @@ async function getMapSearchClusterFileList(fileIds: number[], gpsParams: Record<
     if (requestId !== currentContentRequestId) return;
 
     const inCluster = (files || []).filter((file: any) => {
-      if (!passesSmallFileFilter(file)) return false;
+      if (!passesAlbumFilters(file)) return false;
       if (exactMembers) return true;
       if (file.gps_latitude == null || file.gps_longitude == null || file.gps_latitude === '' || file.gps_longitude === '') return false;
       const lat = Number(file.gps_latitude);
@@ -6797,7 +6780,6 @@ async function getCollectionFileList(collectionId: number, requestId: number) {
     calendarSort: config.settings.calendarSort,
     folderSort: config.settings.folderSort,
     categorySort: config.settings.categorySort,
-    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     make: '',
     model: '',
     lensMake: '',
@@ -6882,7 +6864,6 @@ async function getSmartFileList(smartAlbum: any, requestId: number) {
     folderSort: Number(config.settings.folderSort || 0),
     calendarSort: Number(config.settings.calendarSort || 0),
     categorySort: Number(config.settings.categorySort || 0),
-    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     groupBy: effectiveGroupBy.value,
   };
   void refreshDedupSmartFileIds(requestId, currentSmartQueryParams.value);
@@ -7002,7 +6983,7 @@ async function getImageSearchFileList(
     if (result) {
       clearSelectionForFileListUpdate();
       resetGroupingState();
-      fileList.value = preserveLoadedThumbnails(result.filter(passesSmallFileFilter));
+      fileList.value = preserveLoadedThumbnails(result.filter(passesAlbumFilters));
       contentCountIsAuthoritative.value = true;
       currentSearchFileIds.value = fileList.value
         .map(file => Number(file.id))
@@ -7059,7 +7040,6 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     calendarSort: config.settings.calendarSort,
     folderSort: config.settings.folderSort,
     categorySort: config.settings.categorySort,
-    smallFileFilter: Number(config.settings.smallFileFilter || 0),
     make: '',
     model: '',
     lensMake: '',
@@ -7115,7 +7095,7 @@ async function getUnifiedSearchFileList(searchText: string, requestId: number) {
     const textIds = new Set(textMatches.map((file: any) => Number(file.id)));
     const visualMatches = (Array.isArray(visualResult) ? visualResult : [])
       .filter((file: any) => !textIds.has(Number(file.id)))
-      .filter(passesSmallFileFilter);
+      .filter(passesAlbumFilters);
     const files = preserveLoadedThumbnails([...textMatches, ...visualMatches]);
     contentCountIsAuthoritative.value = true;
 

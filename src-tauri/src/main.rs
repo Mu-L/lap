@@ -263,6 +263,7 @@ async fn main() {
             t_cmds::select_folder,
             t_cmds::fetch_folder,
             t_cmds::count_folder,
+            t_cmds::list_album_subfolders,
             t_cmds::create_folder,
             t_cmds::rename_folder,
             t_cmds::move_folder,
